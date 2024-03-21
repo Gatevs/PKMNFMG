@@ -23,12 +23,12 @@ public:
 
     // Movement and position
     void npcMoving(std::vector<NPC>& npcs);
-    void UpdatePositionAndCamera(Camera2D &camera, const std::vector<NPC>& npcs);
+    void UpdatePositionAndCamera();
     void UpdateAnim ();
     void setPosition(Vector2 newPos);
 
     // Collision detection
-    void checkCollisions(const ldtk::Layer& collisions);
+    void checkCollisions(const ldtk::Layer& collisions,  const std::vector<NPC>& npcs);
     Rectangle ColOffset(bool Tile) const;
 
     // Accessors
@@ -38,6 +38,7 @@ public:
     int GetPlayerSpeed() const;
     int GetPlayerFollower() const;
     bool IsPlayerMoving() const;
+    bool IsPlayerAnimating() const;
     int CheckForNPCInFront(const std::vector<NPC>& npcs) const;
     void GetShadow(Texture2D load);
 

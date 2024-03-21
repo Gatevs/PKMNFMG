@@ -1,4 +1,5 @@
 #include "player.h"
+#include "raylib.h"
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -60,12 +61,15 @@ void Player::HandleInput(std::vector<NPC>& npcs, ActionHandler& MenuObj){
         keyPressTimer = 0.0f;
         animating = false;
     }
+    if (step_timer >= 16/player_speed) {
+        past_dir = input_direction;
+        step_timer = 0;
+        move = 0;
+    }
 
     // Check if the timer exceeds the delay threshold
     if (keyPressTimer >= MOVEMENT_DELAY) {
-        if (step_timer == 0 ){
-            past_pos = position;
-        }
+
         if (!move) {
             if (IsKeyDown(KEY_UP)) {
                 currentAnimation = ANIM_UP;
@@ -74,6 +78,7 @@ void Player::HandleInput(std::vector<NPC>& npcs, ActionHandler& MenuObj){
                 m_dir = 90;
                 input_direction.y = -1;
                 input_direction.x = 0;
+                past_pos = position;
             } else if (IsKeyDown(KEY_DOWN)) {
                 currentAnimation = ANIM_DOWN;
                 animating = true;
@@ -81,6 +86,7 @@ void Player::HandleInput(std::vector<NPC>& npcs, ActionHandler& MenuObj){
                 m_dir = 270;
                 input_direction.y = 1;
                 input_direction.x = 0;
+                past_pos = position;
             } else if (IsKeyDown(KEY_RIGHT)) {
                 currentAnimation = ANIM_RIGHT;
                 animating = true;
@@ -88,6 +94,7 @@ void Player::HandleInput(std::vector<NPC>& npcs, ActionHandler& MenuObj){
                 m_dir = 0;
                 input_direction.x = 1;
                 input_direction.y = 0;
+                past_pos = position;
             } else if (IsKeyDown(KEY_LEFT)) {
                 currentAnimation = ANIM_LEFT;
                 animating = true;
@@ -95,6 +102,7 @@ void Player::HandleInput(std::vector<NPC>& npcs, ActionHandler& MenuObj){
                 m_dir = 180;
                 input_direction.x = -1;
                 input_direction.y = 0;
+                past_pos = position;
             }
             player_speed = IsKeyDown(KEY_X) ? 2 : 1;
             RunFrames = (player_speed == 2) ? 4: 0 ;
@@ -250,47 +258,33 @@ void Player::Update() {
 void Player::npcMoving(std::vector<NPC>& npcs){
     for (auto& npc : npcs) {
         if (npc.GetID() == FollowerID) {
-            npc.npcMove(past_dir,past_pos,player_speed,move,animating);
+            npc.npcMove(past_dir,past_pos,player_speed,move,animating, step_timer);
             break;
         }
     }
 }
 
 // Update player position based on movement logic
-void Player::UpdatePositionAndCamera(Camera2D& camera, const std::vector<NPC>& npcs) {
+void Player::UpdatePositionAndCamera() {
+    Rectangle colOffset = ColOffset(false); // Calculate once
+
     if (move) {
         if (step_timer < 16/player_speed) {
             step_timer += 1;
-            // Check for collisions with NPCs
-            for (const auto& npc : npcs) {
-                if (CheckCollisionRecs(ColOffset(false), npc.GetCollisionMask())) {
-                    colID = npc.GetID();
-                    // Collision detected, player can't move
-                    if (colID != FollowerID){
-                        step_timer = 0;
-                        move = false;
-                        return;
-                    }
-                }
-            }
-            // No collisions detected, update player position
-            position.x = ColOffset(false).x + (COLLISION_MASK_WIDTH / 2.0f);
-            position.y = ColOffset(false).y + (COLLISION_MASK_HEIGHT / 2.0f);
-        } else {
-            past_dir = input_direction;
-            step_timer = 0;
-            move = false;
+
+            position.x = colOffset.x + (COLLISION_MASK_WIDTH / 2.0f);
+            position.y = colOffset.y + (COLLISION_MASK_HEIGHT / 2.0f);
         }
+
     }
     // Update collision mask position to match player position
     collisionMask.x = position.x - (COLLISION_MASK_WIDTH / 2.0f);
     collisionMask.y = position.y - (COLLISION_MASK_HEIGHT / 2.0f);
-    // Set camera target to player position
-    camera.target = (Vector2){((position.x - (256 / 2.0f)) + (FRAME_X / 2.0f)) + 32, (position.y - (192 / 2.0f)) + (FRAME_Y / 2.0f)};
 }
 
 
-void Player::checkCollisions(const ldtk::Layer& collisions) {
+
+void Player::checkCollisions(const ldtk::Layer& collisions,  const std::vector<NPC>& npcs) {
     // Calculate the position in front of the player based on direction
     int tile_Col = 0;
     // Get the integer grid value at the specified position
@@ -312,6 +306,16 @@ void Player::checkCollisions(const ldtk::Layer& collisions) {
         }
         step_timer = 0;
         move = false;
+    }
+    for (const auto& npc : npcs) {
+        if (CheckCollisionRecs(ColOffset(false), npc.GetCollisionMask())) {
+            colID = npc.GetID();
+            // Collision detected, player can't move
+            if (colID != FollowerID){
+                step_timer = 0;
+                move = false;
+            }
+        }
     }
 }
 
@@ -405,8 +409,16 @@ Vector2 Player::GetPosition() const {
     return position;
 }
 
+int Player::GetPlayerSpeed() const {
+    return player_speed;
+}
+
 bool Player::IsPlayerMoving() const {
     return move;
+}
+
+bool Player::IsPlayerAnimating() const {
+    return animating;
 }
 
 int Player::GetPlayerFollower() const {

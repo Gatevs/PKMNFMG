@@ -4,10 +4,12 @@
 #include "player.h"
 #include "npc.h"
 #include "ActionHandler.h"
+#include <math.h>
 #include <string>
 #include <vector>
 #include <algorithm>
 #include "TileMap.h"
+#include "raylib.h"
 
 GameManager::~GameManager(){
     scaleFactor = MIN(GetScreenWidth() / gameHeight, GetScreenHeight() / gameHeight);
@@ -33,8 +35,9 @@ void GameManager::GameInitialization(){
 
     //Only at initialization
     player.GetShadow(ShadowCentered);
-    player.UpdatePositionAndCamera(camera, npcs);
+    player.UpdatePositionAndCamera();
     camera.target = (Vector2){((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32, (player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f)};
+    cameraHelper = camera.target;
     camera.rotation = 0.0f;
     camera.zoom = 1.0f;
 
@@ -42,6 +45,7 @@ void GameManager::GameInitialization(){
 }
 
 void GameManager::CameraUpdate(){
+    Vector2 targetPos = {(floor((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32), floor((player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f))};
     // Set the camera zoom and offset
     scaleFactor = MIN(GetScreenWidth() / gameHeight, GetScreenHeight() / gameHeight);
     // Calculate the actual game width and height after applying scaleFactor
@@ -52,6 +56,12 @@ void GameManager::CameraUpdate(){
     int offsetY = (GetScreenHeight() - actualGameHeight) / 2;
     camera.zoom = scaleFactor;
     camera.offset = (Vector2){ (float)offsetX, (float)offsetY };
+    if (player.IsPlayerMoving()){
+        cameraHelper.x += (player.GetPlayerSpeed() * 60) * GetFrameTime();
+    }else{
+        cameraHelper = (Vector2){((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32, (player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f)};
+    }
+    camera.target = targetPos;
 }
 
 void GameManager::GameLoop(){
@@ -68,9 +78,9 @@ void GameManager::GameLoop(){
     }
     player.Update();
     if (player.IsPlayerMoving()){
-        player.checkCollisions(Outside.GetCOL());
+        player.checkCollisions(Outside.GetCOL(), npcs);
         player.UpdateAnim();
-        player.UpdatePositionAndCamera(camera, npcs);
+        player.UpdatePositionAndCamera();
         if (player.GetPlayerFollower() != 0){
             player.npcMoving(npcs);
         }

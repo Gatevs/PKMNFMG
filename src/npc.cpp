@@ -46,20 +46,18 @@ NPC::~NPC() {
     //clean
 }
 
-void NPC::npcMove(Vector2 past_direction, Vector2 past_position, int speed, bool moving, bool anim){
+void NPC::npcMove(Vector2 past_direction, Vector2 past_position, int speed, bool moving, bool anim, int step){
     animating = anim;
     if (moving){
         move = true;
     }
     
     if (move){
-        if (step_timer < 16){
-        step_timer += speed;
+        if (step < 16){
         position.x += past_direction.x * speed;
         position.y += past_direction.y * speed;
         }
         else{
-            step_timer = 0;
             position = past_position;
             move = false;
         }

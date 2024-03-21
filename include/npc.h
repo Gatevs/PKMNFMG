@@ -17,7 +17,7 @@ public:
 
     // Position and Movement
     void UpdatePosition();
-    void npcMove(Vector2 past_direction, Vector2 past_position, int speed, bool moving, bool anim);
+    void npcMove(Vector2 past_direction, Vector2 past_position, int speed, bool moving, bool anim, int step);
 
     // Animation
     void updateAnimationFrameDimensions(const std::string& animation);

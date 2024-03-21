@@ -16,8 +16,8 @@ int main()
     //gameloop
     while (WindowShouldClose() == false)
     {
-        Game.CameraUpdate();
         Game.GameLoop();
+        Game.CameraUpdate();
         // Draw
         BeginDrawing();
         {
