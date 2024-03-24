@@ -4,8 +4,8 @@
 #include <vector>
 #include <algorithm>
 
-Player::Player(const char* texturePath) {
-    playerTexture = LoadTexture(texturePath);
+Player::Player() {
+    playerTexture = LoadTexture("assets/player.png");
     // Initialize member variables
     position = { 32, 32 };
     currentAnimation = ANIM_UP;
@@ -209,7 +209,14 @@ void Player::HandleInput(std::vector<NPC>& npcs, ActionHandler& MenuObj){
         if (!MenuObj.stopPlayerInput and !IsPlayerMoving()){
             MenuObj.handleAction(ActionType::Pause_M,position);
         }
-
+    }
+    if (IsKeyPressed(KEY_S)){
+        if (!MenuObj.stopPlayerInput and !IsPlayerMoving()){
+            int npcIdInFront = CheckForNPCInFront(npcs);
+            if (npcIdInFront != -1) {
+                MenuObj.handleAction(ActionType::Action_M,position);
+            }
+        }
     }
 }
 

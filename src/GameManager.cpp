@@ -11,6 +11,10 @@
 #include "TileMap.h"
 #include "raylib.h"
 
+GameManager::GameManager(){
+
+}
+
 GameManager::~GameManager(){
     scaleFactor = MIN(GetScreenWidth() / gameHeight, GetScreenHeight() / gameHeight);
 }
@@ -40,14 +44,12 @@ void GameManager::GameInitialization(){
     cameraHelper = camera.target;
     camera.rotation = 0.0f;
     camera.zoom = 1.0f;
-
-    SetTargetFPS(60);
 }
 
 void GameManager::CameraUpdate(){
     Vector2 targetPos = {(floor((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32), floor((player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f))};
     // Set the camera zoom and offset
-    scaleFactor = MIN(GetScreenWidth() / gameHeight, GetScreenHeight() / gameHeight);
+    scaleFactor = MIN(GetScreenWidth() / gameWidth, GetScreenHeight() / gameHeight);
     // Calculate the actual game width and height after applying scaleFactor
     int actualGameWidth = gameHeight * scaleFactor;
     int actualGameHeight = gameHeight * scaleFactor;
@@ -123,11 +125,12 @@ void GameManager::DrawBars(){
         DrawRectangle(0, 0, (GetScreenWidth() - gameWidth * scaleFactor) / 2, GetScreenHeight(), BLACK); //Left Bar
         DrawRectangle((GetScreenWidth() + gameWidth * scaleFactor) / 2, 0, (GetScreenWidth() - gameWidth * scaleFactor) / 2, GetScreenHeight(), BLACK); //Right Bar
         DrawRectangle(0, 0, GetScreenWidth(), (GetScreenHeight() - gameHeight * scaleFactor) / 2, BLACK); //Top Bar
-        DrawRectangle(0, GetScreenHeight() - (GetScreenHeight() - gameHeight * scaleFactor) / 2, GetScreenWidth(), (GetScreenHeight() - gameHeight * scaleFactor) / 2, BLACK); // Bottom Bar
+        DrawRectangle(0, GetScreenHeight() - (GetScreenHeight() - gameHeight * scaleFactor) / 2.0f, GetScreenWidth(), (GetScreenHeight() - gameHeight * scaleFactor) / 2.0f, BLACK); // Bottom Bar
+        DrawRectangle(0, GetScreenHeight() - (GetScreenHeight() - (gameHeight + 4) * scaleFactor) / 2.0f, GetScreenWidth(), (GetScreenHeight() - gameHeight * scaleFactor) / 2.0f, BLACK); // Bottom Bar
     }
     else if (scaleFactor <= 1) {
         DrawRectangle(0, 0, GetScreenWidth(), (GetScreenHeight() - gameHeight * scaleFactor) / 2, BLACK); //Top Bar
-        DrawRectangle(0, (GetScreenHeight() + gameHeight * scaleFactor) / 2, GetScreenWidth(), (GetScreenHeight() - gameHeight * scaleFactor) / 2, BLACK); //Bottom Bar
+        DrawRectangle(0, (GetScreenHeight() + gameHeight * (scaleFactor)) / 2.0f, GetScreenWidth(), (GetScreenHeight() - gameHeight * scaleFactor) / 2.0f, BLACK); //Bottom Bar
         DrawRectangle(0, 0, (GetScreenWidth() - gameWidth * scaleFactor) / 2, GetScreenHeight(), BLACK); //Left Bar
         DrawRectangle(GetScreenWidth() - (GetScreenWidth() - gameWidth * scaleFactor) / 2, 0, (GetScreenWidth() - gameWidth * scaleFactor) / 2, GetScreenHeight(), BLACK); //Right Bar
     }

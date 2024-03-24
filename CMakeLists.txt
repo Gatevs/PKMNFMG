@@ -8,10 +8,31 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build (Debug, Release, RelWithDebInfo, MinSizeRel)" FORCE)
 endif()
 
+# Set Emscripten-specific settings only if building for Emscripten
+if (EMSCRIPTEN)
+    # Include the emscripten.cmake file
+    include(/home/gatevs/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake)
+
+    # Set Emscripten compiler flags
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s GL_ENABLE_GET_PROC_ADDRESS=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s GL_ENABLE_GET_PROC_ADDRESS=1")
+    set(CMAKE_EXECUTABLE_SUFFIX ".html") # This line is used to set your executable to build with the emscripten html template so that you can directly open it.
+
+    # Embed assets directory into the virtual file system
+    file(GLOB_RECURSE ASSETS "assets/*")
+    foreach(asset ${ASSETS})
+        get_filename_component(asset_name ${asset} NAME)
+        list(APPEND PRELOAD_FILES "--preload-file ${asset}@/assets/${asset_name}")
+    endforeach()
+    string(REPLACE ";" " " PRELOAD_FILES "${PRELOAD_FILES}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${PRELOAD_FILES}")
+endif()
+
 # Set the output directory for the built executable
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++")
+
 
 # Add include directories
 include_directories(include)

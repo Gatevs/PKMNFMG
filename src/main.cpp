@@ -4,29 +4,47 @@
 #include <algorithm>
 #include "GameManager.h"
 
-int main()
-{
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
-    InitWindow(256,192,"Pokemon FMG");
-    SetWindowMinSize(256, 192);
+//#define PLATFORM_WEB
 
+#if defined(PLATFORM_WEB)
+    #include <emscripten/emscripten.h>
+#endif
+
+// Global variables
+
+// Update and Draw one frame
+void UpdateDrawFrame(GameManager& game) {
+    // Update
+    game.GameLoop();
+    game.CameraUpdate();
+
+    // Draw
+    BeginDrawing();
+    {
+       game.DrawWorld();
+       game.DrawBars();
+    }
+    EndDrawing();
+}
+
+int main() {
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+    InitWindow(256, 192, "Pokemon FMG");
+    SetWindowMinSize(256, 192);
     GameManager Game;
+
     Game.GameInitialization();
 
-    //gameloop
-    while (WindowShouldClose() == false)
-    {
-        Game.GameLoop();
-        Game.CameraUpdate();
-        // Draw
-        BeginDrawing();
-        {
-           Game.DrawWorld();
-           Game.DrawBars();
-
-        }
-        EndDrawing();
+#if defined(PLATFORM_WEB)
+    emscripten_set_main_loop_arg((em_arg_callback_func)UpdateDrawFrame, &Game, 0, 1);
+#else
+    SetTargetFPS(60);
+    // Main game loop
+    while (!WindowShouldClose()) {
+        UpdateDrawFrame(Game);
     }
+#endif
+
     Game.Unload();
     CloseWindow();
     return 0;

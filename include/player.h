@@ -11,7 +11,7 @@
 
 class Player :public GameObject {
 public:
-    Player(const char* texturePath);
+    Player();
     ~Player();
 
 // Core functionality

@@ -3,15 +3,17 @@
 #include <raylib.h>
 #include "npc.h"
 
-ActionHandler::ActionHandler(const char* texture_Path) {
-    atlasTexture = LoadTexture(texture_Path);
+ActionHandler::ActionHandler() {
+    atlasTexture = LoadTexture("assets/UI_Atlas.png");
     MainFont = LoadFont("assets/SpriteFont_Main.png");
+    screenTexture = LoadTexture("assets/Screens_Atlas.png");
     MainPos = {0,0};
     SubPos = {0,0};
     MainSelPos = {0,0};
     SubSelPos = {0,0};
     stopPlayerInput = false;
     inUI = NONE;
+    screenState = OFF;
     menuID = 1;
     wordWrap = true;
     textTimer = 0;
@@ -19,6 +21,10 @@ ActionHandler::ActionHandler(const char* texture_Path) {
     textFinished = true;
     TEXT_SPEED = 3.0f;
     InteractionID = 0;
+    selection = 0;
+    Fade = 0;
+    fadeInComplete = false;
+    fadeOutComplete = false;
 }
 
 
@@ -57,14 +63,25 @@ void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
         case ActionType::Pause_M:
             MainPos = Vector2{drawPos.x + 42, drawPos.y - 74};
             MainSelPos = Vector2{MainPos.x + 4, MainPos.y + 5};
+            ICOPos = (Vector2){MainSelPos.x + 3, MainSelPos.y};
             MainMap = pauseMap;
             MainSelector = selectorMap;
+            ICO[1] = MenuICOMap.width;
             stopPlayerInput = true;
             inUI = PAUSE;
             InputUI();
             break;
         case ActionType::Action_M:
-            action();
+            MainPos = Vector2{drawPos.x - 110, drawPos.y - 74};
+            MainSelPos = Vector2{MainPos.x + 4, MainPos.y + 5};
+            ICOPos = (Vector2){MainSelPos.x + 3, MainSelPos.y};
+            fadePos = (Vector2){drawPos.x - 112, drawPos.y - 80};
+            MainMap = actionMap;
+            MainSelector = selectorMap;
+            ICO[1] = MenuICOMap.width;
+            stopPlayerInput = true;
+            inUI = ACTION;
+            InputUI();
             break;
         case ActionType::Dialogue_Box:
             MainPos = Vector2{drawPos.x - 110, drawPos.y + 65};
@@ -83,6 +100,9 @@ void ActionHandler::InputUI(){
     }
     if (inUI == DIALOGUE){
         dialogue();
+    }
+    if (inUI == ACTION){
+        action();
     }
 }
 
@@ -116,7 +136,98 @@ void ActionHandler::pause() {
 
 // Function to handle generic action
 void ActionHandler::action() {
-    std::cout << "Generic action with value: " << 2 << std::endl;
+    if (textTimer < 10){
+        textTimer += 1;
+    }
+    if (IsKeyPressed(KEY_DOWN) and menuID < 4){
+        switch (selection){
+            case 0:
+                for (int i = 0; i < 5; ++i) {
+                    ICO[i] = 0;
+                }
+                MainSelPos.y = MainSelPos.y + 24;
+                menuID += 1;
+                ICO[menuID] = MenuICOMap.width;
+                break;
+            case 2:
+                break;
+        }
+    }
+    if (IsKeyPressed(KEY_UP) and menuID > 1){
+        switch (selection){
+            case 0:
+                for (int i = 0; i < 5; ++i) {
+                    ICO[i] = 0;
+                }
+                MainSelPos.y = MainSelPos.y - 24;
+                menuID -= 1;
+                ICO[menuID] = MenuICOMap.width;
+                break;
+            case 2:
+                break;
+        }
+    }
+    if (IsKeyPressed(KEY_S) && textTimer >= 10 && selection == 0){
+        menuID = 1;
+        stopPlayerInput = false;
+        textTimer = 0;
+        selection = 0;
+        for (int i = 0; i < 5; ++i) {
+            ICO[i] = 0;
+        }
+    }
+    if (IsKeyPressed(KEY_X)){
+        switch (selection){
+            case 0:
+                menuID = 1;
+                stopPlayerInput = false;
+                textTimer = 0;
+                selection = 0;
+                for (int i = 0; i < 5; ++i) {
+                    ICO[i] = 0;
+                }
+                break;
+            case 1:
+                if (screenState == ON && fadeOutComplete){
+                    fadeIn();
+                    screenState = WAIT;
+                }
+                break;
+            case 2:
+                selection = 0;
+                break;
+        }
+    }
+    if (IsKeyPressed(KEY_Z)){
+        selection = menuID;
+    }
+
+    switch (selection){
+        case 1:
+            if (!fadeInComplete){
+                fadeIn();
+            }else if (!fadeOutComplete){
+                fadeOut();
+            }
+            if (fadeInComplete && screenState == OFF){
+                screenState = ON;
+            }
+            if (fadeInComplete && screenState == WAIT && fadeOutComplete){
+                screenState = SHUTTNG_OFF;
+                fadeOutComplete = false;
+            }
+            if (fadeOutComplete && screenState == SHUTTNG_OFF){
+                selection = 0;
+                fadeInComplete = false;
+                fadeOutComplete = false;
+                screenState = OFF;
+            }
+            break;
+        case 2:
+            SubMap = YesNoMap;
+            SubPos = Vector2{MainPos.x + 102, MainPos.y};
+            break;
+    }
     // Add code to handle generic action here
 }
 
@@ -154,6 +265,34 @@ void ActionHandler::dialogue() {
             stopPlayerInput = false;
             claenText();
         }
+    }
+}
+
+void ActionHandler::fadeIn(){
+    const int MAX_FADE_VALUE = 255;
+    const int FADE_INCREMENT = 10; // Adjust the increment value as needed
+
+    if (Fade < MAX_FADE_VALUE) {
+        // Increment Fade by FADE_INCREMENT, but ensure it doesn't exceed MAX_FADE_VALUE
+        Fade = std::min(Fade + FADE_INCREMENT, MAX_FADE_VALUE);
+        fadeInComplete = false;
+    } else {
+        Fade = MAX_FADE_VALUE;
+        fadeInComplete = true;
+    }
+}
+
+void ActionHandler::fadeOut(){
+    const int MIN_FADE_VALUE = 0;
+    const int FADE_DECREMENT = 10; // Adjust the decrement value as needed
+
+    if (Fade > MIN_FADE_VALUE) {
+        // Decrement Fade by FADE_DECREMENT, but ensure it doesn't go below MIN_FADE_VALUE
+        Fade = std::max(Fade - FADE_DECREMENT, MIN_FADE_VALUE);
+        fadeOutComplete = false;
+    } else {
+        Fade = MIN_FADE_VALUE;
+        fadeOutComplete = true;
     }
 }
 
@@ -304,9 +443,28 @@ void ActionHandler::Draw(){
         DrawTextureRec(atlasTexture, MainMap, MainPos, WHITE);
         if (inUI == PAUSE){
             DrawTextureRec(atlasTexture, MainSelector, MainSelPos, WHITE);
+            DrawTextBoxed(MainFont, "Player", (Rectangle){ MainPos.x + 33, MainPos.y + 84, 60, 30 }, MainFont.baseSize, -5, wordWrap, WHITE);
         }
         if (inUI == DIALOGUE){
             DrawTextBoxed(MainFont, DestTXT.c_str(), (Rectangle){ MainPos.x + 16, MainPos.y +8, 220, 60 }, MainFont.baseSize, -5, wordWrap, WHITE);
         }
+        if (inUI == ACTION){
+            DrawTextureRec(atlasTexture, MainSelector, MainSelPos, WHITE);
+            DrawTextureRec(atlasTexture, (Rectangle) {MenuICOMap.x + ICO[1], MenuICOMap.y + (MenuICOMap.height * 7), MenuICOMap.width, MenuICOMap.height},(Vector2){ICOPos.x + 1, ICOPos.y}, WHITE);
+            DrawTextureRec(atlasTexture, (Rectangle) {MenuICOMap.x + ICO[2], MenuICOMap.y + (MenuICOMap.height * 8), MenuICOMap.width, MenuICOMap.height},(Vector2){ICOPos.x + 1, ICOPos.y + MenuICOMap.height}, WHITE);
+            DrawTextureRec(atlasTexture, (Rectangle) {MenuICOMap.x + ICO[3], MenuICOMap.y + (MenuICOMap.height * 9), MenuICOMap.width, MenuICOMap.height},(Vector2){ICOPos.x + 1, ICOPos.y + (MenuICOMap.height * 2) - 1}, WHITE);
+            DrawTextureRec(atlasTexture, (Rectangle) {MenuICOMap.x + ICO[4], MenuICOMap.y + (MenuICOMap.height * 10), MenuICOMap.width, MenuICOMap.height},(Vector2){ICOPos.x +1, ICOPos.y + (MenuICOMap.height * 3) - 2}, WHITE);
+            switch (selection){
+                case 1:
+                    if (screenState == ON || screenState == WAIT){
+                        DrawTextureRec(screenTexture, StatsMap, fadePos, WHITE);
+                    }
+                    break;
+                case 2:
+                    DrawTextureRec(atlasTexture, SubMap, SubPos, WHITE);
+                    break;
+            }
+        }
     }
+    DrawRectangle(fadePos.x,fadePos.y,256,194,(Color) {0,0,0,static_cast<unsigned char>(Fade)});
 }

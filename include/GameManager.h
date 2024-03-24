@@ -11,7 +11,7 @@
 
 class GameManager{
 public:
-    GameManager() : player("assets/player.png"), Menu("assets/UI_Atlas.png"){};
+    GameManager();
     ~GameManager();
 
     void GameInitialization();
