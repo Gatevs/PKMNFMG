@@ -53,7 +53,7 @@ void NPC::npcMove(Vector2 past_direction, Vector2 past_position, int speed, bool
     }
     
     if (move){
-        if (step < 16){
+        if (step < 16 / speed){
         position.x += past_direction.x * speed;
         position.y += past_direction.y * speed;
         }
