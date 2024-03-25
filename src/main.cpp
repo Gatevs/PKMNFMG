@@ -29,7 +29,7 @@ void UpdateDrawFrame(GameManager& game) {
 
 int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
-    InitWindow(256, 192, "PokemonFMG");
+    InitWindow(256, 192, "Pokemon FMG");
     SetWindowMinSize(256, 192);
     GameManager Game;
 

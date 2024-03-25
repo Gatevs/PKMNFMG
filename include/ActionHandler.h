@@ -33,6 +33,9 @@ private:
     void pause();
     void action();
     void dialogue();
+    void UpdateScreenState();
+    void DrawPauseUI();
+    void DrawActionUI();
     static void DrawTextBoxed(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint);
     static void DrawTextBoxedSelectable(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint, int selectStart, int selectLength, Color selectTint, Color selectBackTint);
     void typewriterEffect(std::string& text);
@@ -115,6 +118,18 @@ private:
     const Rectangle StatsMap = {
         static_cast<float>(0),
         static_cast<float>(0),
+        static_cast<float>(256),
+        static_cast<float>(192)
+    };
+        const Rectangle GrowthMap = {
+        static_cast<float>(256),
+        static_cast<float>(0),
+        static_cast<float>(256),
+        static_cast<float>(192)
+    };
+        const Rectangle OutfitMap = {
+        static_cast<float>(0),
+        static_cast<float>(192),
         static_cast<float>(256),
         static_cast<float>(192)
     };

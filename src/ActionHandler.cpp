@@ -112,24 +112,48 @@ void ActionHandler::pause() {
     if (textTimer < 10){
         textTimer += 1;
     }
-        if (IsKeyPressed(KEY_DOWN) and menuID < 7){
-            MainSelPos.y = MainSelPos.y + 24;
-            menuID += 1;
+    if (IsKeyPressed(KEY_DOWN) and menuID < 7){
+        switch (selection){
+            case 0:
+                for (int i = 0; i < 8; ++i) {
+                    ICO[i] = 0;
+                }
+                MainSelPos.y = MainSelPos.y + 24;
+                menuID += 1;
+                ICO[menuID] = MenuICOMap.width;
+                break;
+            case 2:
+                break;
         }
-        if (IsKeyPressed(KEY_UP) and menuID > 1){
-            MainSelPos.y = MainSelPos.y - 24;
-            menuID -= 1;
+    }
+    if (IsKeyPressed(KEY_UP) and menuID > 1){
+        switch (selection){
+            case 0:
+                for (int i = 0; i < 8; ++i) {
+                    ICO[i] = 0;
+                }
+                MainSelPos.y = MainSelPos.y - 24;
+                menuID -= 1;
+                ICO[menuID] = MenuICOMap.width;
+                break;
+            case 2:
+                break;
         }
-        if (IsKeyPressed(KEY_A) && textTimer >= 10){
-            menuID = 1;
-            stopPlayerInput = false;
-            textTimer = 0;
+    }
+    if (IsKeyPressed(KEY_A) && textTimer >= 10 && selection == 0){
+        menuID = 1;
+        stopPlayerInput = false;
+        textTimer = 0;
+        selection = 0;
+        for (int i = 0; i < 8; ++i) {
+            ICO[i] = 0;
         }
-        if (IsKeyPressed(KEY_X)){
-            menuID = 1;
-            stopPlayerInput = false;
-            textTimer = 0;
-        }
+    }
+    if (IsKeyPressed(KEY_X)){
+        menuID = 1;
+        stopPlayerInput = false;
+        textTimer = 0;
+    }
 
     //std::cout << "Pause action with value: " << menuID << std::endl;
 }
@@ -196,6 +220,18 @@ void ActionHandler::action() {
             case 2:
                 selection = 0;
                 break;
+            case 3:
+                if (screenState == ON && fadeOutComplete){
+                    fadeIn();
+                    screenState = WAIT;
+                }
+                break;
+            case 4:
+                if (screenState == ON && fadeOutComplete){
+                    fadeIn();
+                    screenState = WAIT;
+                }
+                break;
         }
     }
     if (IsKeyPressed(KEY_Z)){
@@ -204,31 +240,47 @@ void ActionHandler::action() {
 
     switch (selection){
         case 1:
-            if (!fadeInComplete){
-                fadeIn();
-            }else if (!fadeOutComplete){
-                fadeOut();
-            }
-            if (fadeInComplete && screenState == OFF){
-                screenState = ON;
-            }
-            if (fadeInComplete && screenState == WAIT && fadeOutComplete){
-                screenState = SHUTTNG_OFF;
-                fadeOutComplete = false;
-            }
-            if (fadeOutComplete && screenState == SHUTTNG_OFF){
-                selection = 0;
-                fadeInComplete = false;
-                fadeOutComplete = false;
-                screenState = OFF;
-            }
+            UpdateScreenState();
             break;
         case 2:
             SubMap = YesNoMap;
             SubPos = Vector2{MainPos.x + 102, MainPos.y};
             break;
+        case 3:
+            UpdateScreenState();
+            break;
+        case 4:
+            UpdateScreenState();
+            break;
     }
     // Add code to handle generic action here
+}
+
+void ActionHandler::UpdateScreenState() {
+    // Fade in or out based on current state
+    if (!fadeInComplete) {
+        fadeIn();
+    } else if (!fadeOutComplete) {
+        fadeOut();
+    }
+
+    // Update screen state based on fade-in and fade-out completion
+    if (fadeInComplete && screenState == OFF) {
+        // Screen is fully faded in and turned on
+        screenState = ON;
+    }
+    if (fadeInComplete && screenState == WAIT && fadeOutComplete) {
+        // Screen is fading out after waiting period
+        screenState = SHUTTNG_OFF;
+        fadeOutComplete = false;
+    }
+    if (fadeOutComplete && screenState == SHUTTNG_OFF) {
+        // Screen is fully faded out and turned off
+        selection = 0; // Reset any selections
+        fadeInComplete = false;
+        fadeOutComplete = false;
+        screenState = OFF;
+    }
 }
 
 void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs) {
@@ -441,30 +493,52 @@ void ActionHandler::DrawTextBoxed(Font font, const char *text, Rectangle rec, fl
 void ActionHandler::Draw(){
     if (stopPlayerInput){
         DrawTextureRec(atlasTexture, MainMap, MainPos, WHITE);
-        if (inUI == PAUSE){
-            DrawTextureRec(atlasTexture, MainSelector, MainSelPos, WHITE);
-            DrawTextBoxed(MainFont, "Player", (Rectangle){ MainPos.x + 33, MainPos.y + 84, 60, 30 }, MainFont.baseSize, -5, wordWrap, WHITE);
-        }
-        if (inUI == DIALOGUE){
-            DrawTextBoxed(MainFont, DestTXT.c_str(), (Rectangle){ MainPos.x + 16, MainPos.y +8, 220, 60 }, MainFont.baseSize, -5, wordWrap, WHITE);
-        }
-        if (inUI == ACTION){
-            DrawTextureRec(atlasTexture, MainSelector, MainSelPos, WHITE);
-            DrawTextureRec(atlasTexture, (Rectangle) {MenuICOMap.x + ICO[1], MenuICOMap.y + (MenuICOMap.height * 7), MenuICOMap.width, MenuICOMap.height},(Vector2){ICOPos.x + 1, ICOPos.y}, WHITE);
-            DrawTextureRec(atlasTexture, (Rectangle) {MenuICOMap.x + ICO[2], MenuICOMap.y + (MenuICOMap.height * 8), MenuICOMap.width, MenuICOMap.height},(Vector2){ICOPos.x + 1, ICOPos.y + MenuICOMap.height}, WHITE);
-            DrawTextureRec(atlasTexture, (Rectangle) {MenuICOMap.x + ICO[3], MenuICOMap.y + (MenuICOMap.height * 9), MenuICOMap.width, MenuICOMap.height},(Vector2){ICOPos.x + 1, ICOPos.y + (MenuICOMap.height * 2) - 1}, WHITE);
-            DrawTextureRec(atlasTexture, (Rectangle) {MenuICOMap.x + ICO[4], MenuICOMap.y + (MenuICOMap.height * 10), MenuICOMap.width, MenuICOMap.height},(Vector2){ICOPos.x +1, ICOPos.y + (MenuICOMap.height * 3) - 2}, WHITE);
-            switch (selection){
-                case 1:
-                    if (screenState == ON || screenState == WAIT){
-                        DrawTextureRec(screenTexture, StatsMap, fadePos, WHITE);
-                    }
-                    break;
-                case 2:
-                    DrawTextureRec(atlasTexture, SubMap, SubPos, WHITE);
-                    break;
-            }
+        switch (inUI){
+            case PAUSE:
+                DrawPauseUI();
+                break;
+            case DIALOGUE:
+                DrawTextBoxed(MainFont, DestTXT.c_str(), (Rectangle){ MainPos.x + 16, MainPos.y +8, 220, 60 }, MainFont.baseSize, -5, wordWrap, WHITE);
+                break;
+            case ACTION:
+                DrawActionUI();
+                break;
         }
     }
+    // Fade in and out
     DrawRectangle(fadePos.x,fadePos.y,256,194,(Color) {0,0,0,static_cast<unsigned char>(Fade)});
+}
+void ActionHandler::DrawPauseUI(){
+    DrawTextureRec(atlasTexture, MainSelector, MainSelPos, WHITE);
+    for (int i = 1; i <= 7; ++i) {
+        DrawTextureRec(atlasTexture, (Rectangle) {MenuICOMap.x + ICO[i], MenuICOMap.y + (MenuICOMap.height * (i - 1)), MenuICOMap.width, MenuICOMap.height},(Vector2){ICOPos.x + 1, ICOPos.y + (MenuICOMap.height * (i - 1)) - (i - 1)}, WHITE);
+    }
+    DrawTextBoxed(MainFont, "Player", (Rectangle){MainPos.x + 33, MainPos.y + 84, 60, 30}, MainFont.baseSize, -5, wordWrap, WHITE);
+}
+
+void ActionHandler::DrawActionUI(){
+    DrawTextureRec(atlasTexture, MainSelector, MainSelPos, WHITE);
+    for (int i = 1; i <= 4; ++i) {
+        DrawTextureRec(atlasTexture, (Rectangle) {MenuICOMap.x + ICO[i], MenuICOMap.y + (MenuICOMap.height * ((i - 1) + 7)), MenuICOMap.width, MenuICOMap.height},(Vector2){ICOPos.x + 1, ICOPos.y + (MenuICOMap.height * (i - 1)) - (i - 1)}, WHITE);
+    }
+    switch (selection){
+        case 1:
+            if (screenState == ON || screenState == WAIT){
+                DrawTextureRec(screenTexture, StatsMap, fadePos, WHITE);
+            }
+            break;
+        case 2:
+            DrawTextureRec(atlasTexture, SubMap, SubPos, WHITE);
+            break;
+        case 3:
+            if (screenState == ON || screenState == WAIT){
+                DrawTextureRec(screenTexture, GrowthMap, fadePos, WHITE);
+            }
+            break;
+        case 4:
+            if (screenState == ON || screenState == WAIT){
+                DrawTextureRec(screenTexture, OutfitMap, fadePos, WHITE);
+            }
+            break;
+    }
 }
