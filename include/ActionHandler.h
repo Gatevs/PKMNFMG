@@ -20,27 +20,29 @@ public:
 
     void handleAction(ActionType actionType, Vector2 drawPos);
     void getNPCInfo(int ID, std::vector<NPC>& NPC_objs);
-    void InputUI();
+    void InputUI(std::vector<NPC>& NPC_objs);
+    void SetInteractionID(int ID);
     void Draw();
     void claenText();
     void fadeIn();
     void fadeOut();
     bool stopPlayerInput;
     bool textFinished;
-    int InteractionID;
 
 private:
     void pause();
-    void action();
+    void action(std::vector<NPC>& NPC_objs);
     void dialogue();
     void UpdateScreenState();
     void DrawPauseUI();
     void DrawActionUI();
+    void CloseUI();
     static void DrawTextBoxed(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint);
     static void DrawTextBoxedSelectable(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint, int selectStart, int selectLength, Color selectTint, Color selectBackTint);
     void typewriterEffect(std::string& text);
     Texture2D atlasTexture;
     Texture2D screenTexture;
+    Texture2D StageTexture;
     Font MainFont;
     Rectangle MainMap;
     Rectangle SubMap;
@@ -57,6 +59,9 @@ private:
     bool fadeOutComplete;
     std::string DestTXT;
     std::string DialogueText;
+    std::string NPC_NAME;
+    int InteractionID;
+    int NPC_Limit;
     int ICO[11]{0,0,0,0,0,0,0,0,0,0};
     int textTimer;
     int menuID;
@@ -65,6 +70,8 @@ private:
     int Fade;
     int screenState;
     float TEXT_SPEED;
+    int MAX_DOWN;
+    int MAX_UP;
     enum UI_Types{
         NONE,
         PAUSE,
@@ -96,6 +103,12 @@ private:
         static_cast<float>(291),
         static_cast<float>(92),
         static_cast<float>(26)
+    };
+    const Rectangle BigSelectMap = {
+        static_cast<float>(94),
+        static_cast<float>(291),
+        static_cast<float>(148),
+        static_cast<float>(17)
     };
     const Rectangle DialogueMap = {
         static_cast<float>(1),
@@ -132,5 +145,11 @@ private:
         static_cast<float>(192),
         static_cast<float>(256),
         static_cast<float>(192)
+    };
+        const Rectangle StageMap = {
+        static_cast<float>(0),
+        static_cast<float>(0),
+        static_cast<float>(51),
+        static_cast<float>(51)
     };
 };

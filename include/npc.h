@@ -24,7 +24,7 @@ public:
     void updateTexture(const std::string& animation);
 
     // Event handling
-    void setEvent(int newEvent);
+    void setNextStage(int nextStage);
     void lookAtPlayer(int lookingAt);
 
     // CSV parsing
@@ -39,6 +39,8 @@ public:
     std::vector<std::vector<std::string>> GetNPCDialogue() {return m_data;}
     bool following_Player;
     void GetShadow(Texture2D load1, Texture2D load2);
+    void setLimit(int newLimit);
+    int GetLimit();
 
 private:
     // Graphics
@@ -66,6 +68,7 @@ private:
     bool animating;
     float frameRate;
     float frameTimer;
+    int lastFrame;
 
     // Position and Movement
     Vector2 position;
@@ -83,6 +86,7 @@ private:
     // NPC properties
     int ID;
     int Stage;
+    int wantedStage;
     int lvl;
     std::vector<std::string> NPC_DEF;
     std::vector<std::vector<std::string>> m_data;

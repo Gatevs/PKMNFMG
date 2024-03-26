@@ -76,7 +76,7 @@ void GameManager::GameLoop(){
     if (!Menu.stopPlayerInput){
         player.HandleInput(npcs, Menu);
     } else{
-        Menu.InputUI();
+        Menu.InputUI(npcs);
     }
     player.Update();
     if (player.IsPlayerMoving()){

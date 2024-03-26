@@ -16,9 +16,11 @@ NPC::NPC(int npcID, Vector2 NPCPos) {
     currentAnimation = ANIM_DOWN;
     currentFrame = 0;
     direction = 1;
+    wantedStage = -1;
     m_dir = 270;
     frameRate = 0.125f;
     frameTimer = 0.0f;
+    lastFrame = 0;
     move = false;
     animating = false;
     step_timer = 0;
@@ -81,14 +83,30 @@ void NPC::npcMove(Vector2 past_direction, Vector2 past_position, int speed, bool
 }
 
 void NPC::Update() {
+    if (Stage < wantedStage && !inGrowthPhase && wantedStage != -1){
+        Stage += 1;
+        updateTexture("growth");
+        updateAnimationFrameDimensions("growth");
+        lastFrame = framesGrowth.size();
+        direction = 1;
+    }
+    if (Stage > wantedStage && !inGrowthPhase && wantedStage != -1 ){
+        updateTexture("growth");
+        updateAnimationFrameDimensions("shrink");
+        lastFrame = 0;
+        direction = -1;
+    }
     // Animate growth if in growth phase
     if (inGrowthPhase) {
         frameRate = 0.250f;
         frameTimer += GetFrameTime();
         if (frameTimer >= frameRate) {
-            currentFrame++;
-            if (currentFrame >= framesGrowth.size()) {
+            currentFrame += direction;
+            if (currentFrame == lastFrame) {
                 // End of growth animation
+                if (Stage > wantedStage){
+                    Stage -= 1;
+                }
                 updateTexture("walk");
                 updateAnimationFrameDimensions("walk");
                 switch (m_dir)
@@ -194,7 +212,7 @@ void NPC::updateAnimationFrameDimensions(const std::string& animation) {
             framesLeft[i] = { static_cast<float>(i * FRAME_X), static_cast<float>(3 * FRAME_Y), static_cast<float>(FRAME_X), static_cast<float>(FRAME_Y) };
         }
 
-    } else if (animation == "growth"){
+    } else if (animation == "growth" || animation == "shrink"){
         // Customize frame dimensions for "grow" animation
         int GROW_FRAMES = stoi(NPC_DEF[Stage]);
         framesGrowth.resize(GROW_FRAMES);
@@ -208,9 +226,13 @@ void NPC::updateAnimationFrameDimensions(const std::string& animation) {
             framesGrowth[i] = { static_cast<float>(0 * FRAME_X), static_cast<float>(i * FRAME_Y), static_cast<float>(FRAME_X), static_cast<float>(FRAME_Y) };
         }
         currentAnimation = ANIM_GROWTH;
+
+        if (!inGrowthPhase and animation == "shrink"){
+            currentFrame = (framesGrowth.size() - 1);
+        } else if (!inGrowthPhase and animation == "growth"){
+            currentFrame = 1;
+        }
         inGrowthPhase = true;
-        DrawText(TextFormat("%02i cock",int(FRAME_X)), 64, 64, 10, WHITE);
-        DrawText(TextFormat("%02i cock",int(FRAME_Y)), 64, 80, 10, WHITE);
     }
 }
 
@@ -225,9 +247,9 @@ void NPC::updateTexture(const std::string& animation) {
     // Load texture based on the current event
 }
 
-void NPC::setEvent(int newEvent) {
+void NPC::setLimit(int newLimit) {
     // Set the event to the new value
-    Stage = newEvent;
+    Stage = newLimit;
 }
 
 void NPC::lookAtPlayer(int lookingAt){
@@ -288,4 +310,12 @@ void NPC::parseCSV(const std::string& filename) {
 void NPC::GetShadow(Texture2D load1, Texture2D load2){
     ShadowCentered = load1;
     ShadowOffCenter = load2;
+}
+
+int NPC::GetLimit(){
+    return stoi(NPC_DEF[9]);
+}
+
+void NPC::setNextStage(int NextStage){
+    wantedStage = NextStage;
 }

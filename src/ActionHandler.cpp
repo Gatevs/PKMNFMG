@@ -1,12 +1,14 @@
 #include "ActionHandler.h"
 #include <cstring>
 #include <raylib.h>
+#include <string>
 #include "npc.h"
 
 ActionHandler::ActionHandler() {
     atlasTexture = LoadTexture("assets/UI_Atlas.png");
     MainFont = LoadFont("assets/SpriteFont_Main.png");
     screenTexture = LoadTexture("assets/Screens_Atlas.png");
+    StageTexture = LoadTexture("assets/GStage.png");
     MainPos = {0,0};
     SubPos = {0,0};
     MainSelPos = {0,0};
@@ -25,6 +27,8 @@ ActionHandler::ActionHandler() {
     Fade = 0;
     fadeInComplete = false;
     fadeOutComplete = false;
+    MAX_DOWN = 0;
+    MAX_UP = 0;
 }
 
 
@@ -69,7 +73,6 @@ void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
             ICO[1] = MenuICOMap.width;
             stopPlayerInput = true;
             inUI = PAUSE;
-            InputUI();
             break;
         case ActionType::Action_M:
             MainPos = Vector2{drawPos.x - 110, drawPos.y - 74};
@@ -81,20 +84,17 @@ void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
             ICO[1] = MenuICOMap.width;
             stopPlayerInput = true;
             inUI = ACTION;
-            InputUI();
             break;
         case ActionType::Dialogue_Box:
             MainPos = Vector2{drawPos.x - 110, drawPos.y + 65};
             MainMap = DialogueMap;
             stopPlayerInput = true;
             inUI = DIALOGUE;
-            InputUI();
             break;
-
     }
 }
 
-void ActionHandler::InputUI(){
+void ActionHandler::InputUI(std::vector<NPC>& NPC_objs){
     if (inUI == PAUSE){
         pause();
     }
@@ -102,7 +102,7 @@ void ActionHandler::InputUI(){
         dialogue();
     }
     if (inUI == ACTION){
-        action();
+        action(NPC_objs);
     }
 }
 
@@ -159,11 +159,11 @@ void ActionHandler::pause() {
 }
 
 // Function to handle generic action
-void ActionHandler::action() {
+void ActionHandler::action(std::vector<NPC>& NPC_objs) {
     if (textTimer < 10){
         textTimer += 1;
     }
-    if (IsKeyPressed(KEY_DOWN) and menuID < 4){
+    if (IsKeyPressed(KEY_DOWN) and menuID < MAX_DOWN){
         switch (selection){
             case 0:
                 for (int i = 0; i < 5; ++i) {
@@ -173,11 +173,13 @@ void ActionHandler::action() {
                 menuID += 1;
                 ICO[menuID] = MenuICOMap.width;
                 break;
-            case 2:
+            case 3:
+                SubSelPos.y = SubSelPos.y + 15;
+                menuID += 1;
                 break;
         }
     }
-    if (IsKeyPressed(KEY_UP) and menuID > 1){
+    if (IsKeyPressed(KEY_UP) and menuID > MAX_UP){
         switch (selection){
             case 0:
                 for (int i = 0; i < 5; ++i) {
@@ -187,29 +189,19 @@ void ActionHandler::action() {
                 menuID -= 1;
                 ICO[menuID] = MenuICOMap.width;
                 break;
-            case 2:
+            case 3:
+                SubSelPos.y = SubSelPos.y - 15;
+                menuID -= 1;
                 break;
         }
     }
     if (IsKeyPressed(KEY_S) && textTimer >= 10 && selection == 0){
-        menuID = 1;
-        stopPlayerInput = false;
-        textTimer = 0;
-        selection = 0;
-        for (int i = 0; i < 5; ++i) {
-            ICO[i] = 0;
-        }
+        CloseUI();
     }
     if (IsKeyPressed(KEY_X)){
         switch (selection){
             case 0:
-                menuID = 1;
-                stopPlayerInput = false;
-                textTimer = 0;
-                selection = 0;
-                for (int i = 0; i < 5; ++i) {
-                    ICO[i] = 0;
-                }
+                CloseUI();
                 break;
             case 1:
                 if (screenState == ON && fadeOutComplete){
@@ -235,10 +227,34 @@ void ActionHandler::action() {
         }
     }
     if (IsKeyPressed(KEY_Z)){
-        selection = menuID;
+        std::cout << NPC_Limit << std::endl;
+        if (selection == 0){
+            selection = menuID;
+        }
+        if (selection == 3 && screenState == OFF){
+            menuID = 1;
+            SubSelPos = (Vector2){fadePos.x + 105, fadePos.y + 15};
+        }
+        switch (selection){
+            case 3:
+                if (fadeOutComplete){
+                    for (auto& npc : NPC_objs) {
+                        if (npc.GetID() == InteractionID) {
+                            npc.setNextStage(menuID - 1);
+                            CloseUI();
+                            break;
+                        }
+                    }
+                }
+                break;
+        }
     }
 
     switch (selection){
+        case 0:
+            MAX_DOWN = 4;
+            MAX_UP = 1;
+            break;
         case 1:
             UpdateScreenState();
             break;
@@ -247,7 +263,12 @@ void ActionHandler::action() {
             SubPos = Vector2{MainPos.x + 102, MainPos.y};
             break;
         case 3:
+            MAX_DOWN = NPC_Limit + 1;
+            MAX_UP = 1;
             UpdateScreenState();
+            if (screenState == SHUTTNG_OFF){
+                    menuID = 3;
+                }
             break;
         case 4:
             UpdateScreenState();
@@ -287,12 +308,14 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs) {
     for (auto& npc : NPC_objs) {
         if (npc.GetID() == ID) {
             std::string targetValue = npc.GetCombinedValues(1);
+            NPC_Limit = npc.GetLimit();
             // Iterate over each row of NPC data
             for (const auto& row : npc.GetNPCDialogue()) {
                 // Check if the value in the first column matches the target value
                 if (row[0] == targetValue) {
                     // If a match is found, set DialogueText to the value in the seventh column
                     DialogueText = row[6];
+                    NPC_NAME = row[2];
                     break; // Stop searching once a match is found
                 }
             }
@@ -352,6 +375,23 @@ void ActionHandler::claenText(){
     DestTXT = "";
     DialogueText = "";
     textTimer = 0;
+}
+
+void ActionHandler::SetInteractionID(int ID){
+    InteractionID = ID;
+}
+
+void ActionHandler::CloseUI(){
+    menuID = 1;
+    stopPlayerInput = false;
+    textTimer = 0;
+    selection = 0;
+    for (int i = 0; i < 5; ++i) {
+        ICO[i] = 0;
+    }
+    fadeInComplete = false;
+    fadeOutComplete = false;
+    screenState = OFF;
 }
 
 // Draw text using font inside rectangle limits with support for text selection
@@ -525,6 +565,7 @@ void ActionHandler::DrawActionUI(){
         case 1:
             if (screenState == ON || screenState == WAIT){
                 DrawTextureRec(screenTexture, StatsMap, fadePos, WHITE);
+                DrawTextBoxed(MainFont, NPC_NAME.c_str(), (Rectangle){fadePos.x + 185, fadePos.y + 6, 60, 30}, MainFont.baseSize, -5, wordWrap, WHITE);
             }
             break;
         case 2:
@@ -533,6 +574,12 @@ void ActionHandler::DrawActionUI(){
         case 3:
             if (screenState == ON || screenState == WAIT){
                 DrawTextureRec(screenTexture, GrowthMap, fadePos, WHITE);
+                DrawTextureRec(StageTexture,(Rectangle){StageMap.x, StageMap.y + (51 * (menuID - 1)), StageMap.width,StageMap.height},(Vector2){fadePos.x + 18, fadePos.y + 40},WHITE);
+                DrawTextureRec(atlasTexture,BigSelectMap,SubSelPos, WHITE );
+                for (int i = 1; i <= MAX_DOWN; ++i) {
+                    std::string GrowText = "Stage: "+ std::to_string(i - 1);
+                    DrawTextBoxed(MainFont, GrowText.c_str(), (Rectangle){fadePos.x + 115, (fadePos.y + 17) + ((i * 15) - 15), 60, 30}, MainFont.baseSize, -5, wordWrap, WHITE);
+                }
             }
             break;
         case 4:

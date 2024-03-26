@@ -178,32 +178,6 @@ void Player::HandleInput(std::vector<NPC>& npcs, ActionHandler& MenuObj){
         }
     }
 
-    // Test Growth
-    if (IsKeyPressed(KEY_G)) {
-        for (auto& npc : npcs) {
-            if (npc.GetID() == lastNPCId) {
-                std::cout << lastNPCId << std::endl;
-                FollowerID = 0;
-                npc.setEvent(1);
-                npc.updateTexture("growth");
-                npc.updateAnimationFrameDimensions("growth");
-                break;
-            }
-        }
-    }
-
-    // Test Revert
-    if (IsKeyPressed(KEY_H)) {
-        for (auto& npc : npcs) {
-            if (npc.GetID() == lastNPCId) {
-                npc.setEvent(0);
-                npc.updateTexture("walk");
-                npc.updateAnimationFrameDimensions("walk");
-                break;
-            }
-        }
-    }
-
     // Pause Test
     if (IsKeyPressed(KEY_A)){
         if (!MenuObj.stopPlayerInput and !IsPlayerMoving()){
@@ -214,7 +188,18 @@ void Player::HandleInput(std::vector<NPC>& npcs, ActionHandler& MenuObj){
         if (!MenuObj.stopPlayerInput and !IsPlayerMoving()){
             int npcIdInFront = CheckForNPCInFront(npcs);
             if (npcIdInFront != -1) {
-                MenuObj.handleAction(ActionType::Action_M,position);
+                lastNPCId = npcIdInFront;
+                for (auto& npc : npcs) {
+                    if (npc.GetID() == lastNPCId && !npc.IsNPCGrowing()) {
+                        npc.GetCombinedValues(1);
+                        if (!MenuObj.stopPlayerInput){
+                            MenuObj.SetInteractionID(lastNPCId);
+                            MenuObj.getNPCInfo(npc.GetID(),npcs);
+                            MenuObj.handleAction(ActionType::Action_M,position);
+                        }
+                        break;
+                    }
+                }
             }
         }
     }
@@ -438,4 +423,8 @@ int Player::GetPlayerDir() const {
 
 void Player::GetShadow(Texture2D load){
     shadowTexture = load;
+}
+
+void Player::SetFollowerID(int follow){
+    FollowerID = follow;
 }

@@ -20,6 +20,7 @@ public:
 
     // Input handling
     void HandleInput(std::vector<NPC>& npcs, ActionHandler& MenuObj);
+    void InvokeUIElement();
 
     // Movement and position
     void npcMoving(std::vector<NPC>& npcs);
@@ -32,6 +33,7 @@ public:
     Rectangle ColOffset(bool Tile) const;
 
     // Accessors
+    void SetFollowerID(int follow);
     float GetYPosition() const override { return position.y; }
     Vector2 GetPosition() const;
     int GetPlayerDir() const;
