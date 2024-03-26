@@ -71,12 +71,53 @@ void GameManager::GameLoop(){
     Outside.update();
 
     // std::cout << Menu.stopPlayerInput << std::endl;
-
+    if (player.InvokeUIElement() != NONE && !Menu.stopPlayerInput){
+        int npcIdInFront = player.CheckForNPCInFront(npcs);
+        switch (player.InvokeUIElement()){
+            case PAUSE:
+                Menu.handleAction(ActionType::Pause_M,player.GetPosition());
+                break;
+            case DIALOGUE:
+                if (npcIdInFront != -1){
+                    for (auto& npc : npcs) {
+                        if (npc.GetID() == npcIdInFront && !npc.IsNPCGrowing()) {
+                            npc.GetCombinedValues(1);
+                            npc.lookAtPlayer(player.GetPlayerDir());
+                            if (!Menu.stopPlayerInput){
+                                Menu.getNPCInfo(npc.GetID(),npcs, 1);
+                                Menu.handleAction(ActionType::Dialogue_Box,player.GetPosition());
+                            }
+                            break;
+                        }
+                    }
+                } else{
+                    player.StopUI_Element();
+                }
+                break;
+            case ACTION:
+                if (npcIdInFront != -1) {
+                    for (auto& npc : npcs) {
+                        if (npc.GetID() == npcIdInFront && !npc.IsNPCGrowing()) {
+                            npc.GetCombinedValues(1);
+                            if (!Menu.stopPlayerInput){
+                                Menu.SetInteractionID(npcIdInFront);
+                                Menu.getNPCInfo(npc.GetID(),npcs, 1);
+                                Menu.handleAction(ActionType::Action_M,player.GetPosition());
+                            }
+                            break;
+                        }
+                    }
+                } else {
+                    player.StopUI_Element();
+                }
+                break;
+        }
+    }
     // Handle player input and update player and npc state
     if (!Menu.stopPlayerInput){
-        player.HandleInput(npcs, Menu);
+        player.HandleInput(npcs);
     } else{
-        Menu.InputUI(npcs);
+        Menu.InputUI(npcs, player);
     }
     player.Update();
     if (player.IsPlayerMoving()){

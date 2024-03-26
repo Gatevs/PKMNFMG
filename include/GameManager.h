@@ -36,6 +36,12 @@ private:
     std::vector<NPC> npcs;
     Texture2D ShadowCentered;
     Texture2D ShadowOffCenter;
+    enum UI_Element {
+        PAUSE,
+        DIALOGUE,
+        ACTION,
+        NONE
+    };
 };
 
 // Define a custom comparison function for sorting GameObject pointers

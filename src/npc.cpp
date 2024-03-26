@@ -319,3 +319,6 @@ int NPC::GetLimit(){
 void NPC::setNextStage(int NextStage){
     wantedStage = NextStage;
 }
+int NPC::GetStage(){
+    return Stage;
+}

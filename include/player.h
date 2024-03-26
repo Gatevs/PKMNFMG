@@ -5,7 +5,6 @@
 #include <LDtkLoader/Project.hpp>
 #include "GameObject.h"
 #include "npc.h"
-#include "ActionHandler.h"
 #include <vector>
 #include <algorithm>
 
@@ -19,8 +18,8 @@ public:
     void Draw() override;
 
     // Input handling
-    void HandleInput(std::vector<NPC>& npcs, ActionHandler& MenuObj);
-    void InvokeUIElement();
+    void HandleInput(std::vector<NPC>& npcs);
+    int InvokeUIElement();
 
     // Movement and position
     void npcMoving(std::vector<NPC>& npcs);
@@ -43,6 +42,8 @@ public:
     bool IsPlayerAnimating() const;
     int CheckForNPCInFront(const std::vector<NPC>& npcs) const;
     void GetShadow(Texture2D load);
+    void StopUI_Element();
+    void SetFollowDir(Vector2 Dir);
 
 private:
     // Graphics
@@ -60,6 +61,12 @@ private:
         ANIM_RIGHT,
         ANIM_LEFT
     };
+    enum UI_Element {
+        PAUSE,
+        DIALOGUE,
+        ACTION,
+        NONE
+    };
     int FRAME_X;
     int FRAME_Y;
     int currentAnimation;
@@ -75,6 +82,7 @@ private:
     int step_timer;
     int FollowerID;
     int RunFrames;
+    int LoadUI_Element;
     bool animating;
     bool move;
     bool canMove;

@@ -1,5 +1,6 @@
 #include "player.h"
 #include "raylib.h"
+#include <cstddef>
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -33,6 +34,7 @@ Player::Player() {
     past_pos = {0,0};
     collisionMask.width = COLLISION_MASK_WIDTH;
     collisionMask.height = COLLISION_MASK_HEIGHT;
+    LoadUI_Element = NONE;
 
     // Initialize animation frames
     FRAME_X = 32;
@@ -51,7 +53,7 @@ Player::~Player() {
 }
 
 // Listen to player Input
-void Player::HandleInput(std::vector<NPC>& npcs, ActionHandler& MenuObj){
+void Player::HandleInput(std::vector<NPC>& npcs){
     float MOVEMENT_DELAY = 0.150f;
     // Increase the timer if any directional key is pressed
     if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_LEFT)) {
@@ -130,25 +132,6 @@ void Player::HandleInput(std::vector<NPC>& npcs, ActionHandler& MenuObj){
         }
     }
 
-    // Interact with NPC and retrieve its ID
-    if (IsKeyPressed(KEY_Z)) {
-        int npcIdInFront = CheckForNPCInFront(npcs);
-        if (npcIdInFront != -1) {
-            lastNPCId = npcIdInFront;
-            for (auto& npc : npcs) {
-                if (npc.GetID() == lastNPCId && !npc.IsNPCGrowing()) {
-                    npc.GetCombinedValues(1);
-                    npc.lookAtPlayer(GetPlayerDir());
-                    if (!MenuObj.stopPlayerInput){
-                        MenuObj.getNPCInfo(npc.GetID(),npcs);
-                        MenuObj.handleAction(ActionType::Dialogue_Box,position);
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
     // Test follow
     if (IsKeyPressed(KEY_J)) {
         int npcIdInFront = CheckForNPCInFront(npcs);
@@ -180,27 +163,18 @@ void Player::HandleInput(std::vector<NPC>& npcs, ActionHandler& MenuObj){
 
     // Pause Test
     if (IsKeyPressed(KEY_A)){
-        if (!MenuObj.stopPlayerInput and !IsPlayerMoving()){
-            MenuObj.handleAction(ActionType::Pause_M,position);
+        if (!IsPlayerMoving()){
+            LoadUI_Element = PAUSE;
         }
     }
     if (IsKeyPressed(KEY_S)){
-        if (!MenuObj.stopPlayerInput and !IsPlayerMoving()){
-            int npcIdInFront = CheckForNPCInFront(npcs);
-            if (npcIdInFront != -1) {
-                lastNPCId = npcIdInFront;
-                for (auto& npc : npcs) {
-                    if (npc.GetID() == lastNPCId && !npc.IsNPCGrowing()) {
-                        npc.GetCombinedValues(1);
-                        if (!MenuObj.stopPlayerInput){
-                            MenuObj.SetInteractionID(lastNPCId);
-                            MenuObj.getNPCInfo(npc.GetID(),npcs);
-                            MenuObj.handleAction(ActionType::Action_M,position);
-                        }
-                        break;
-                    }
-                }
-            }
+        if (!IsPlayerMoving()){
+            LoadUI_Element = ACTION;
+        }
+    }
+    if (IsKeyPressed(KEY_Z)){
+        if (!IsPlayerMoving()){
+            LoadUI_Element = DIALOGUE;
         }
     }
 }
@@ -427,4 +401,16 @@ void Player::GetShadow(Texture2D load){
 
 void Player::SetFollowerID(int follow){
     FollowerID = follow;
+}
+
+int Player::InvokeUIElement(){
+    return LoadUI_Element;
+}
+
+void Player::StopUI_Element(){
+    LoadUI_Element = NONE;
+}
+
+void Player::SetFollowDir(Vector2 Dir){
+    past_dir = Dir;
 }

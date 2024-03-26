@@ -1,6 +1,7 @@
 #pragma once
 
 #include "npc.h"
+#include "player.h"
 #include <iostream>
 #include <raylib.h>
 #include <string>
@@ -19,8 +20,8 @@ public:
     ~ActionHandler();
 
     void handleAction(ActionType actionType, Vector2 drawPos);
-    void getNPCInfo(int ID, std::vector<NPC>& NPC_objs);
-    void InputUI(std::vector<NPC>& NPC_objs);
+    void getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event);
+    void InputUI(std::vector<NPC>& NPC_objs, Player& player_Obj);
     void SetInteractionID(int ID);
     void Draw();
     void claenText();
@@ -30,19 +31,20 @@ public:
     bool textFinished;
 
 private:
-    void pause();
-    void action(std::vector<NPC>& NPC_objs);
-    void dialogue();
+    void pause(Player& p);
+    void action(std::vector<NPC>& NPC_objs, Player& p);
+    void dialogue(Player& player);
     void UpdateScreenState();
     void DrawPauseUI();
     void DrawActionUI();
-    void CloseUI();
+    void CloseUI(Player& player);
     static void DrawTextBoxed(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint);
     static void DrawTextBoxedSelectable(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint, int selectStart, int selectLength, Color selectTint, Color selectBackTint);
     void typewriterEffect(std::string& text);
     Texture2D atlasTexture;
     Texture2D screenTexture;
     Texture2D StageTexture;
+    Texture2D StatSprite;
     Font MainFont;
     Rectangle MainMap;
     Rectangle SubMap;
@@ -62,6 +64,7 @@ private:
     std::string NPC_NAME;
     int InteractionID;
     int NPC_Limit;
+    int NPC_Stage;
     int ICO[11]{0,0,0,0,0,0,0,0,0,0};
     int textTimer;
     int menuID;

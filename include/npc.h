@@ -41,6 +41,7 @@ public:
     void GetShadow(Texture2D load1, Texture2D load2);
     void setLimit(int newLimit);
     int GetLimit();
+    int GetStage();
 
 private:
     // Graphics
