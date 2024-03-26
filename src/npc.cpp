@@ -11,6 +11,7 @@ NPC::NPC(int npcID, Vector2 NPCPos) {
     Stage = 0;
     lvl = 1;
     NPCTexture = LoadTexture(NPCWalk::GetTexturePath(ID, Stage).c_str());
+    DrawnTexture = NPCTexture;
     position = NPCPos;
     //Initialize variables
     currentAnimation = ANIM_DOWN;
@@ -26,6 +27,7 @@ NPC::NPC(int npcID, Vector2 NPCPos) {
     step_timer = 0;
     inGrowthPhase = false;
     following_Player = false;
+    idle = false;
     // Initialize collision mask
     collisionMask.width = COLLISION_MASK_WIDTH;
     collisionMask.height = COLLISION_MASK_HEIGHT;
@@ -83,6 +85,18 @@ void NPC::npcMove(Vector2 past_direction, Vector2 past_position, int speed, bool
 }
 
 void NPC::Update() {
+    if (NPC_DEF[7] == "1" && !move && !animating && Stage > 0 && !inGrowthPhase && !idle){
+        DrawnTexture = NPCTextureIdle;
+        updateAnimationFrameDimensions("idle");
+        animating = true;
+        idle = true;
+    } else if (NPC_DEF[7] == "1" && move && Stage > 0 && !inGrowthPhase && idle){
+        DrawnTexture = NPCTexture;
+        updateAnimationFrameDimensions("walk");
+        idle = false;
+    }
+
+    //  Compare the NPC's current stage with the wanted stage, and shrink or grow accordingly
     if (Stage < wantedStage && !inGrowthPhase && wantedStage != -1){
         Stage += 1;
         updateTexture("growth");
@@ -108,6 +122,7 @@ void NPC::Update() {
                     Stage -= 1;
                 }
                 updateTexture("walk");
+                DrawnTexture = NPCTexture;
                 updateAnimationFrameDimensions("walk");
                 switch (m_dir)
                 {
@@ -126,6 +141,11 @@ void NPC::Update() {
                 }
                 currentFrame = 1;
                 inGrowthPhase = false; // Switch back to regular walking animation
+                if (NPC_DEF[7] == "1" && !move && Stage > 0 && !inGrowthPhase && !idle){
+                    updateTexture("idle");
+                    DrawnTexture = NPCTextureIdle;
+                    updateAnimationFrameDimensions("idle");
+                }
             }
             frameTimer = 0.0f;
         }
@@ -133,9 +153,11 @@ void NPC::Update() {
         // Animate movement for regular walking animation
         if (move || animating) {
             if (step_timer == 0){
-                animating = false;
+                if (!idle){
+                    animating = false;
+                }
             }
-            frameRate = 0.125f;
+            frameRate = (idle == false ) ? 0.125f : 0.500f ;
             frameTimer += GetFrameTime();
             if (frameTimer >= frameRate) {
                 currentFrame += direction;
@@ -169,16 +191,16 @@ void NPC::Draw() {
     }
     switch (currentAnimation) {
         case ANIM_UP:
-            DrawTextureRec(NPCTexture, framesUp[currentFrame], drawPosition, WHITE);
+            DrawTextureRec(DrawnTexture, framesUp[currentFrame], drawPosition, WHITE);
             break;
         case ANIM_DOWN:
-            DrawTextureRec(NPCTexture, framesDown[currentFrame], drawPosition, WHITE);
+            DrawTextureRec(DrawnTexture, framesDown[currentFrame], drawPosition, WHITE);
             break;
         case ANIM_RIGHT:
-            DrawTextureRec(NPCTexture, framesRight[currentFrame], drawPosition, WHITE);
+            DrawTextureRec(DrawnTexture, framesRight[currentFrame], drawPosition, WHITE);
             break;
         case ANIM_LEFT:
-            DrawTextureRec(NPCTexture, framesLeft[currentFrame], drawPosition, WHITE);
+            DrawTextureRec(DrawnTexture, framesLeft[currentFrame], drawPosition, WHITE);
             break;
         case ANIM_GROWTH:
             DrawTextureRec(NPCTexture, framesGrowth[currentFrame], drawPosition, WHITE);
@@ -188,14 +210,14 @@ void NPC::Draw() {
 }
 
 void NPC::updateAnimationFrameDimensions(const std::string& animation) {
-    int textureWidth = NPCTexture.width;
-    int textureHeight = NPCTexture.height;
+    int textureWidth = (animation == "idle") ? NPCTextureIdle.width : NPCTexture.width;
+    int textureHeight = (animation == "idle") ? NPCTextureIdle.height : NPCTexture.height;
 
     // Default frame dimensions
     int frameCountX = 3;
     int frameCountY = 4;
 
-    if (animation == "walk") {
+    if (animation == "walk" || animation == "idle") {
         // Customize frame dimensions for "walk" animation
         frameCountX = 3;
         frameCountY = 4;
@@ -239,10 +261,13 @@ void NPC::updateAnimationFrameDimensions(const std::string& animation) {
 
 void NPC::updateTexture(const std::string& animation) {
     if (animation=="growth"){
+        UnloadTexture(NPCTexture);
         NPCTexture = LoadTexture(NPCGrow::GetTexturePath(ID, Stage).c_str());
-    } else if (animation=="walk")
-    {
+    } else if (animation=="walk") {
+        UnloadTexture(NPCTexture);
         NPCTexture = LoadTexture(NPCWalk::GetTexturePath(ID, Stage).c_str());
+    } else if (animation == "idle") {
+        NPCTextureIdle = LoadTexture(NPCIdle::GetTexturePath(ID, Stage).c_str());
     }
     // Load texture based on the current event
 }

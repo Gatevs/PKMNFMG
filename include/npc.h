@@ -46,6 +46,8 @@ public:
 private:
     // Graphics
     Texture2D NPCTexture;
+    Texture2D NPCTextureIdle;
+    Texture2D DrawnTexture;
     Texture2D ShadowCentered;
     Texture2D ShadowOffCenter;
     Rectangle framesUp[3];
@@ -70,6 +72,7 @@ private:
     float frameRate;
     float frameTimer;
     int lastFrame;
+    bool idle;
 
     // Position and Movement
     Vector2 position;
