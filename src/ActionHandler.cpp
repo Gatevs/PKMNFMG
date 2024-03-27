@@ -454,7 +454,9 @@ void ActionHandler::CloseUI(Player& player){
     fadeInComplete = false;
     fadeOutComplete = false;
     screenState = OFF;
-    UnloadTexture(StatSprite);
+    if (IsTextureReady(StatSprite)){
+        UnloadTexture(StatSprite);
+    }
     player.StopUI_Element();
 }
 

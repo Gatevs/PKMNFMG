@@ -28,17 +28,18 @@ void GameManager::GameInitialization(){
     Outside.initialize("Level_0");
     Outside.loadPlayer(player);
     Outside.loadNPCs(npcs);
+    Outside.loadTileObjs(tileObjs);
     ShadowCentered = LoadTexture("assets/Shadow_0.png");
     ShadowOffCenter = LoadTexture("assets/Shadow_1.png");
 
     for (auto& npc : npcs) {
         npc.parseCSV("assets/Dataset.csv");
         npc.parseCSV("assets/NPC_OW_DEF.csv");
-        npc.GetShadow(ShadowCentered,ShadowOffCenter);
+        npc.SetShadow(ShadowCentered,ShadowOffCenter);
     }
 
     //Only at initialization
-    player.GetShadow(ShadowCentered);
+    player.SetShadow(ShadowCentered);
     player.UpdatePositionAndCamera();
     camera.target = (Vector2){((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32, (player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f)};
     cameraHelper = camera.target;
@@ -137,7 +138,7 @@ void GameManager::DrawWorld(){
     ClearBackground(green);
     BeginMode2D(camera);
     {
-        Outside.draw();
+        Outside.draw("BG");
         // Create a vector to hold pointers to GameObjects
         std::vector<GameObject*> objects;
 
@@ -146,6 +147,10 @@ void GameManager::DrawWorld(){
         for (auto& npc : npcs) {
             objects.push_back(&npc);
         }
+        for (auto& tObj : tileObjs) {
+            objects.push_back(&tObj);
+        }
+
 
         // Sorting objects based on Y position
         std::sort(objects.begin(), objects.end(), [](const GameObject* a, const GameObject* b) {
@@ -156,6 +161,7 @@ void GameManager::DrawWorld(){
         for (const auto& obj : objects) {
             obj->Draw(); // Draw each object using polymorphism
         }
+        Outside.draw("Front");
         Menu.Draw();
     }
     EndMode2D();

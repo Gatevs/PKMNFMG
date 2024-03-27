@@ -132,36 +132,6 @@ void Player::HandleInput(std::vector<NPC>& npcs){
         }
     }
 
-    // Test follow
-    if (IsKeyPressed(KEY_J)) {
-        int npcIdInFront = CheckForNPCInFront(npcs);
-        if (npcIdInFront != -1) {
-            // Set NPC as follower and update directions
-            FollowerID = npcIdInFront;
-            switch (GetPlayerDir()){
-                case 270:
-                    past_dir = Vector2{0,-1};
-                    break;
-                case 90:
-                    past_dir = Vector2{0,1};
-                    break;
-                case 0:
-                    past_dir = Vector2{-1,0};
-                    break;
-                case 180:
-                    past_dir = Vector2{1,0};
-                    break;
-            }
-            for (auto& npc : npcs) {
-                if (npc.GetID() == lastNPCId) {
-                    npc.following_Player = true;
-                    break;
-                }
-            }
-        }
-    }
-
-    // Pause Test
     if (IsKeyPressed(KEY_A)){
         if (!IsPlayerMoving()){
             LoadUI_Element = PAUSE;
@@ -395,7 +365,7 @@ int Player::GetPlayerDir() const {
     return m_dir;
 }
 
-void Player::GetShadow(Texture2D load){
+void Player::SetShadow(Texture2D load){
     shadowTexture = load;
 }
 

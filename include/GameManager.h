@@ -3,6 +3,7 @@
 #include "ActionHandler.h"
 #include "TileMap.h"
 #include <raylib.h>
+#include "TileObjects.h"
 #include "player.h"
 #include <LDtkLoader/Project.hpp>
 
@@ -34,6 +35,7 @@ private:
     ActionHandler Menu;
     Player player;
     std::vector<NPC> npcs;
+    std::vector<tileObj> tileObjs;
     Texture2D ShadowCentered;
     Texture2D ShadowOffCenter;
     enum UI_Element {

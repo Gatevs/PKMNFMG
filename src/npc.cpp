@@ -145,6 +145,8 @@ void NPC::Update() {
                     updateTexture("idle");
                     DrawnTexture = NPCTextureIdle;
                     updateAnimationFrameDimensions("idle");
+                } else{
+                    idle = false;
                 }
             }
             frameTimer = 0.0f;
@@ -187,7 +189,7 @@ void NPC::Draw() {
     if (NPC_DEF[8] == "Centered"){
         DrawTexture(ShadowCentered, (collisionMask.x + COLLISION_MASK_WIDTH), (collisionMask.y + (COLLISION_MASK_HEIGHT * 2)),WHITE);
     } else if (NPC_DEF[8] == "Off_Center"){
-        DrawTexture(ShadowOffCenter, (collisionMask.x + COLLISION_MASK_WIDTH), (collisionMask.y + (COLLISION_MASK_HEIGHT * 2)) + 2,WHITE);
+        DrawTexture(ShadowOffCenter, (collisionMask.x + COLLISION_MASK_WIDTH), (collisionMask.y + (COLLISION_MASK_HEIGHT * 2)),WHITE);
     }
     switch (currentAnimation) {
         case ANIM_UP:
@@ -332,7 +334,7 @@ void NPC::parseCSV(const std::string& filename) {
     }
 }
 
-void NPC::GetShadow(Texture2D load1, Texture2D load2){
+void NPC::SetShadow(Texture2D load1, Texture2D load2){
     ShadowCentered = load1;
     ShadowOffCenter = load2;
 }

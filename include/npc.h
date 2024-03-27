@@ -16,7 +16,6 @@ public:
     void Draw() override;
 
     // Position and Movement
-    void UpdatePosition();
     void npcMove(Vector2 past_direction, Vector2 past_position, int speed, bool moving, bool anim, int step);
 
     // Animation
@@ -38,7 +37,7 @@ public:
     bool IsNPCGrowing() const { return inGrowthPhase; }
     std::vector<std::vector<std::string>> GetNPCDialogue() {return m_data;}
     bool following_Player;
-    void GetShadow(Texture2D load1, Texture2D load2);
+    void SetShadow(Texture2D load1, Texture2D load2);
     void setLimit(int newLimit);
     int GetLimit();
     int GetStage();

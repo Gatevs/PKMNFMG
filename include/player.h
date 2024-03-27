@@ -41,7 +41,7 @@ public:
     bool IsPlayerMoving() const;
     bool IsPlayerAnimating() const;
     int CheckForNPCInFront(const std::vector<NPC>& npcs) const;
-    void GetShadow(Texture2D load);
+    void SetShadow(Texture2D load);
     void StopUI_Element();
     void SetFollowDir(Vector2 Dir);
 

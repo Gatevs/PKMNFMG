@@ -1,4 +1,6 @@
 #include "TileMap.h"
+#include "TileObjects.h"
+#include "raylib.h"
 
 TileMap::TileMap() {
     currentFrameIndex = -1;
@@ -31,6 +33,7 @@ void TileMap::initialize(const std::string& Lvl) {
     // Load texture and renderer
     texture = LoadTexture(("assets/" + layer.getTileset().path).c_str());
     renderer = LoadRenderTexture(level.size.x, level.size.y);
+    inFront = LoadRenderTexture(level.size.x, level.size.y);
 
     // Load tile animations
     const auto& tileAnim = ldtk_project.getEnum("Animations");
@@ -49,6 +52,10 @@ void TileMap::initialize(const std::string& Lvl) {
             firstFrameIds.push_back(std::make_pair(animationName, firstFrameId)); // Add animation name and first frame ID to the vector
         }
     }
+
+    // Load in front tiles
+
+    frontTiles = layer.getTileset().getTilesWithTagEnum(tileAnim["TOP"]);
 
     // Draw all the tiles.
     BeginTextureMode(renderer);
@@ -73,20 +80,26 @@ void TileMap::initialize(const std::string& Lvl) {
 }
 
 // Draw the tilemap
-void TileMap::draw() {
+void TileMap::draw(const std::string render) {
+    RenderTexture2D drawer;
+    if (render == "BG"){
+        drawer = renderer;
+    } else if (render == "Front"){
+        drawer = inFront;
+    }
     Rectangle src = {
         0,
         0,
-        static_cast<float>(renderer.texture.width),
-        -static_cast<float>(renderer.texture.height)
+        static_cast<float>(drawer.texture.width),
+        -static_cast<float>(drawer.texture.height)
     };
     Rectangle dest = {
         0,
         0,
-        static_cast<float>(renderer.texture.width) * 1,
-        static_cast<float>(renderer.texture.height) * 1
+        static_cast<float>(drawer.texture.width) * 1,
+        static_cast<float>(drawer.texture.height) * 1
     };
-    DrawTexturePro(renderer.texture, src, dest, {0}, .0f, WHITE);
+    DrawTexturePro(drawer.texture, src, dest, {0}, .0f, WHITE);
 }
 
 // Animate Tiles
@@ -151,6 +164,37 @@ void TileMap::update() {
     }
 }
 
+void TileMap::InFrontObjs(){
+    const auto& world = ldtk_project.getWorld();
+    const auto& level = world.getLevel("Level_0");
+    const auto& layer = level.getLayer("BG");
+    const auto& tiles_vector = layer.allTiles();
+
+    BeginTextureMode(inFront);
+
+    for (const auto &tile : tiles_vector) {
+        const auto& position = tile.getPosition();
+        const auto& texture_rect = tile.getTextureRect();
+        if (tile.tileId == frontTiles[0]){
+            std::cout << tile.tileId << std::endl;
+
+
+        Vector2 dest = {
+            static_cast<float>(position.x),
+            static_cast<float>(position.y),
+        };
+        Rectangle src = {
+            static_cast<float>(texture_rect.x),
+            static_cast<float>(texture_rect.y),
+            static_cast<float>(texture_rect.width) * (tile.flipX ? -1.0f : 1.0f),
+            static_cast<float>(texture_rect.height) * (tile.flipY ? -1.0f : 1.0f)
+        };
+        DrawTextureRec(texture, src, dest, WHITE);
+        }
+    }
+    EndTextureMode();
+}
+
 const ldtk::Layer& TileMap::GetCOL() {
     const auto& world = ldtk_project.getWorld();
     const auto& level = world.getLevel("Level_0");
@@ -181,7 +225,20 @@ void TileMap::loadNPCs(std::vector<NPC>& NPC_objs) {
     }
 }
 
+void TileMap::loadTileObjs(std::vector<tileObj>& Tile_objs) {
+    const auto& world = ldtk_project.getWorld();
+    const auto& level = world.getLevel("Level_0");
+    const auto& objects = level.getLayer("Objects");
+    for (const ldtk::Entity& tObj : objects.getEntitiesByTag("TileObjects")) {
+        auto tileObj_ID = 0;
+        auto tileObj_Pos = tObj.getPosition();
+        auto tileObj_Rect = tObj.getTextureRect();
+        Tile_objs.push_back(tileObj(tileObj_ID, Vector2{(float)(tileObj_Pos.x), (float)(tileObj_Pos.y)}, tileObj_Rect, texture));
+    }
+}
+
 void TileMap::Unload() {
     UnloadRenderTexture(renderer);
+    UnloadRenderTexture(inFront);
     UnloadTexture(texture);
 }
