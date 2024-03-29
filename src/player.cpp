@@ -220,13 +220,13 @@ void Player::UpdatePositionAndCamera() {
 
 
 
-void Player::checkCollisions(const ldtk::Layer& collisions,  const std::vector<NPC>& npcs) {
+void Player::checkCollisions(const ldtk::Layer& collisions,  const std::vector<NPC>& npcs, Vector2 IntGridOffset) {
     // Calculate the position in front of the player based on direction
     int tile_Col = 0;
     // Get the integer grid value at the specified position
-    auto tileValue1 = collisions.getIntGridVal((ColOffset(true).x / 16), (ColOffset(true).y / 16));
-    auto tileValue2 = collisions.getIntGridVal(((ColOffset(true).x + 16 )/ 16), ((ColOffset(true).y) / 16));
-    auto tileValue3 = collisions.getIntGridVal((ColOffset(true).x/ 16), ((ColOffset(true).y + 16 ) / 16));
+    auto tileValue1 = collisions.getIntGridVal((ColOffset(true).x / 16) - IntGridOffset.x, (ColOffset(true).y / 16) - IntGridOffset.y);
+    auto tileValue2 = collisions.getIntGridVal(((ColOffset(true).x + 16 )/ 16) - IntGridOffset.x, ((ColOffset(true).y) / 16) - IntGridOffset.y);
+    auto tileValue3 = collisions.getIntGridVal((ColOffset(true).x/ 16) - IntGridOffset.x, ((ColOffset(true).y + 16 ) / 16) - IntGridOffset.y);
     if (m_dir == 90 or m_dir == 180){
         tile_Col = tileValue1.value;
     } else if (m_dir == 0){

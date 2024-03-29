@@ -28,7 +28,7 @@ public:
     void setPosition(Vector2 newPos);
 
     // Collision detection
-    void checkCollisions(const ldtk::Layer& collisions,  const std::vector<NPC>& npcs);
+    void checkCollisions(const ldtk::Layer& collisions,  const std::vector<NPC>& npcs, Vector2 IntGridOffset);
     Rectangle ColOffset(bool Tile) const;
 
     // Accessors

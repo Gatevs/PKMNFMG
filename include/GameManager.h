@@ -38,6 +38,8 @@ private:
     std::vector<tileObj> tileObjs;
     Texture2D ShadowCentered;
     Texture2D ShadowOffCenter;
+    unrelated swapper;
+    unrelated cur;
     enum UI_Element {
         PAUSE,
         DIALOGUE,

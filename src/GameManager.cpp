@@ -20,15 +20,15 @@ GameManager::~GameManager(){
 }
 
 void GameManager::GameInitialization(){
-    Outside.loadLDtkMap("assets/Outside.ldtk");
-
-
-    // Load UI Atlas
-
-    Outside.initialize("Level_0");
-    Outside.loadPlayer(player);
-    Outside.loadNPCs(npcs);
-    Outside.loadTileObjs(tileObjs);
+    Outside.loadLDtkMap("assets/Outside.ldtk",[&]() {
+        std::cout << "Initializing map..." << std::endl;
+            Outside.initialize("Route_1");
+            std::cout << "Map initialized!" << std::endl;
+            Outside.loadPlayer(player);
+            Outside.loadNPCs(npcs);
+            Outside.loadTileObjs(Outside.GetCurLevelName(), tileObjs);
+        });
+    // Outside.loadWarps(warps);
     ShadowCentered = LoadTexture("assets/Shadow_0.png");
     ShadowOffCenter = LoadTexture("assets/Shadow_1.png");
 
@@ -69,7 +69,15 @@ void GameManager::CameraUpdate(){
 
 void GameManager::GameLoop(){
     // Tile animations
-    Outside.update();
+    Outside.update(Outside.GetCurLevelName(), cur);
+
+    if (IsKeyPressed(KEY_P)){
+        unrelated a = cur;
+        unrelated b = swapper;
+        cur = b;
+        swapper = a;
+        std::cout << Outside.GetSwapLevelName() << std::endl;
+    }
 
     // std::cout << Menu.stopPlayerInput << std::endl;
     if (player.InvokeUIElement() != NONE && !Menu.stopPlayerInput){
@@ -122,7 +130,8 @@ void GameManager::GameLoop(){
     }
     player.Update();
     if (player.IsPlayerMoving()){
-        player.checkCollisions(Outside.GetCOL(), npcs);
+        Outside.IsWarpClose(player);
+        player.checkCollisions(Outside.GetCOL(), npcs, Outside.GetlevelOffset());
         player.UpdateAnim();
         player.UpdatePositionAndCamera();
         if (player.GetPlayerFollower() != 0){
@@ -132,13 +141,28 @@ void GameManager::GameLoop(){
     for (auto& npc : npcs) {
         npc.Update();
     }
+
+    if (Outside.StandingOnWarp()){
+        Outside.SwapLevels(player);
+    }
+    if (Outside.IsNextLevelLoaded()){
+        if (!Outside.GetDrawNextLevel()){
+            Outside.loadTileObjs(Outside.GetSwapLevelName(), tileObjs);
+            Outside.SetDrawNextLevel();
+        }else{
+            Outside.update(Outside.GetSwapLevelName(), swapper);
+        }
+    }
 }
 
 void GameManager::DrawWorld(){
     ClearBackground(green);
     BeginMode2D(camera);
     {
-        Outside.draw("BG");
+        Outside.draw("Current", Outside.GetCurLevel());
+        if (Outside.GetDrawNextLevel()){
+            Outside.draw("Swap", Outside.GetSwapLevel());
+        }
         // Create a vector to hold pointers to GameObjects
         std::vector<GameObject*> objects;
 
@@ -161,7 +185,6 @@ void GameManager::DrawWorld(){
         for (const auto& obj : objects) {
             obj->Draw(); // Draw each object using polymorphism
         }
-        Outside.draw("Front");
         Menu.Draw();
     }
     EndMode2D();
