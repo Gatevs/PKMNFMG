@@ -6,7 +6,7 @@
 #include <string>
 #include "rapidcsv.h"
 
-NPC::NPC(int npcID, Vector2 NPCPos) {
+NPC::NPC(int npcID, std::string loc, Vector2 NPCPos) {
     ID = npcID;
     Stage = 0;
     lvl = 1;

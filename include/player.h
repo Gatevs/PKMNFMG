@@ -5,6 +5,7 @@
 #include <LDtkLoader/Project.hpp>
 #include "GameObject.h"
 #include "npc.h"
+#include <string>
 #include <vector>
 #include <algorithm>
 
@@ -34,6 +35,7 @@ public:
     // Accessors
     void SetFollowerID(int follow);
     float GetYPosition() const override { return position.y; }
+    std::string GetLocation() {return location;}
     Vector2 GetPosition() const;
     int GetPlayerDir() const;
     int GetPlayerSpeed() const;
@@ -44,8 +46,17 @@ public:
     void SetShadow(Texture2D load);
     void StopUI_Element();
     void SetFollowDir(Vector2 Dir);
+    void SetLocation (std::string loc);
+    void SetPlayerGender(std::string playerGender);
+    std::string GetPlayerGender() const;
+    std::string GetPlayerName() const;
+    int GetStage() const;
 
 private:
+    std::string Gender;
+    std::string Name;
+    int Stage;
+
     // Graphics
     Texture2D playerTexture;
     Rectangle framesUp[3];
@@ -90,6 +101,7 @@ private:
     float frameRate;
     float frameTimer;
     float keyPressTimer;
+    std::string location;
 
     // Collision detection
     Rectangle collisionMask;

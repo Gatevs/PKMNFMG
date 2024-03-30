@@ -7,6 +7,7 @@
 ActionHandler::ActionHandler() {
     atlasTexture = LoadTexture("assets/UI_Atlas.png");
     MainFont = LoadFont("assets/SpriteFont_Main.png");
+    BagFont = LoadFont("assets/SpriteFont_Bag.png");
     screenTexture = LoadTexture("assets/Screens_Atlas.png");
     StageTexture = LoadTexture("assets/GStage.png");
     MainPos = {0,0};
@@ -385,9 +386,15 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
     }
 }
 
+void ActionHandler::getPlayerInfo(int ID, Player player_Obj, int Event){
+    NPC_Limit = 1;
+    NPC_Stage = player_Obj.GetStage();
+    NPC_NAME = player_Obj.GetPlayerName();
+}
+
 
 void ActionHandler::dialogue(Player& player) {
-    replaceAll(DialogueText,"PLAYERNAME", "Player");
+    replaceAll(DialogueText,"PLAYERNAME", player.GetPlayerName());
     typewriterEffect(DialogueText);
 
     if (IsKeyDown(KEY_Z)){

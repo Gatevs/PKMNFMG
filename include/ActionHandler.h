@@ -21,6 +21,7 @@ public:
 
     void handleAction(ActionType actionType, Vector2 drawPos);
     void getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event);
+    void getPlayerInfo(int ID, Player player_Obj, int Event);
     void InputUI(std::vector<NPC>& NPC_objs, Player& player_Obj);
     void SetInteractionID(int ID);
     void Draw();
@@ -46,6 +47,7 @@ private:
     Texture2D StageTexture;
     Texture2D StatSprite;
     Font MainFont;
+    Font BagFont;
     Rectangle MainMap;
     Rectangle SubMap;
     Rectangle MainSelector;

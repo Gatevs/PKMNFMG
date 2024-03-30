@@ -15,16 +15,27 @@
 // Update and Draw one frame
 void UpdateDrawFrame(GameManager& game) {
     // Update
-    game.GameLoop();
-    game.CameraUpdate();
+    if (game.IsIntroFinished()){
+        game.GameLoop();
+        game.CameraUpdate();
 
-    // Draw
-    BeginDrawing();
-    {
-       game.DrawWorld();
-       game.DrawBars();
+        // Draw
+        BeginDrawing();
+        {
+            game.DrawWorld();
+            game.DrawBars();
+        }
+        EndDrawing();
+    } else{
+        game.DebugIntro();
+
+        BeginDrawing();
+        {
+            game.DrawIntro();
+            game.DrawBars();
+        }
+        EndDrawing();
     }
-    EndDrawing();
 }
 
 int main() {
@@ -32,7 +43,6 @@ int main() {
     InitWindow(256, 192, "Pokemon FMG");
     SetWindowMinSize(256, 192);
     GameManager Game;
-
     Game.GameInitialization();
 
 #if defined(PLATFORM_WEB)

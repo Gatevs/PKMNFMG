@@ -1,6 +1,7 @@
 #include "GameManager.h"
 #include <iostream>
 #include "GameObject.h"
+#include "TileObjects.h"
 #include "player.h"
 #include "npc.h"
 #include "ActionHandler.h"
@@ -17,6 +18,40 @@ GameManager::GameManager(){
 
 GameManager::~GameManager(){
     scaleFactor = MIN(GetScreenWidth() / gameHeight, GetScreenHeight() / gameHeight);
+}
+void GameManager::DebugIntro(){
+    Vector2 targetPos = {static_cast<float>(+32), static_cast<float>(0)};
+    // Set the camera zoom and offset
+    scaleFactor = MIN(GetScreenWidth() / gameWidth, GetScreenHeight() / gameHeight);
+    // Calculate the actual game width and height after applying scaleFactor
+    int actualGameWidth = gameHeight * scaleFactor;
+    int actualGameHeight = gameHeight * scaleFactor;
+    // Calculate the offset to center the game in the window
+    int offsetX = (GetScreenWidth() - actualGameWidth) / 2;
+    int offsetY = (GetScreenHeight() - actualGameHeight) / 2;
+    camera.zoom = scaleFactor;
+    camera.offset = (Vector2){ (float)offsetX, (float)offsetY };
+    camera.target = targetPos;
+    if (IsKeyPressed(KEY_RIGHT) && DebugID < 2){
+        std::cout << DebugID << std::endl;
+        SelectPos.x += 129;
+        DebugID = 2;
+    }
+    if (IsKeyPressed(KEY_LEFT) && DebugID > 1){
+        std::cout << DebugID << std::endl;
+        SelectPos.x -= 129;
+        DebugID = 1;
+    }
+    if (IsKeyPressed(KEY_Z)){
+        if (DebugID == 1){
+            player.SetPlayerGender("PlayerM");
+        } else{
+            player.SetPlayerGender("PlayerF");
+        }
+        UnloadTexture(IntroBG);
+        UnloadTexture(IntroSelect);
+        IntroFinished = true;
+    }
 }
 
 void GameManager::GameInitialization(){
@@ -71,14 +106,6 @@ void GameManager::GameLoop(){
     // Tile animations
     Outside.update(Outside.GetCurLevelName(), cur);
 
-    if (IsKeyPressed(KEY_P)){
-        unrelated a = cur;
-        unrelated b = swapper;
-        cur = b;
-        swapper = a;
-        std::cout << Outside.GetSwapLevelName() << std::endl;
-    }
-
     // std::cout << Menu.stopPlayerInput << std::endl;
     if (player.InvokeUIElement() != NONE && !Menu.stopPlayerInput){
         int npcIdInFront = player.CheckForNPCInFront(npcs);
@@ -104,6 +131,11 @@ void GameManager::GameLoop(){
                 }
                 break;
             case ACTION:
+                if (player.GetPlayerGender() == "PlayerF" && npcIdInFront == -1){
+                    Menu.SetInteractionID(1);
+                    Menu.getPlayerInfo(1,player,1);
+                    Menu.handleAction(ActionType::Action_M,player.GetPosition());
+                }
                 if (npcIdInFront != -1) {
                     for (auto& npc : npcs) {
                         if (npc.GetID() == npcIdInFront && !npc.IsNPCGrowing()) {
@@ -146,6 +178,7 @@ void GameManager::GameLoop(){
         Outside.SwapLevels(player);
     }
     if (Outside.IsNextLevelLoaded()){
+        Outside.unloadFarAwayLevel(player,tileObjs);
         if (!Outside.GetDrawNextLevel()){
             Outside.loadTileObjs(Outside.GetSwapLevelName(), tileObjs);
             Outside.SetDrawNextLevel();
@@ -175,7 +208,6 @@ void GameManager::DrawWorld(){
             objects.push_back(&tObj);
         }
 
-
         // Sorting objects based on Y position
         std::sort(objects.begin(), objects.end(), [](const GameObject* a, const GameObject* b) {
             return a->GetYPosition() < b->GetYPosition();
@@ -204,6 +236,18 @@ void GameManager::DrawBars(){
         DrawRectangle(0, 0, (GetScreenWidth() - gameWidth * scaleFactor) / 2, GetScreenHeight(), BLACK); //Left Bar
         DrawRectangle(GetScreenWidth() - (GetScreenWidth() - gameWidth * scaleFactor) / 2, 0, (GetScreenWidth() - gameWidth * scaleFactor) / 2, GetScreenHeight(), BLACK); //Right Bar
     }
+}
+
+void GameManager::DrawIntro(){
+    ClearBackground(green);
+    BeginMode2D(camera);
+    {
+        DrawTexture(IntroBG,0,0,WHITE);
+        DrawTextureRec(IntroSelect,Select, SelectPos,WHITE);
+        DrawTextEx(BagFont,"DEBUG",(Vector2){15,148},BagFont.baseSize, -5,WHITE);
+        DrawTextEx(BagFont,"Select character to test.",(Vector2){15,160},BagFont.baseSize, -5,WHITE);
+    }
+    EndMode2D();
 }
 
 void GameManager::Unload(){

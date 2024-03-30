@@ -188,6 +188,11 @@ void TileMap::IsWarpClose(Player& player_obj){
                 LoadNextLevel(wObj);
             }
         }
+        if (wObj_Pos.x == player_obj.GetPosition().x - (9 * TILE_SIZE) ){
+            if (!NextLevelLoaded){
+                LoadNextLevel(wObj);
+            }
+        }
         if (wObj_Pos.x == player_obj.GetPosition().x){
             curLevel = level.name;
             std::string wname = wObj.getField<std::string>("Going_To").value();
@@ -251,6 +256,7 @@ void TileMap::EnterNextlevel(Vector2 warpPos, Player& player_obj, int dir){
                             curLevel_Pos = loadLevel_Pos;
                             loadLevel_Pos = pastRenderPos;
                             SwapLevel_Dir = 180;
+                            player_obj.SetLocation(curLevel);
                             onWarp = false;
                         }
                     case 180:
@@ -265,11 +271,36 @@ void TileMap::EnterNextlevel(Vector2 warpPos, Player& player_obj, int dir){
                             curLevel_Pos = loadLevel_Pos;
                             loadLevel_Pos = pastRenderPos;
                             SwapLevel_Dir = 0;
+                            player_obj.SetLocation(curLevel);
                             onWarp = false;
                         }
                         break;
             }
         }
+}
+
+void TileMap::unloadFarAwayLevel(Player& player_obj, std::vector<tileObj>& Tile_objs){
+    bool TurnOff = false;
+    switch (SwapLevel_Dir){
+        case 180:
+            if (player_obj.GetPosition().x > loadLevel_Pos.x + 700){
+                TurnOff = true;
+            }
+            break;
+        case 0:
+            if (player_obj.GetPosition().x < loadLevel_Pos.x - 700){
+                TurnOff = true;
+            }
+            break;
+    }
+    if (TurnOff){
+        NextLevelLoaded = false;
+        DrawLoadedLevel = false;
+        UnloadRenderTexture(swapRender);
+        Tile_objs.erase(std::remove_if(Tile_objs.begin(), Tile_objs.end(), [&](const tileObj& obj) {
+            return obj.GetLocation() != player_obj.GetLocation();
+        }), Tile_objs.end());
+    }
 }
 
 const ldtk::Layer& TileMap::GetCOL() {
@@ -288,6 +319,7 @@ void TileMap::loadPlayer(Player& player_obj){
         auto player_pos = playerEnt.getPosition();
 
         player_obj.setPosition(Vector2{(float(player_pos.x)-8),(float(player_pos.y)-16)});
+        player_obj.SetLocation(curLevel);
     }
 }
 
@@ -298,7 +330,7 @@ void TileMap::loadNPCs(std::vector<NPC>& NPC_objs) {
     for (const ldtk::Entity& npcObj : objects.getEntitiesByName("NPC")) {
         auto npc_ID = npcObj.getField<int>("NPC_ID").value();
         auto npc_pos = npcObj.getWorldPosition();
-        NPC_objs.push_back(NPC(npc_ID, Vector2{(float)(npc_pos.x - 8), (float)(npc_pos.y - 16)}));
+        NPC_objs.push_back(NPC(npc_ID, curLevel, Vector2{(float)(npc_pos.x - 8), (float)(npc_pos.y - 16)}));
     }
 }
 
@@ -311,7 +343,7 @@ void TileMap::loadTileObjs(const std::string lvl, std::vector<tileObj>& Tile_obj
         auto tileObj_ID = 0;
         auto tileObj_Pos = tObj.getWorldPosition();
         auto tileObj_Rect = tObj.getTextureRect();
-        Tile_objs.push_back(tileObj(tileObj_ID, Vector2{(float)(tileObj_Pos.x), (float)(tileObj_Pos.y)}, tileObj_Rect, texture));
+        Tile_objs.push_back(tileObj(tileObj_ID, lvl, Vector2{(float)(tileObj_Pos.x), (float)(tileObj_Pos.y)}, tileObj_Rect, texture));
     }
 }
 

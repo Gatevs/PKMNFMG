@@ -8,7 +8,7 @@
 
 class NPC :public GameObject {
 public:
-    NPC(int npcID, Vector2 NPCPos);
+    NPC(int npcID, std::string loc, Vector2 NPCPos);
     ~NPC();
 
     // Core functionality
@@ -31,6 +31,7 @@ public:
 
     // Accessors
     float GetYPosition() const override { return position.y; }
+    std::string GetLocation() {return location;}
     int GetID() const { return ID; }
     Rectangle GetCollisionMask() const { return collisionMask; }
     std::string GetCombinedValues(int Event);
@@ -91,6 +92,7 @@ private:
     int Stage;
     int wantedStage;
     int lvl;
+    std::string location;
     std::vector<std::string> NPC_DEF;
     std::vector<std::vector<std::string>> m_data;
 };

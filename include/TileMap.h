@@ -44,6 +44,7 @@ public:
     void SetDrawNextLevel();
     std::string GetCurLevelName();
     std::string GetSwapLevelName();
+    void unloadFarAwayLevel(Player& player_obj, std::vector<tileObj>& Tile_objs);
 
 
 private:

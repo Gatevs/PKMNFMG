@@ -2,11 +2,14 @@
 #include "raylib.h"
 #include <cstddef>
 #include <iostream>
+#include <string>
 #include <vector>
 #include <algorithm>
 
 Player::Player() {
-    playerTexture = LoadTexture("assets/player.png");
+    Stage = 0;
+    Name = "Player";
+    playerTexture = LoadTexture("assets/dummy.png");
     // Initialize member variables
     position = { 32, 32 };
     currentAnimation = ANIM_UP;
@@ -383,4 +386,27 @@ void Player::StopUI_Element(){
 
 void Player::SetFollowDir(Vector2 Dir){
     past_dir = Dir;
+}
+
+void Player::SetLocation(std::string loc){
+    location = loc;
+}
+
+void Player::SetPlayerGender(std::string playerGender){
+    Gender = playerGender;
+    UnloadTexture(playerTexture);
+    std::string TexturePath = "assets/" + playerGender + "_" + std::to_string(Stage) + ".png";
+    playerTexture = LoadTexture(TexturePath.c_str());
+}
+
+std::string Player::GetPlayerGender() const {
+    return Gender;
+}
+
+std::string Player::GetPlayerName() const {
+    return Name;
+}
+
+int Player::GetStage() const {
+    return Stage;
 }

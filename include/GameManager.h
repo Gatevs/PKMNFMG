@@ -15,13 +15,15 @@ public:
     GameManager();
     ~GameManager();
 
+    void DebugIntro();
     void GameInitialization();
     void CameraUpdate();
     void GameLoop();
     void DrawWorld();
     void DrawBars();
     void Unload();
-
+    bool IsIntroFinished() {return IntroFinished;}
+    void DrawIntro();
 private:
     int test;
     Color green = {20,160,133,254};
@@ -40,11 +42,23 @@ private:
     Texture2D ShadowOffCenter;
     unrelated swapper;
     unrelated cur;
+    bool IntroFinished = false;
+    Texture2D IntroBG = LoadTexture("assets/MISC/DEBUG_CHAR.png");
+    Texture2D IntroSelect = LoadTexture("assets/MISC/DEBUG_SELECT.png");
+    Font BagFont = LoadFont("assets/SpriteFont_Bag.png");;
+    int DebugID = 1;
     enum UI_Element {
         PAUSE,
         DIALOGUE,
         ACTION,
         NONE
+    };
+    Vector2 SelectPos = (Vector2){18,6};
+    const Rectangle Select = {
+        static_cast<float>(0),
+        static_cast<float>(0),
+        static_cast<float>(92),
+        static_cast<float>(136)
     };
 };
 
