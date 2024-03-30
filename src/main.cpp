@@ -28,6 +28,7 @@ void UpdateDrawFrame(GameManager& game) {
         EndDrawing();
     } else{
         game.DebugIntro();
+        game.CameraUpdate();
 
         BeginDrawing();
         {

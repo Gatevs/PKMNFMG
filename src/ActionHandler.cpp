@@ -3,6 +3,7 @@
 #include <raylib.h>
 #include <string>
 #include "npc.h"
+#include "player.h"
 
 ActionHandler::ActionHandler() {
     atlasTexture = LoadTexture("assets/UI_Atlas.png");
@@ -290,6 +291,11 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
                 break;
             case 3:
                 if (fadeOutComplete){
+                    if (InteractionID == 1){
+                        p.setNextStage(menuID - 1);
+                        CloseUI(p);
+                        break;
+                    }
                     for (auto& npc : NPC_objs) {
                         if (npc.GetID() == InteractionID) {
                             npc.setNextStage(menuID - 1);

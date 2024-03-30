@@ -20,26 +20,12 @@ GameManager::~GameManager(){
     scaleFactor = MIN(GetScreenWidth() / gameHeight, GetScreenHeight() / gameHeight);
 }
 void GameManager::DebugIntro(){
-    Vector2 targetPos = {static_cast<float>(+32), static_cast<float>(0)};
-    // Set the camera zoom and offset
-    scaleFactor = MIN(GetScreenWidth() / gameWidth, GetScreenHeight() / gameHeight);
-    // Calculate the actual game width and height after applying scaleFactor
-    int actualGameWidth = gameHeight * scaleFactor;
-    int actualGameHeight = gameHeight * scaleFactor;
-    // Calculate the offset to center the game in the window
-    int offsetX = (GetScreenWidth() - actualGameWidth) / 2;
-    int offsetY = (GetScreenHeight() - actualGameHeight) / 2;
-    camera.zoom = scaleFactor;
-    camera.offset = (Vector2){ (float)offsetX, (float)offsetY };
-    camera.target = targetPos;
     if (IsKeyPressed(KEY_RIGHT) && DebugID < 2){
-        std::cout << DebugID << std::endl;
-        SelectPos.x += 129;
+        SelectPos.x += 128;
         DebugID = 2;
     }
     if (IsKeyPressed(KEY_LEFT) && DebugID > 1){
-        std::cout << DebugID << std::endl;
-        SelectPos.x -= 129;
+        SelectPos.x -= 128;
         DebugID = 1;
     }
     if (IsKeyPressed(KEY_Z)){
@@ -67,6 +53,8 @@ void GameManager::GameInitialization(){
     ShadowCentered = LoadTexture("assets/Shadow_0.png");
     ShadowOffCenter = LoadTexture("assets/Shadow_1.png");
 
+    player.parseCSV("assets/NPC_OW_DEF.csv");
+
     for (auto& npc : npcs) {
         npc.parseCSV("assets/Dataset.csv");
         npc.parseCSV("assets/NPC_OW_DEF.csv");
@@ -83,7 +71,11 @@ void GameManager::GameInitialization(){
 }
 
 void GameManager::CameraUpdate(){
-    Vector2 targetPos = {(floor((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32), floor((player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f))};
+    if (!IntroFinished){
+        targetPos = {static_cast<float>(+32), static_cast<float>(0)};
+    }else{
+        targetPos = {(floor((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32), floor((player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f))};
+    }
     // Set the camera zoom and offset
     scaleFactor = MIN(GetScreenWidth() / gameWidth, GetScreenHeight() / gameHeight);
     // Calculate the actual game width and height after applying scaleFactor

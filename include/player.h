@@ -18,6 +18,16 @@ public:
     void Update();
     void Draw() override;
 
+    // Animation
+    void UpdateTexture(const std::string& animation);
+    void updateAnimationFrameDimensions(const std::string& animation);
+
+    void setNextStage(int nextStage);
+    bool IsNPCGrowing() const { return inGrowthPhase; }
+
+    // CSV parsing
+    void parseCSV(const std::string& filename);
+
     // Input handling
     void HandleInput(std::vector<NPC>& npcs);
     int InvokeUIElement();
@@ -53,16 +63,19 @@ public:
     int GetStage() const;
 
 private:
+    void Growth();
     std::string Gender;
     std::string Name;
     int Stage;
 
     // Graphics
     Texture2D playerTexture;
+    Texture2D playerTextureIdle;
     Rectangle framesUp[3];
     Rectangle framesDown[3];
     Rectangle framesRight[3];
     Rectangle framesLeft[3];
+    std::vector<Rectangle> framesGrowth;
     Texture2D shadowTexture;
 
     // Animation
@@ -70,7 +83,8 @@ private:
         ANIM_UP,
         ANIM_DOWN,
         ANIM_RIGHT,
-        ANIM_LEFT
+        ANIM_LEFT,
+        ANIM_GROWTH
     };
     enum UI_Element {
         PAUSE,
@@ -82,6 +96,7 @@ private:
     int FRAME_Y;
     int currentAnimation;
     int currentFrame;
+    std::vector<std::string> PLAYER_DEF;
 
     // Position and movement
     Vector2 position;
@@ -94,14 +109,17 @@ private:
     int FollowerID;
     int RunFrames;
     int LoadUI_Element;
+    int wantedStage;
     bool animating;
     bool move;
     bool canMove;
+    bool inGrowthPhase;
     int player_speed;
     float frameRate;
     float frameTimer;
     float keyPressTimer;
     std::string location;
+    int lastFrame;
 
     // Collision detection
     Rectangle collisionMask;

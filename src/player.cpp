@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include "rapidcsv.h"
 
 Player::Player() {
     Stage = 0;
@@ -38,6 +39,7 @@ Player::Player() {
     collisionMask.width = COLLISION_MASK_WIDTH;
     collisionMask.height = COLLISION_MASK_HEIGHT;
     LoadUI_Element = NONE;
+    lastFrame = 0;
 
     // Initialize animation frames
     FRAME_X = 32;
@@ -64,7 +66,9 @@ void Player::HandleInput(std::vector<NPC>& npcs){
     } else {
         // Reset the timer if no directional key is pressed
         keyPressTimer = 0.0f;
-        animating = false;
+        if (!inGrowthPhase){
+            animating = false;
+        }
     }
     if (step_timer >= 16/player_speed) {
         past_dir = input_direction;
@@ -152,6 +156,58 @@ void Player::HandleInput(std::vector<NPC>& npcs){
     }
 }
 
+void Player::Growth(){
+        //  Compare the NPC's current stage with the wanted stage, and shrink or grow accordingly
+    if (Stage < wantedStage && !inGrowthPhase && wantedStage != -1){
+        Stage += 1;
+        UpdateTexture("growth");
+        updateAnimationFrameDimensions("growth");
+        lastFrame = framesGrowth.size();
+        direction = 1;
+    }
+    if (Stage > wantedStage && !inGrowthPhase && wantedStage != -1 ){
+        UpdateTexture("growth");
+        updateAnimationFrameDimensions("shrink");
+        lastFrame = 0;
+        direction = -1;
+    }
+    // Animate growth if in growth phase
+    if (inGrowthPhase) {
+        frameRate = 0.250f;
+        frameTimer += GetFrameTime();
+        if (frameTimer >= frameRate) {
+            currentFrame += direction;
+            if (currentFrame == lastFrame) {
+                // End of growth animation
+                if (Stage > wantedStage){
+                    Stage -= 1;
+                }
+                UpdateTexture("walk");
+                updateAnimationFrameDimensions("walk");
+                switch (m_dir)
+                {
+                case 90:
+                currentAnimation = ANIM_UP;
+                    break;
+                case 180:
+                currentAnimation = ANIM_LEFT;
+                    break;
+                case 270:
+                currentAnimation = ANIM_DOWN;
+                    break;
+                case 0:
+                currentAnimation = ANIM_RIGHT;
+                    break;
+                }
+                currentFrame = 1;
+                frameRate = 0.125f;
+                inGrowthPhase = false; // Switch back to regular walking animation
+            }
+            frameTimer = 0.0f;
+        }
+    }
+}
+
 void Player::UpdateAnim(){
     int textureWidth = playerTexture.width;
     int textureHeight = playerTexture.height;
@@ -174,6 +230,9 @@ void Player::UpdateAnim(){
 
 // Animate movement
 void Player::Update() {
+    if (Gender == "PlayerF"){
+        Growth();
+    }
     if (move || animating) {
         frameTimer += GetFrameTime();
         if (frameTimer >= frameRate) {
@@ -188,7 +247,7 @@ void Player::Update() {
             }
             frameTimer = 0.0f;
         }
-    } else {
+    } else if (!inGrowthPhase){
         currentFrame = 1;
     }
 }
@@ -325,19 +384,27 @@ void Player::setPosition(Vector2 newPos){
 
 // Draw the player's texture into the world
 void Player::Draw() {
+        //Calculate the position where the texture is drawn
+    Vector2 drawPosition = {
+        static_cast<float>(floor(((position.x + COLLISION_MASK_WIDTH) - float(FRAME_X / 2.0f)))),
+        ((position.y + (COLLISION_MASK_HEIGHT*2)) - (FRAME_Y))
+    };
     DrawTexture(shadowTexture, (collisionMask.x + COLLISION_MASK_WIDTH), (collisionMask.y + (COLLISION_MASK_HEIGHT * 2)),WHITE);
     switch (currentAnimation) {
         case ANIM_UP:
-            DrawTextureRec(playerTexture, framesUp[currentFrame], position, WHITE);
+            DrawTextureRec(playerTexture, framesUp[currentFrame], drawPosition, WHITE);
             break;
         case ANIM_DOWN:
-            DrawTextureRec(playerTexture, framesDown[currentFrame], position, WHITE);
+            DrawTextureRec(playerTexture, framesDown[currentFrame], drawPosition, WHITE);
             break;
         case ANIM_RIGHT:
-            DrawTextureRec(playerTexture, framesRight[currentFrame], position, WHITE);
+            DrawTextureRec(playerTexture, framesRight[currentFrame], drawPosition, WHITE);
             break;
         case ANIM_LEFT:
-            DrawTextureRec(playerTexture, framesLeft[currentFrame], position, WHITE);
+            DrawTextureRec(playerTexture, framesLeft[currentFrame], drawPosition, WHITE);
+            break;
+        case ANIM_GROWTH:
+            DrawTextureRec(playerTexture, framesGrowth[currentFrame], drawPosition, WHITE);
             break;
     }
 
@@ -409,4 +476,73 @@ std::string Player::GetPlayerName() const {
 
 int Player::GetStage() const {
     return Stage;
+}
+
+void Player::setNextStage(int NextStage){
+    wantedStage = NextStage;
+}
+
+void Player::UpdateTexture(const std::string& animation){
+    if (animation == "growth"){
+        std::string TexturePath = "assets/" + Gender + "_G" + std::to_string(Stage) + ".png";
+        UnloadTexture(playerTexture);
+        playerTexture = LoadTexture(TexturePath.c_str());
+    } else if(animation == "walk"){
+        std::string TexturePath = "assets/" + Gender + "_" + std::to_string(Stage) + ".png";
+        UnloadTexture(playerTexture);
+        playerTexture = LoadTexture(TexturePath.c_str());
+    }else if(animation == "idle"){
+        std::string TexturePath = "assets/" + Gender + "_I" + std::to_string(Stage) + ".png";
+        playerTexture = LoadTexture(TexturePath.c_str());
+    }
+
+}
+
+void Player::parseCSV(const std::string& filename) {
+    rapidcsv::Document doc(filename);
+    const auto& ids = doc.GetColumn<int>("ID");
+
+    if(filename == "assets/NPC_OW_DEF.csv"){
+        for (size_t i = 0; i < ids.size(); ++i) {
+            if (ids[i] == 1) {
+                // Store entire row in NPC-specific vector
+                PLAYER_DEF = doc.GetRow<std::string>(i);
+                break; // Stop after finding the first matching ID
+            }
+        }
+    }
+}
+
+void Player::updateAnimationFrameDimensions(const std::string& animation) {
+    int textureWidth = (animation == "idle") ? playerTextureIdle.width : playerTexture.width;
+    int textureHeight = (animation == "idle") ? playerTextureIdle.height : playerTexture.height;
+
+    // Default frame dimensions
+    int frameCountX = 3;
+    int frameCountY = 8;
+
+    if (animation == "walk" || animation == "idle") {
+        UpdateAnim();
+    } else if (animation == "growth" || animation == "shrink"){
+        // Customize frame dimensions for "grow" animation
+        int GROW_FRAMES = stoi(PLAYER_DEF[Stage]);
+        framesGrowth.resize(GROW_FRAMES);
+
+        // Calculate frame size
+        FRAME_X = textureWidth / 1;
+        FRAME_Y = textureHeight / GROW_FRAMES;
+
+        // Update animation frames
+        for (int i = 0; i < GROW_FRAMES; i++) {
+            framesGrowth[i] = { static_cast<float>(0 * FRAME_X), static_cast<float>(i * FRAME_Y), static_cast<float>(FRAME_X), static_cast<float>(FRAME_Y) };
+        }
+        currentAnimation = ANIM_GROWTH;
+
+        if (!inGrowthPhase and animation == "shrink"){
+            currentFrame = (framesGrowth.size() - 1);
+        } else if (!inGrowthPhase and animation == "growth"){
+            currentFrame = 1;
+        }
+        inGrowthPhase = true;
+    }
 }

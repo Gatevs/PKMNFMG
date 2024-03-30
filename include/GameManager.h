@@ -32,6 +32,7 @@ private:
     int scaleFactor;
     // Camera zoom and offset
     Camera2D camera = { 0 };
+    Vector2 targetPos;
     Vector2 cameraHelper;
     TileMap Outside;
     ActionHandler Menu;
