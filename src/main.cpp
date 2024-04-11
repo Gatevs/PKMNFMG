@@ -24,6 +24,9 @@ void UpdateDrawFrame(GameManager& game) {
         {
             game.DrawWorld();
             game.DrawBars();
+            if (game.IsVNMenu()){
+                game.DrawVN();
+            }
         }
         EndDrawing();
     } else{
@@ -41,8 +44,9 @@ void UpdateDrawFrame(GameManager& game) {
 
 int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
-    InitWindow(256, 192, "Pokemon FMG");
+    InitWindow(768, 576, "Pokemon FMG");
     SetWindowMinSize(256, 192);
+    InitAudioDevice();
     GameManager Game;
     Game.GameInitialization();
 

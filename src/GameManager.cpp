@@ -13,7 +13,7 @@
 #include "raylib.h"
 
 GameManager::GameManager(){
-
+    EntityGrowth = LoadSound("assets/SFX/GROWTH.ogg");
 }
 
 GameManager::~GameManager(){
@@ -28,7 +28,7 @@ void GameManager::DebugIntro(){
         SelectPos.x -= 128;
         DebugID = 1;
     }
-    if (IsKeyPressed(KEY_Z)){
+    if (IsKeyPressed(KEY_Z) || IsKeyPressed(KEY_ENTER)){
         if (DebugID == 1){
             player.SetPlayerGender("PlayerM");
         } else{
@@ -42,14 +42,13 @@ void GameManager::DebugIntro(){
 
 void GameManager::GameInitialization(){
     Outside.loadLDtkMap("assets/Outside.ldtk",[&]() {
-        std::cout << "Initializing map..." << std::endl;
-            Outside.initialize("Route_1");
-            std::cout << "Map initialized!" << std::endl;
+            Outside.initialize("Swolie_Town");
             Outside.loadPlayer(player);
             Outside.loadNPCs(npcs);
             Outside.loadTileObjs(Outside.GetCurLevelName(), tileObjs);
         });
     // Outside.loadWarps(warps);
+    SetMasterVolume(0.9f);
     ShadowCentered = LoadTexture("assets/Shadow_0.png");
     ShadowOffCenter = LoadTexture("assets/Shadow_1.png");
 
@@ -65,7 +64,6 @@ void GameManager::GameInitialization(){
     player.SetShadow(ShadowCentered);
     player.UpdatePositionAndCamera();
     camera.target = (Vector2){((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32, (player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f)};
-    cameraHelper = camera.target;
     camera.rotation = 0.0f;
     camera.zoom = 1.0f;
 }
@@ -86,17 +84,19 @@ void GameManager::CameraUpdate(){
     int offsetY = (GetScreenHeight() - actualGameHeight) / 2;
     camera.zoom = scaleFactor;
     camera.offset = (Vector2){ (float)offsetX, (float)offsetY };
-    if (player.IsPlayerMoving()){
-        cameraHelper.x += (player.GetPlayerSpeed() * 60) * GetFrameTime();
-    }else{
-        cameraHelper = (Vector2){((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32, (player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f)};
-    }
     camera.target = targetPos;
 }
 
 void GameManager::GameLoop(){
     // Tile animations
-    Outside.update(Outside.GetCurLevelName(), cur);
+    if (IsKeyPressed(KEY_I)){
+        VNMenu = !VNMenu;
+        if (!IsTextureReady(VNTest)){
+            VNTest = LoadTexture("assets/Lana_Test.png");
+        }
+    }
+
+    Outside.update(Outside.GetCurLevelName(), cur, player);
 
     // std::cout << Menu.stopPlayerInput << std::endl;
     if (player.InvokeUIElement() != NONE && !Menu.stopPlayerInput){
@@ -164,6 +164,9 @@ void GameManager::GameLoop(){
     }
     for (auto& npc : npcs) {
         npc.Update();
+        if (npc.IsNPCGrowing() && !IsSoundPlaying(EntityGrowth)){
+            PlaySound(EntityGrowth);
+        }
     }
 
     if (Outside.StandingOnWarp()){
@@ -175,7 +178,7 @@ void GameManager::GameLoop(){
             Outside.loadTileObjs(Outside.GetSwapLevelName(), tileObjs);
             Outside.SetDrawNextLevel();
         }else{
-            Outside.update(Outside.GetSwapLevelName(), swapper);
+            Outside.update(Outside.GetSwapLevelName(), swapper, player);
         }
     }
 }
@@ -244,4 +247,21 @@ void GameManager::DrawIntro(){
 
 void GameManager::Unload(){
     Outside.Unload();
+}
+
+void GameManager::DrawVN(){
+    int scaleFactorB = MIN(GetScreenWidth() / gameWidth, GetScreenHeight() / gameHeight);
+    int actualGameWidth = gameHeight * scaleFactor;
+    int actualGameHeight = gameHeight * scaleFactor;
+    // Calculate the offset to center the game in the window
+    int offsetX = (GetScreenWidth() - actualGameWidth) / 2;
+    int offsetY = (GetScreenHeight() - actualGameHeight) / 2;
+    SetTextureFilter(VNTest,TEXTURE_FILTER_BILINEAR);
+    bigCamera.zoom = 0.2 * scaleFactorB;
+    bigCamera.target = (Vector2){0,0};
+    bigCamera.offset = (Vector2){ (float)offsetX, (float)offsetY };
+    BeginMode2D(bigCamera);
+    {
+        DrawTexture(VNTest,(VNTest.width / 2.25f) - (VNTest.width / 2.0f),(VNTest.height / 2.0f) - (VNTest.height / 2.0f),WHITE);
+    }
 }

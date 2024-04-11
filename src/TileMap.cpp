@@ -8,8 +8,8 @@ TileMap::TileMap() {
     NextLevelLoaded = false;
     onWarp = false;
     TILE_ANIM_TIME = 50;
-    curLevel = "Route_1";
-    nextLevel = "Route_1";
+    curLevel = "Swolie_Town";
+    nextLevel = "Swolie_Town";
 }
 
 TileMap::~TileMap() {
@@ -105,7 +105,7 @@ void TileMap::draw(const std::string render, Vector2 lvl_Pos) {
 }
 
 // Animate Tiles
-void TileMap::update(const std::string lvl, unrelated& animationState) {
+void TileMap::update(const std::string lvl, unrelated& animationState, Player& player_obj) {
     RenderTexture2D drawer;
     if (lvl == curLevel){
         drawer = renderer;
@@ -127,6 +127,8 @@ void TileMap::update(const std::string lvl, unrelated& animationState) {
     }
 
     if (animationState.animFrame){
+        Vector2 StartPos = (Vector2){player_obj.GetPosition().x - 112, player_obj.GetPosition().y - 96};
+        Vector2 EndPos = (Vector2){StartPos.x + 256, StartPos.y + 208};
         // Update the current frame index based on the tile animation direction.
         animationState.currentFrameIndex += animationState.tileAnimReverse ? -1 : 1;
         // Check if the current frame index is at the beginning or end of the animation sequence.
@@ -142,6 +144,9 @@ void TileMap::update(const std::string lvl, unrelated& animationState) {
             const auto& texture_rect = tile.getTextureRect();
             int TILE_X = texture_rect.x;
             int TILE_Y = texture_rect.y;
+            if (position.x > StartPos.x && position.x < EndPos.x && position.y > StartPos.y && position.y < EndPos.y){
+
+
             auto it = std::find_if(firstFrameIds.begin(), firstFrameIds.end(),
                                    [&](const std::pair<std::string, int>& pair) {
                                        return pair.second == tile.tileId;
@@ -168,6 +173,7 @@ void TileMap::update(const std::string lvl, unrelated& animationState) {
                 static_cast<float>(texture_rect.height) * (tile.flipY ? -1.0f : 1.0f)
             };
             DrawTextureRec(texture, src, dest, WHITE);
+        }
         }
         EndTextureMode();
     }

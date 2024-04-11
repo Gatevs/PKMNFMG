@@ -12,7 +12,7 @@ public:
     ~tileObj();
 
     void Draw() override;
-    float GetYPosition() const override { return position.y; }
+    float GetYPosition() const override { return position.y + 1; }
     std::string GetLocation() const {return location;}
 
 private:

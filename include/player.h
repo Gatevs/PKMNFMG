@@ -64,6 +64,7 @@ public:
 
 private:
     void Growth();
+    void BumpAgainstObject();
     std::string Gender;
     std::string Name;
     int Stage;
@@ -71,6 +72,7 @@ private:
     // Graphics
     Texture2D playerTexture;
     Texture2D playerTextureIdle;
+    Sound Bump;
     Rectangle framesUp[3];
     Rectangle framesDown[3];
     Rectangle framesRight[3];

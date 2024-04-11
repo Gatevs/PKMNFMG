@@ -11,6 +11,7 @@ Player::Player() {
     Stage = 0;
     Name = "Player";
     playerTexture = LoadTexture("assets/dummy.png");
+    Bump = LoadSound("assets/SFX/BUMP.ogg");
     // Initialize member variables
     position = { 32, 32 };
     currentAnimation = ANIM_UP;
@@ -40,6 +41,8 @@ Player::Player() {
     collisionMask.height = COLLISION_MASK_HEIGHT;
     LoadUI_Element = NONE;
     lastFrame = 0;
+    wantedStage = -1;
+    inGrowthPhase = false;
 
     // Initialize animation frames
     FRAME_X = 32;
@@ -250,6 +253,9 @@ void Player::Update() {
     } else if (!inGrowthPhase){
         currentFrame = 1;
     }
+    if (move){
+        frameRate = 0.125f;
+    }
 }
 
 // If player has a follower make them move along player
@@ -302,19 +308,26 @@ void Player::checkCollisions(const ldtk::Layer& collisions,  const std::vector<N
         if (step_timer != 0){
             past_dir = input_direction;
         }
-        step_timer = 0;
-        move = false;
+        BumpAgainstObject();
     }
     for (const auto& npc : npcs) {
         if (CheckCollisionRecs(ColOffset(false), npc.GetCollisionMask())) {
             colID = npc.GetID();
             // Collision detected, player can't move
             if (colID != FollowerID){
-                step_timer = 0;
-                move = false;
+                BumpAgainstObject();
             }
         }
     }
+}
+
+void Player::BumpAgainstObject(){
+    if (!IsSoundPlaying(Bump)){
+        PlaySound(Bump);
+    }
+    frameRate = 0.250f;
+    step_timer = 0;
+    move = false;
 }
 
 Rectangle Player::ColOffset (bool Tile) const{

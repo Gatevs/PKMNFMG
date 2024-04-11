@@ -11,6 +11,10 @@ ActionHandler::ActionHandler() {
     BagFont = LoadFont("assets/SpriteFont_Bag.png");
     screenTexture = LoadTexture("assets/Screens_Atlas.png");
     StageTexture = LoadTexture("assets/GStage.png");
+    smallBeep = LoadSound("assets/SFX/BEEP1.ogg");
+    GUIOpen = LoadSound("assets/SFX/GUI_OPEN.ogg");
+    GUIClose = LoadSound("assets/SFX/GUI_CLOSE.ogg");
+    GUICursor = LoadSound("assets/SFX/GUI_MOVE.ogg");
     MainPos = {0,0};
     SubPos = {0,0};
     MainSelPos = {0,0};
@@ -74,6 +78,7 @@ void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
             MainSelector = selectorMap;
             ICO[1] = MenuICOMap.width;
             stopPlayerInput = true;
+            PlaySound(GUIOpen);
             inUI = PAUSE;
             break;
         case ActionType::Action_M:
@@ -85,12 +90,14 @@ void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
             MainSelector = selectorMap;
             ICO[1] = MenuICOMap.width;
             stopPlayerInput = true;
+            PlaySound(GUIOpen);
             inUI = ACTION;
             break;
         case ActionType::Dialogue_Box:
             MainPos = Vector2{drawPos.x - 110, drawPos.y + 65};
             MainMap = DialogueMap;
             stopPlayerInput = true;
+            PlaySound(smallBeep);
             inUI = DIALOGUE;
             break;
     }
@@ -123,6 +130,7 @@ void ActionHandler::pause(Player& p) {
                 MainSelPos.y = MainSelPos.y + 24;
                 menuID += 1;
                 ICO[menuID] = MenuICOMap.width;
+                PlaySound(GUICursor);
                 break;
             case 2:
                 break;
@@ -137,6 +145,7 @@ void ActionHandler::pause(Player& p) {
                 MainSelPos.y = MainSelPos.y - 24;
                 menuID -= 1;
                 ICO[menuID] = MenuICOMap.width;
+                PlaySound(GUICursor);
                 break;
             case 2:
                 break;
@@ -166,6 +175,7 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
                 MainSelPos.y = MainSelPos.y + 24;
                 menuID += 1;
                 ICO[menuID] = MenuICOMap.width;
+                PlaySound(GUICursor);
                 break;
             case 3:
                 SubSelPos.y = SubSelPos.y + 15;
@@ -182,6 +192,7 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
                 MainSelPos.y = MainSelPos.y - 24;
                 menuID -= 1;
                 ICO[menuID] = MenuICOMap.width;
+                PlaySound(GUICursor);
                 break;
             case 3:
                 SubSelPos.y = SubSelPos.y - 15;
@@ -222,11 +233,14 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
     }
     if (IsKeyPressed(KEY_Z)){
         if (selection == 0){
+            PlaySound(smallBeep);
             selection = menuID;
             textTimer = 0;
         if (selection == 1 && screenState == OFF){
             std::string text = "assets/STAT_SPRITES/" + std::to_string(InteractionID) + "_" + std::to_string(NPC_Stage) + ".png";
-            StatSprite = LoadTexture(text.c_str());
+            if (!IsTextureReady(StatSprite)){
+                StatSprite = LoadTexture(text.c_str());
+            }
         }
         }
         if (selection == 3 && screenState == OFF){
@@ -469,7 +483,13 @@ void ActionHandler::CloseUI(Player& player){
     screenState = OFF;
     if (IsTextureReady(StatSprite)){
         UnloadTexture(StatSprite);
+        StatSprite.id = 0;
+        StatSprite.format = 0;
+        StatSprite.height = 0;
+        StatSprite.width = 0;
+        StatSprite.mipmaps = 0;
     }
+    PlaySound(GUIClose);
     player.StopUI_Element();
 }
 

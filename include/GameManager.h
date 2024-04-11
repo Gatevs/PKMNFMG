@@ -23,7 +23,9 @@ public:
     void DrawBars();
     void Unload();
     bool IsIntroFinished() {return IntroFinished;}
+    bool IsVNMenu() {return VNMenu;}
     void DrawIntro();
+    void DrawVN();
 private:
     int test;
     Color green = {20,160,133,254};
@@ -32,8 +34,9 @@ private:
     int scaleFactor;
     // Camera zoom and offset
     Camera2D camera = { 0 };
+    Camera2D bigCamera = { 1 };
     Vector2 targetPos;
-    Vector2 cameraHelper;
+    Vector2 BottomBarPos;
     TileMap Outside;
     ActionHandler Menu;
     Player player;
@@ -44,8 +47,11 @@ private:
     unrelated swapper;
     unrelated cur;
     bool IntroFinished = false;
+    bool VNMenu = false;
     Texture2D IntroBG = LoadTexture("assets/MISC/DEBUG_CHAR.png");
     Texture2D IntroSelect = LoadTexture("assets/MISC/DEBUG_SELECT.png");
+    Texture2D VNTest;
+    Sound EntityGrowth;
     Font BagFont = LoadFont("assets/SpriteFont_Bag.png");;
     int DebugID = 1;
     enum UI_Element {

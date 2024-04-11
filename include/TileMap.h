@@ -26,7 +26,7 @@ public:
     void initialize(const std::string& Lvl);
     void Unload();
     void draw(const std::string render, Vector2 lvl_pos);
-    void update(const std::string lvl, unrelated& animationState);
+    void update(const std::string lvl, unrelated& animationState, Player& player_obj);
     void InFrontObjs();
     const ldtk::Layer& GetCOL();
     ldtk::Project ldtk_project;
@@ -62,7 +62,7 @@ private:
     int TILE_ANIM_TIME;
     std::string curLevel;
     std::string nextLevel;
-    const int TILE_ANIM_NUM = 3;
+    const int TILE_ANIM_NUM = 5;
 
     Vector2 loadLevel_Pos;
     Vector2 curLevel_Pos;

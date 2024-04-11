@@ -25,11 +25,23 @@ foreach(asset ${ASSETS})
     list(APPEND PRELOAD_FILES "--preload-file ${asset}@/assets/${asset_name}")
 endforeach()
 
-# Include STAT_SPRITES directory and its contents into the virtual file system
+# Include subdirectories and their contents into the virtual file system
 file(GLOB_RECURSE STAT_SPRITES "assets/STAT_SPRITES/*")
 foreach(sprite ${STAT_SPRITES})
     get_filename_component(sprite_name ${sprite} NAME)
     list(APPEND PRELOAD_FILES "--preload-file ${sprite}@/assets/STAT_SPRITES/${sprite_name}")
+endforeach()
+
+file(GLOB_RECURSE MISC "assets/MISC/*")
+foreach(sprite ${MISC})
+    get_filename_component(sprite_name ${sprite} NAME)
+    list(APPEND PRELOAD_FILES "--preload-file ${sprite}@/assets/MISC/${sprite_name}")
+endforeach()
+
+file(GLOB_RECURSE SFX "assets/SFX/*")
+foreach(sprite ${SFX})
+    get_filename_component(sprite_name ${sprite} NAME)
+    list(APPEND PRELOAD_FILES "--preload-file ${sprite}@/assets/SFX/${sprite_name}")
 endforeach()
 
 # Concatenate all preload files into a single string
@@ -37,6 +49,13 @@ string(REPLACE ";" " " PRELOAD_FILES "${PRELOAD_FILES}")
 
 # Add the preload files to CXX flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${PRELOAD_FILES}")
+endif()
+
+if(WIN32)
+    # Target Windows XP
+    set(CMAKE_SYSTEM_VERSION 5.1)
+    # Set compiler flags
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows")
 endif()
 
 # Set the output directory for the built executable

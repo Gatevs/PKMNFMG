@@ -46,6 +46,10 @@ private:
     Texture2D screenTexture;
     Texture2D StageTexture;
     Texture2D StatSprite;
+    Sound smallBeep;
+    Sound GUIOpen;
+    Sound GUIClose;
+    Sound GUICursor;
     Font MainFont;
     Font BagFont;
     Rectangle MainMap;
