@@ -23,6 +23,7 @@ public:
     void getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event);
     void getPlayerInfo(int ID, Player player_Obj, int Event);
     void InputUI(std::vector<NPC>& NPC_objs, Player& player_Obj);
+    void SetPlayerName(std::string player);
     void SetInteractionID(int ID);
     void Draw();
     void claenText();
@@ -38,6 +39,7 @@ private:
     void UpdateScreenState();
     void DrawPauseUI();
     void DrawActionUI();
+    void SetVNSprite();
     void CloseUI(Player& player);
     static void DrawTextBoxed(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint);
     static void DrawTextBoxedSelectable(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint, int selectStart, int selectLength, Color selectTint, Color selectBackTint);
@@ -46,6 +48,7 @@ private:
     Texture2D screenTexture;
     Texture2D StageTexture;
     Texture2D StatSprite;
+    Texture2D VN_Sprite;
     Sound smallBeep;
     Sound GUIOpen;
     Sound GUIClose;
@@ -56,6 +59,7 @@ private:
     Rectangle SubMap;
     Rectangle MainSelector;
     Rectangle SubSelector;
+    Rectangle VN_Idle[2];
     Vector2 MainPos;
     Vector2 SubPos;
     Vector2 MainSelPos;
@@ -66,11 +70,19 @@ private:
     bool fadeInComplete;
     bool fadeOutComplete;
     std::string DestTXT;
+    std::string CurText;
+    std::string NextText;
+    std::string RemainingText;
     std::string DialogueText;
     std::string NPC_NAME;
+    std::string PLAYER_NAME;
+    int curTextSize;
     int InteractionID;
     int NPC_Limit;
     int NPC_Stage;
+    int VN_Frame;
+    float VN_Timer;
+    int frameFlip;
     int ICO[11]{0,0,0,0,0,0,0,0,0,0};
     int textTimer;
     int menuID;

@@ -53,6 +53,7 @@ void GameManager::GameInitialization(){
     ShadowOffCenter = LoadTexture("assets/Shadow_1.png");
 
     player.parseCSV("assets/NPC_OW_DEF.csv");
+    Menu.SetPlayerName(player.GetPlayerName());
 
     for (auto& npc : npcs) {
         npc.parseCSV("assets/Dataset.csv");
@@ -133,7 +134,6 @@ void GameManager::GameLoop(){
                         if (npc.GetID() == npcIdInFront && !npc.IsNPCGrowing()) {
                             npc.GetCombinedValues(1);
                             if (!Menu.stopPlayerInput){
-                                Menu.SetInteractionID(npcIdInFront);
                                 Menu.getNPCInfo(npc.GetID(),npcs, 1);
                                 Menu.handleAction(ActionType::Action_M,player.GetPosition());
                             }

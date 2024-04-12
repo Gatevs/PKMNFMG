@@ -26,7 +26,8 @@ ActionHandler::ActionHandler() {
     wordWrap = true;
     textTimer = 0;
     DestTXT = "";
-    textFinished = true;
+    CurText = "";
+    textFinished = false;
     TEXT_SPEED = 3.0f;
     InteractionID = 0;
     selection = 0;
@@ -35,11 +36,26 @@ ActionHandler::ActionHandler() {
     fadeOutComplete = false;
     MAX_DOWN = 0;
     MAX_UP = 0;
+    VN_Frame = 0;
+    VN_Timer = 0.0f;
+    frameFlip = 1;
+    curTextSize = 0;
 }
 
 
 ActionHandler::~ActionHandler() {
     // Clean up any resources if needed
+}
+
+void splitDialogue(const std::string& dialogue, std::string& firstPart, std::string& remainingPart) {
+    size_t pos = dialogue.find('|');
+    if (pos != std::string::npos) {
+        firstPart = dialogue.substr(0, pos);
+        remainingPart = dialogue.substr(pos + 1);
+    } else {
+        firstPart = dialogue;
+        remainingPart.clear();
+    }
 }
 
 void replaceAll(std::string& str, const std::string& oldWord, const std::string& newWord) {
@@ -58,6 +74,7 @@ void ActionHandler::typewriterEffect(std::string& text) {
         textFinished = false;
     //If the lenght is the same as the source text, set text as finished
     }else{
+        curTextSize += CurText.length();
         textFinished = true;
     }
     // Append a portion of the source text once the timer finishes
@@ -95,9 +112,11 @@ void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
             break;
         case ActionType::Dialogue_Box:
             MainPos = Vector2{drawPos.x - 110, drawPos.y + 65};
+            fadePos = (Vector2){drawPos.x - 112, drawPos.y - 80};
             MainMap = DialogueMap;
             stopPlayerInput = true;
             PlaySound(smallBeep);
+            SetVNSprite();
             inUI = DIALOGUE;
             break;
     }
@@ -159,6 +178,26 @@ void ActionHandler::pause(Player& p) {
     }
 
     //std::cout << "Pause action with value: " << menuID << std::endl;
+}
+
+void ActionHandler::SetVNSprite(){
+    std::string text = "assets/VN_SPRITE/" + std::to_string(InteractionID) + "_" + std::to_string(NPC_Stage) + ".png";
+    VN_Sprite = LoadTexture(text.c_str());
+    int FRAME_X;
+    int FRAME_Y;
+    int textureWidth = VN_Sprite.width;
+    int textureHeight = VN_Sprite.height;
+    // Customize frame dimensions for "walk" animation
+    int frameCountX = 2;
+    int frameCountY = 1;
+
+    // Calculate frame size
+    FRAME_X = textureWidth / frameCountX;
+    FRAME_Y = textureHeight / frameCountY;
+
+    for (int i = 0; i < frameCountX; i++) {
+        VN_Idle[i] = { static_cast<float>(i * FRAME_X), static_cast<float>(0 * FRAME_Y), static_cast<float>(FRAME_X), static_cast<float>(FRAME_Y) };
+    }
 }
 
 // Function to handle generic action
@@ -389,6 +428,7 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
     for (auto& npc : NPC_objs) {
         if (npc.GetID() == ID) {
             std::string targetValue = npc.GetCombinedValues(Event);
+            InteractionID = npc.GetID();
             NPC_Limit = npc.GetLimit();
             NPC_Stage = npc.GetStage();
             // Iterate over each row of NPC data
@@ -397,6 +437,9 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
                 if (row[0] == targetValue) {
                     // If a match is found, set DialogueText to the value in the seventh column
                     DialogueText = row[6];
+                    replaceAll(DialogueText,"PLAYERNAME", PLAYER_NAME);
+                    replaceAll(DialogueText,"¬", "\n");
+                    splitDialogue(DialogueText,CurText,RemainingText);
                     NPC_NAME = row[2];
                     break; // Stop searching once a match is found
                 }
@@ -414,21 +457,53 @@ void ActionHandler::getPlayerInfo(int ID, Player player_Obj, int Event){
 
 
 void ActionHandler::dialogue(Player& player) {
-    replaceAll(DialogueText,"PLAYERNAME", player.GetPlayerName());
-    typewriterEffect(DialogueText);
+    const float frameRate = 0.400f;
+    const float TEXT_SPEED_NORMAL = 3.0f;
+    const float TEXT_SPEED_FAST = 1.5f;
 
-    if (IsKeyDown(KEY_Z)){
-
-        TEXT_SPEED = 1.5f;
-    }else{
-        TEXT_SPEED = 3.0f;
+    // Handle text typing effect
+    if (!textFinished){
+        typewriterEffect(CurText);
     }
+
+    // Adjust text speed based on key state
+    if (IsKeyDown(KEY_Z)){
+        TEXT_SPEED = TEXT_SPEED_FAST;
+    }else{
+        TEXT_SPEED = TEXT_SPEED_NORMAL;
+    }
+
+    // Process key press events
     if (IsKeyPressed(KEY_Z)){
-        if (textFinished){
+        if (textFinished && curTextSize == DialogueText.length()){
+            // Text finished displaying, reset and stop UI
             stopPlayerInput = false;
             claenText();
+            curTextSize = 0;
             player.StopUI_Element();
+        } else if (textFinished && curTextSize != DialogueText.length()){
+            // Display next portion of text
+            curTextSize += 1;
+            NextText = RemainingText;
+            splitDialogue(NextText,CurText,RemainingText);
+            DestTXT = "";
+            textFinished = false;
+            PlaySound(smallBeep);
         }
+    }
+    //VN type sprite
+    VN_Timer += GetFrameTime();
+    if (VN_Timer >= frameRate) {
+        VN_Frame += frameFlip;
+        if (VN_Frame > 0) {
+            VN_Frame = 1;
+            frameFlip = -1;
+        }
+        if (VN_Frame < 0) {
+            VN_Frame = 1;
+            frameFlip = 1;
+        }
+        VN_Timer = 0.0f;
     }
 }
 
@@ -464,6 +539,13 @@ void ActionHandler::claenText(){
     DestTXT = "";
     DialogueText = "";
     textTimer = 0;
+    textFinished = false;
+    UnloadTexture(VN_Sprite);
+    VN_Sprite.id = 0;
+    VN_Sprite.format = 0;
+    VN_Sprite.height = 0;
+    VN_Sprite.width = 0;
+    VN_Sprite.mipmaps = 0;
 }
 
 void ActionHandler::SetInteractionID(int ID){
@@ -631,15 +713,18 @@ void ActionHandler::DrawTextBoxed(Font font, const char *text, Rectangle rec, fl
 
 void ActionHandler::Draw(){
     if (stopPlayerInput){
-        DrawTextureRec(atlasTexture, MainMap, MainPos, WHITE);
         switch (inUI){
             case PAUSE:
+                DrawTextureRec(atlasTexture, MainMap, MainPos, WHITE);
                 DrawPauseUI();
                 break;
             case DIALOGUE:
+                DrawTextureRec(VN_Sprite, VN_Idle[VN_Frame], (Vector2){(fadePos.x + 160) - (VN_Sprite.width / 2.0f),(fadePos.y + 170) - VN_Sprite.height}, WHITE);
+                DrawTextureRec(atlasTexture, MainMap, MainPos, WHITE);
                 DrawTextBoxed(MainFont, DestTXT.c_str(), (Rectangle){ MainPos.x + 16, MainPos.y +8, 220, 60 }, MainFont.baseSize, -5, wordWrap, WHITE);
                 break;
             case ACTION:
+                DrawTextureRec(atlasTexture, MainMap, MainPos, WHITE);
                 DrawActionUI();
                 break;
         }
@@ -688,4 +773,8 @@ void ActionHandler::DrawActionUI(){
             }
             break;
     }
+}
+
+void ActionHandler::SetPlayerName(std::string player){
+    PLAYER_NAME = player;
 }

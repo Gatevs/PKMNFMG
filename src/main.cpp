@@ -61,6 +61,7 @@ int main() {
 #endif
 
     Game.Unload();
+    CloseAudioDevice();
     CloseWindow();
     return 0;
 }
