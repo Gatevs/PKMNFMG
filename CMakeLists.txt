@@ -18,31 +18,24 @@ if (EMSCRIPTEN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s GL_ENABLE_GET_PROC_ADDRESS=1")
     set(CMAKE_EXECUTABLE_SUFFIX ".html") # This line is used to set your executable to build with the emscripten html template so that you can directly open it.
 
-# Include assets directory and its subdirectories into the virtual file system
-file(GLOB_RECURSE ASSETS "assets/*")
-foreach(asset ${ASSETS})
-    get_filename_component(asset_name ${asset} NAME)
-    list(APPEND PRELOAD_FILES "--preload-file ${asset}@/assets/${asset_name}")
-endforeach()
+# Function to preprocess files in a directory and its subdirectories
+function(preprocess_directory directory)
+    file(GLOB_RECURSE files "${directory}/*")
+    set(local_preload_files)
+    foreach(file ${files})
+        get_filename_component(file_name ${file} NAME)
+        list(APPEND local_preload_files "--preload-file ${file}@/${directory}/${file_name}")
+    endforeach()
+    # Return the list of preloaded files
+    set(PRELOAD_FILES ${PRELOAD_FILES} ${local_preload_files} PARENT_SCOPE)
+endfunction()
 
-# Include subdirectories and their contents into the virtual file system
-file(GLOB_RECURSE STAT_SPRITES "assets/STAT_SPRITES/*")
-foreach(sprite ${STAT_SPRITES})
-    get_filename_component(sprite_name ${sprite} NAME)
-    list(APPEND PRELOAD_FILES "--preload-file ${sprite}@/assets/STAT_SPRITES/${sprite_name}")
-endforeach()
-
-file(GLOB_RECURSE MISC "assets/MISC/*")
-foreach(sprite ${MISC})
-    get_filename_component(sprite_name ${sprite} NAME)
-    list(APPEND PRELOAD_FILES "--preload-file ${sprite}@/assets/MISC/${sprite_name}")
-endforeach()
-
-file(GLOB_RECURSE SFX "assets/SFX/*")
-foreach(sprite ${SFX})
-    get_filename_component(sprite_name ${sprite} NAME)
-    list(APPEND PRELOAD_FILES "--preload-file ${sprite}@/assets/SFX/${sprite_name}")
-endforeach()
+# Include assets from different directories
+preprocess_directory("assets")
+preprocess_directory("assets/STAT_SPRITES")
+preprocess_directory("assets/MISC")
+preprocess_directory("assets/SFX")
+preprocess_directory("assets/VN_SPRITE")
 
 # Concatenate all preload files into a single string
 string(REPLACE ";" " " PRELOAD_FILES "${PRELOAD_FILES}")
