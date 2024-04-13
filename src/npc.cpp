@@ -28,6 +28,10 @@ NPC::NPC(int npcID, std::string loc, Vector2 NPCPos) {
     inGrowthPhase = false;
     following_Player = false;
     idle = false;
+    //NPCEventData
+    NPCEventData.hasGrown = false;
+    NPCEventData.maxGrowthStage = 0;
+    NPCEventData.timesGrown = 0;
     // Initialize collision mask
     collisionMask.width = COLLISION_MASK_WIDTH;
     collisionMask.height = COLLISION_MASK_HEIGHT;
@@ -99,6 +103,11 @@ void NPC::Update() {
     //  Compare the NPC's current stage with the wanted stage, and shrink or grow accordingly
     if (Stage < wantedStage && !inGrowthPhase && wantedStage != -1){
         Stage += 1;
+        NPCEventData.timesGrown += 1;
+        if (NPCEventData.maxGrowthStage < Stage){
+            NPCEventData.maxGrowthStage = Stage;
+            NPCEventData.hasGrown = true;
+        }
         updateTexture("growth");
         updateAnimationFrameDimensions("growth");
         lastFrame = framesGrowth.size();

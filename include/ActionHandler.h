@@ -24,6 +24,7 @@ public:
     void getPlayerInfo(int ID, Player player_Obj, int Event);
     void InputUI(std::vector<NPC>& NPC_objs, Player& player_Obj);
     void SetPlayerName(std::string player);
+    void SetPlayerGender(std::string player);
     void SetInteractionID(int ID);
     void Draw();
     void claenText();
@@ -40,6 +41,7 @@ private:
     void DrawPauseUI();
     void DrawActionUI();
     void SetVNSprite();
+    void SetNPCDialogue(std::string text);
     void CloseUI(Player& player);
     static void DrawTextBoxed(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint);
     static void DrawTextBoxedSelectable(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint, int selectStart, int selectLength, Color selectTint, Color selectBackTint);
@@ -76,6 +78,7 @@ private:
     std::string DialogueText;
     std::string NPC_NAME;
     std::string PLAYER_NAME;
+    std::string PLAYER_GENDER;
     int curTextSize;
     int InteractionID;
     int NPC_Limit;
@@ -104,6 +107,19 @@ private:
         ON,
         WAIT,
         SHUTTNG_OFF
+    };
+    enum Column_Def{
+        COMBINED_VALUES,
+        ID,
+        NAME,
+        STAGE,
+        LV,
+        LOCATION,
+        TEXT_DIALOGUE,
+        EVENT,
+        EVENT_CONDITION,
+        EVENT_VALUE,
+        GENDER
     };
 
     // Mapping Atlas elements (element X position in atlas, element Y position in atlas, element width, element height)

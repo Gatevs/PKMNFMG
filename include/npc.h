@@ -6,6 +6,13 @@
 #include <string>
 #include <vector>
 
+struct NPCState {
+    bool hasGrown;
+    int maxGrowthStage;
+    int timesGrown;
+    // Add more flags and properties as needed
+};
+
 class NPC :public GameObject {
 public:
     NPC(int npcID, std::string loc, Vector2 NPCPos);
@@ -37,6 +44,7 @@ public:
     std::string GetCombinedValues(int Event);
     bool IsNPCGrowing() const { return inGrowthPhase; }
     std::vector<std::vector<std::string>> GetNPCDialogue() {return m_data;}
+    NPCState GetNPCEventState() const {return NPCEventData;}
     bool following_Player;
     void SetShadow(Texture2D load1, Texture2D load2);
     void setLimit(int newLimit);
@@ -95,6 +103,7 @@ private:
     std::string location;
     std::vector<std::string> NPC_DEF;
     std::vector<std::vector<std::string>> m_data;
+    NPCState NPCEventData;
 };
 
 #endif // NPC_H

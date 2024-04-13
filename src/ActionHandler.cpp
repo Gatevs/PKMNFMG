@@ -425,28 +425,47 @@ void ActionHandler::UpdateScreenState() {
 }
 
 void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
+    std::string defaultLine = "";
+    bool foundNonEmpty = false;
+
     for (auto& npc : NPC_objs) {
         if (npc.GetID() == ID) {
             std::string targetValue = npc.GetCombinedValues(Event);
             InteractionID = npc.GetID();
             NPC_Limit = npc.GetLimit();
             NPC_Stage = npc.GetStage();
-            // Iterate over each row of NPC data
+
             for (const auto& row : npc.GetNPCDialogue()) {
-                // Check if the value in the first column matches the target value
-                if (row[0] == targetValue) {
-                    // If a match is found, set DialogueText to the value in the seventh column
-                    DialogueText = row[6];
-                    replaceAll(DialogueText,"PLAYERNAME", PLAYER_NAME);
-                    replaceAll(DialogueText,"¬", "\n");
-                    splitDialogue(DialogueText,CurText,RemainingText);
-                    NPC_NAME = row[2];
-                    break; // Stop searching once a match is found
+                if (row[COMBINED_VALUES] == targetValue) {
+                    NPC_NAME = row[NAME];
+                    if (!row[EVENT_CONDITION].empty()) {
+                        if ((row[EVENT_CONDITION] == "HasGrown" && npc.GetNPCEventState().hasGrown) ||
+                            (row[EVENT_CONDITION] == "TimesGrown" && npc.GetNPCEventState().timesGrown >= std::stoi(row[EVENT_VALUE]))) {
+                            foundNonEmpty = true;
+                            SetNPCDialogue(row[TEXT_DIALOGUE]);
+                            break;
+                        }
+                    } else if (PLAYER_GENDER == row[GENDER] || row[GENDER].empty()) {
+                        defaultLine = row[TEXT_DIALOGUE];
+                    }
                 }
             }
-            break; // Stop searching for NPCs after finding the one with the matching ID
+
+            if (!foundNonEmpty) {
+                SetNPCDialogue(defaultLine);
+            }
+            return;
         }
     }
+    // Error handling if NPC with the given ID is not found
+    // You may want to log an error message or throw an exception
+}
+
+void ActionHandler::SetNPCDialogue(std::string text){
+    DialogueText = text;
+    replaceAll(DialogueText,"PLAYERNAME", PLAYER_NAME);
+    replaceAll(DialogueText,"¬", "\n");
+    splitDialogue(DialogueText,CurText,RemainingText);
 }
 
 void ActionHandler::getPlayerInfo(int ID, Player player_Obj, int Event){
@@ -777,4 +796,8 @@ void ActionHandler::DrawActionUI(){
 
 void ActionHandler::SetPlayerName(std::string player){
     PLAYER_NAME = player;
+}
+
+void ActionHandler::SetPlayerGender(std::string player){
+    PLAYER_GENDER = player;
 }

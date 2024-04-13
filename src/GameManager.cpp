@@ -36,6 +36,7 @@ void GameManager::DebugIntro(){
         }
         UnloadTexture(IntroBG);
         UnloadTexture(IntroSelect);
+        Menu.SetPlayerGender(player.GetPlayerGender());
         IntroFinished = true;
     }
 }
@@ -89,16 +90,7 @@ void GameManager::CameraUpdate(){
 }
 
 void GameManager::GameLoop(){
-    // Tile animations
-    if (IsKeyPressed(KEY_I)){
-        VNMenu = !VNMenu;
-        if (!IsTextureReady(VNTest)){
-            VNTest = LoadTexture("assets/Lana_Test.png");
-        }
-    }
-
     Outside.update(Outside.GetCurLevelName(), cur, player);
-
     // std::cout << Menu.stopPlayerInput << std::endl;
     if (player.InvokeUIElement() != NONE && !Menu.stopPlayerInput){
         int npcIdInFront = player.CheckForNPCInFront(npcs);

@@ -530,10 +530,6 @@ void Player::updateAnimationFrameDimensions(const std::string& animation) {
     int textureWidth = (animation == "idle") ? playerTextureIdle.width : playerTexture.width;
     int textureHeight = (animation == "idle") ? playerTextureIdle.height : playerTexture.height;
 
-    // Default frame dimensions
-    int frameCountX = 3;
-    int frameCountY = 8;
-
     if (animation == "walk" || animation == "idle") {
         UpdateAnim();
     } else if (animation == "growth" || animation == "shrink"){
