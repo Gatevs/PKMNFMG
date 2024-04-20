@@ -1,9 +1,11 @@
 #include "TileMap.h"
 #include "TileObjects.h"
+#include "rapidcsv.h"
 #include "raylib.h"
 #include <string>
 
 TileMap::TileMap() {
+    locationCard_Texture = LoadTexture("assets/LocationCard.png");
     DrawLoadedLevel = false;
     NextLevelLoaded = false;
     onWarp = false;
@@ -107,6 +109,9 @@ void TileMap::draw(const std::string render, Vector2 lvl_Pos) {
 // Animate Tiles
 void TileMap::update(const std::string lvl, unrelated& animationState, Player& player_obj) {
     RenderTexture2D drawer;
+    if (Card.Active){
+        ShowLocationCard(player_obj);
+    }
     if (lvl == curLevel){
         drawer = renderer;
     } else if (lvl == nextLevel){
@@ -215,6 +220,8 @@ void TileMap::IsWarpClose(Player& player_obj){
             if (wObj_Dir == player_obj.GetPlayerDir() && !onWarp){
                 Warp_Pos = (Vector2){static_cast<float>(wObj_Pos.x), static_cast<float>(wObj_Pos.y)};
                 Warp_Dir = wObj_Dir;
+                if (!Card.Active) {parseCSV();}
+                ShowLocationCard(player_obj);
                 onWarp = true;
             }
         }
@@ -361,6 +368,41 @@ bool TileMap::IsCameraLockNear(Player& player_obj){
     return false;
 }
 
+void TileMap::ShowLocationCard(Player& player_obj){
+    if (!Card.Active){
+        Card.Position = {player_obj.GetPosition().x - 110, player_obj.GetPosition().y - 110};
+        Card.Active = true;
+    }
+    if (Card.Active){
+        Card.Position.x = player_obj.GetPosition().x - 110;
+        Card.Position.y = (player_obj.GetPosition().y - 110) + Card.CardYPos;
+        if (Card.CardYPos < 32 && !Card.Hide){
+            Card.CardYPos += 0.5f;
+        }else{
+            Card.Timer += GetFrameTime();
+        }
+        if (Card.Timer >= 3.0f){
+            Card.Hide = true;
+        }
+    }
+    if (Card.Hide){
+        if (Card.CardYPos > -1){
+            Card.CardYPos -= 0.5f;
+        }else{
+            Card.CardYPos = 0.0f;
+            Card.Timer = 0.0f;
+            Card.Hide = false;
+            Card.Active = false;
+        }
+    }
+}
+
+void TileMap::DrawLocationCard(){
+    if (Card.Active){
+        DrawTextureRec(locationCard_Texture,Rectangle {static_cast<float>(30*(Card.Index_X)),static_cast<float>(30*(Card.Index_Y)),130,30},Card.Position,WHITE);
+    }
+}
+
 const ldtk::Layer& TileMap::GetCOL() {
     const auto& world = ldtk_project.getWorld();
     const auto& level = world.getLevel(curLevel);
@@ -409,6 +451,23 @@ void TileMap::Unload() {
     UnloadRenderTexture(renderer);
     UnloadRenderTexture(swapRender);
     UnloadTexture(texture);
+}
+
+void TileMap::parseCSV(){
+    rapidcsv::Document doc("assets/OW_LEVEL_DEF.csv");
+    const auto& levels = doc.GetColumn<std::string>("Level");
+    const auto& LevelX = doc.GetColumn<int>("Index_X");
+    const auto& LevelY = doc.GetColumn<int>("Index_Y");
+
+
+    // Iterate through rows and compare IDs
+    for (size_t i = 0; i < levels.size(); ++i) {
+        if (levels[i] == nextLevel) {
+            Card.Index_X = LevelX[i];
+            Card.Index_Y = LevelY[i];
+        }
+    }
+
 }
 
 Vector2 TileMap::GetSwapLevel(){

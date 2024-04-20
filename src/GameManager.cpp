@@ -216,6 +216,7 @@ void GameManager::DrawWorld(){
             obj->Draw(); // Draw each object using polymorphism
         }
         Menu.Draw();
+        Outside.DrawLocationCard();
     }
     EndMode2D();
 }

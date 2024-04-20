@@ -47,6 +47,8 @@ public:
     void unloadFarAwayLevel(Player& player_obj, std::vector<tileObj>& Tile_objs);
     bool IsCameraLockNear(Player& player_obj);
     int GetLockCameraAxis() const {return LockCameraAxis;}
+    void DrawLocationCard();
+    void parseCSV();
 
 
 private:
@@ -54,17 +56,31 @@ private:
     std::vector<std::pair<std::string, int>> firstFrameIds; // Vector to store animation name and first frame ID
     std::vector<int> frontTiles;
     Texture2D texture;
+    Texture2D locationCard_Texture;
     RenderTexture2D renderer;
     RenderTexture2D inFront;
     RenderTexture2D swapRender;
 
     void LoadNextLevel(const ldtk::Entity& warpObj);
     void EnterNextlevel(Vector2 warpPos, Player& player_obj, int dir);
+    void ShowLocationCard(Player& player_obj);
 
     int TILE_ANIM_TIME;
     std::string curLevel;
     std::string nextLevel;
     const int TILE_ANIM_NUM = 5;
+
+    struct LocationCard {
+        std::string Name;
+        Vector2 Position;
+        float Timer = 0.0f;
+        float CardYPos = 0.0f;
+        bool Hide = false;
+        bool Active = false;
+        int Index_X = 0;
+        int Index_Y = 0;
+    };
+    LocationCard Card;
 
     Vector2 loadLevel_Pos;
     Vector2 curLevel_Pos;
