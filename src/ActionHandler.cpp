@@ -292,26 +292,28 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
                     int npcIdInFront = p.CheckForNPCInFront(NPC_objs);
                     if (npcIdInFront != -1) {
                         // Set NPC as follower and update directions
-                        p.SetFollowerID(npcIdInFront);
-                        switch (p.GetPlayerDir()){
-                            case 270:
-                                p.SetFollowDir({0,-1});
-                                break;
-                            case 90:
-                                p.SetFollowDir({0,1});
-                                break;
-                            case 0:
-                                p.SetFollowDir({-1,0});
-                                break;
-                            case 180:
-                                p.SetFollowDir({1,0});
-                                break;
-                        }
                         for (auto& npc : NPC_objs) {
                             if (npc.GetID() == npcIdInFront) {
-                                npc.following_Player = true;
-                                npc.lookAtPlayer(p.GetPlayerDir());
                                 getNPCInfo(npc.GetID(),NPC_objs, 3);
+                                if (!NPC_FollowReject){
+                                    p.SetFollowerID(npcIdInFront);
+                                    npc.following_Player = true;
+                                    switch (p.GetPlayerDir()){
+                                        case 270:
+                                            p.SetFollowDir({0,-1});
+                                            break;
+                                        case 90:
+                                            p.SetFollowDir({0,1});
+                                            break;
+                                        case 0:
+                                            p.SetFollowDir({-1,0});
+                                            break;
+                                        case 180:
+                                            p.SetFollowDir({1,0});
+                                            break;
+                                    }
+                                }
+                                npc.lookAtPlayer(p.GetPlayerDir());
                                 menuID = 1;
                                 textTimer = 0;
                                 selection = 0;
@@ -319,6 +321,7 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
                                     ICO[i] = 0;
                                 }
                                 handleAction(ActionType::Dialogue_Box,p.GetPosition());
+                                NPC_FollowReject = false;
                                 break;
                             }
                         }
@@ -461,6 +464,9 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
 }
 
 bool ActionHandler::CompareDialogueConditions(std::string condition, std::string value, NPC& npc){
+    if (value == "FollowNo"){
+        NPC_FollowReject = true;
+    }
     if (condition == "HasGrown" && npc.GetNPCEventState().hasGrown) {
         return true;
     }

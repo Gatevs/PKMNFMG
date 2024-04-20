@@ -84,6 +84,7 @@ private:
     int InteractionID;
     int NPC_Limit;
     int NPC_Stage;
+    bool NPC_FollowReject = false;
     int VN_Frame;
     float VN_Timer;
     int frameFlip;
