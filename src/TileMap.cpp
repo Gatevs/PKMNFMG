@@ -181,6 +181,7 @@ void TileMap::update(const std::string lvl, unrelated& animationState, Player& p
 
 void TileMap::IsWarpClose(Player& player_obj){
     const int TILE_SIZE = 16;
+    int dirvalue = 0;
 
     const auto& world = ldtk_project.getWorld();
     const auto& level = world.getLevel(curLevel);
@@ -188,24 +189,32 @@ void TileMap::IsWarpClose(Player& player_obj){
 
     for (const ldtk::Entity& wObj : objects.getEntitiesByTag("Warps")) {
         auto wObj_Pos = wObj.getWorldPosition();
+        auto wObj_Width = wObj.getSize().x;
+        auto wObj_Height = wObj.getSize().y;
+        int wObj_Dir = wObj.getField<int>("Dir").value();
+        if (player_obj.GetPlayerDir() == 0 || player_obj.GetPlayerDir() == 270){
+            dirvalue = 1;
+        }else{
+            dirvalue = -1;
+        }
 
-        if (wObj_Pos.x == player_obj.GetPosition().x + (9 * TILE_SIZE) ){
-            if (!NextLevelLoaded){
-                LoadNextLevel(wObj);
+        if (player_obj.GetPosition().x > wObj_Pos.x && player_obj.GetPosition().x < (wObj_Pos.x + wObj_Width)){
+            if (player_obj.GetPosition().y + (dirvalue * (9 * TILE_SIZE)) >= wObj_Pos.y && wObj_Dir == 270 ){
+                if (!NextLevelLoaded){
+                    LoadNextLevel(wObj);
+                }
+            }else if (player_obj.GetPosition().y + (dirvalue * (9 * TILE_SIZE)) <= wObj_Pos.y && wObj_Dir == 90){
+                if (!NextLevelLoaded){
+                    LoadNextLevel(wObj);
+                }
             }
         }
-        if (wObj_Pos.x == player_obj.GetPosition().x - (9 * TILE_SIZE) ){
-            if (!NextLevelLoaded){
-                LoadNextLevel(wObj);
-            }
-        }
-        if (wObj_Pos.x == player_obj.GetPosition().x){
+        if (wObj_Pos.x == player_obj.GetPosition().x || wObj_Pos.y == player_obj.GetPosition().y){
             curLevel = level.name;
             std::string wname = wObj.getField<std::string>("Going_To").value();
-            int wdir = wObj.getField<int>("Dir").value();
-            if (wdir == player_obj.GetPlayerDir() && !onWarp){
+            if (wObj_Dir == player_obj.GetPlayerDir() && !onWarp){
                 Warp_Pos = (Vector2){static_cast<float>(wObj_Pos.x), static_cast<float>(wObj_Pos.y)};
-                Warp_Dir = wdir;
+                Warp_Dir = wObj_Dir;
                 onWarp = true;
             }
         }
@@ -244,62 +253,83 @@ void TileMap::LoadNextLevel(const ldtk::Entity& warpObj){
     }
     EndTextureMode();
     NextLevelLoaded = true;
+    std::cout << "Loading Next Level..." << std::endl;
 }
 
 void TileMap::EnterNextlevel(Vector2 warpPos, Player& player_obj, int dir){
-    const int TILE_SIZE = 16;
+    bool enterLevel = false;
             if (onWarp){
                 switch (dir){
                     case 0:
                         if (player_obj.GetPosition().x == warpPos.x + 8 && player_obj.GetPlayerDir() == 0){
-                            RenderTexture2D pastRenderer = renderer;
-                            Vector2 pastRenderPos = curLevel_Pos;
-                            std::string pastLevel = curLevel;
-                            curLevel = nextLevel;
-                            nextLevel = pastLevel;
-                            renderer = swapRender;
-                            swapRender =pastRenderer;
-                            curLevel_Pos = loadLevel_Pos;
-                            loadLevel_Pos = pastRenderPos;
                             SwapLevel_Dir = 180;
-                            player_obj.SetLocation(curLevel);
-                            onWarp = false;
+                            enterLevel = true;
                         }
+                        break;
                     case 180:
                         if (player_obj.GetPosition().x == warpPos.x - 20 && player_obj.GetPlayerDir() == 180){
-                            RenderTexture2D pastRenderer = renderer;
-                            Vector2 pastRenderPos = curLevel_Pos;
-                            std::string pastLevel = curLevel;
-                            curLevel = nextLevel;
-                            nextLevel = pastLevel;
-                            renderer = swapRender;
-                            swapRender =pastRenderer;
-                            curLevel_Pos = loadLevel_Pos;
-                            loadLevel_Pos = pastRenderPos;
                             SwapLevel_Dir = 0;
-                            player_obj.SetLocation(curLevel);
-                            onWarp = false;
+                            enterLevel = true;
+                        }
+                        break;
+                    case 270:
+                        if (player_obj.GetPosition().y >= warpPos.y && player_obj.GetPlayerDir() == 270){
+                            SwapLevel_Dir = 90;
+                            enterLevel = true;
+                        }
+                        break;
+                    case 90:
+                        if (player_obj.GetPosition().y <= warpPos.y && player_obj.GetPlayerDir() == 90){
+                            SwapLevel_Dir = 270;
+                            enterLevel = true;
                         }
                         break;
             }
         }
+        if (enterLevel){
+            RenderTexture2D pastRenderer = renderer;
+            Vector2 pastRenderPos = curLevel_Pos;
+            std::string pastLevel = curLevel;
+            curLevel = nextLevel;
+            nextLevel = pastLevel;
+            renderer = swapRender;
+            swapRender =pastRenderer;
+            curLevel_Pos = loadLevel_Pos;
+            loadLevel_Pos = pastRenderPos;
+            player_obj.SetLocation(curLevel);
+            onWarp = false;
+        }
 }
 
 void TileMap::unloadFarAwayLevel(Player& player_obj, std::vector<tileObj>& Tile_objs){
+    const auto& world = ldtk_project.getWorld();
+    const auto& level = world.getLevel(curLevel);
     bool TurnOff = false;
+    Vector2 levelheight = (Vector2){static_cast<float>(level.size.x), static_cast<float>(level.size.y)};
     switch (SwapLevel_Dir){
         case 180:
-            if (player_obj.GetPosition().x > loadLevel_Pos.x + 700){
+            if (player_obj.GetPosition().x > loadLevel_Pos.x + 512){
                 TurnOff = true;
             }
             break;
         case 0:
-            if (player_obj.GetPosition().x < loadLevel_Pos.x - 700){
+            if (player_obj.GetPosition().x < loadLevel_Pos.x - 512){
+                TurnOff = true;
+            }
+            break;
+        case 270:
+            if (player_obj.GetPosition().y < (curLevel_Pos.y + levelheight.y) - 200){
+                TurnOff = true;
+            }
+            break;
+        case 90:
+            if (player_obj.GetPosition().y > curLevel_Pos.y + 200){
                 TurnOff = true;
             }
             break;
     }
     if (TurnOff){
+        std::cout << "Unloading level..." << std::endl;
         NextLevelLoaded = false;
         DrawLoadedLevel = false;
         UnloadRenderTexture(swapRender);
@@ -307,6 +337,28 @@ void TileMap::unloadFarAwayLevel(Player& player_obj, std::vector<tileObj>& Tile_
             return obj.GetLocation() != player_obj.GetLocation();
         }), Tile_objs.end());
     }
+}
+
+bool TileMap::IsCameraLockNear(Player& player_obj){
+    const auto& world = ldtk_project.getWorld();
+    const auto& level = world.getLevel(curLevel);
+    const auto& objects = level.getLayer("Utility");
+    for (const ldtk::Entity& CameraL : objects.getEntitiesByName("LockCamera")) {
+        auto CameraL_pos = CameraL.getWorldPosition();
+        auto CameraL_Width = CameraL.getSize().x;
+        auto CameraL_Height = CameraL.getSize().y;
+        Rectangle CameraLRec = {static_cast<float>(CameraL_pos.x), static_cast<float>(CameraL_pos.y), static_cast<float>(CameraL_Width),static_cast<float>(CameraL_Height)};
+
+        if (CheckCollisionRecs(player_obj.ColOffset(false),CameraLRec)){
+            if (CameraL_Width < CameraL_Height){
+                LockCameraAxis = 1;
+            } else if (CameraL_Width > CameraL_Height){
+                LockCameraAxis = 2;
+            }
+            return true;
+        }
+    }
+    return false;
 }
 
 const ldtk::Layer& TileMap::GetCOL() {

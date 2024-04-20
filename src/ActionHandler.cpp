@@ -439,8 +439,7 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
                 if (row[COMBINED_VALUES] == targetValue) {
                     NPC_NAME = row[NAME];
                     if (!row[EVENT_CONDITION].empty()) {
-                        if ((row[EVENT_CONDITION] == "HasGrown" && npc.GetNPCEventState().hasGrown) ||
-                            (row[EVENT_CONDITION] == "TimesGrown" && npc.GetNPCEventState().timesGrown >= std::stoi(row[EVENT_VALUE]))) {
+                        if (CompareDialogueConditions(row[EVENT_CONDITION],row[EVENT_VALUE],npc)){
                             foundNonEmpty = true;
                             SetNPCDialogue(row[TEXT_DIALOGUE]);
                             break;
@@ -460,6 +459,21 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
     // Error handling if NPC with the given ID is not found
     // You may want to log an error message or throw an exception
 }
+
+bool ActionHandler::CompareDialogueConditions(std::string condition, std::string value, NPC& npc){
+    if (condition == "HasGrown" && npc.GetNPCEventState().hasGrown) {
+        return true;
+    }
+    if (condition == "TimesGrown" && npc.GetNPCEventState().timesGrown >= std::stoi(value)) {
+        return true;
+    }
+    if (condition == "FirstTime" && npc.GetNPCEventState().newGrowthStage == npc.GetNPCEventState().maxGrowthStage && npc.GetNPCEventState().hasGrown) {
+        npc.SetNewGrowthStage();  // Set new growth stage if condition is met
+        return true;
+    }
+    return false;
+}
+
 
 void ActionHandler::SetNPCDialogue(std::string text){
     DialogueText = text;

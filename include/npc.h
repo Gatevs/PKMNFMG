@@ -8,6 +8,7 @@
 
 struct NPCState {
     bool hasGrown;
+    int newGrowthStage = 0;
     int maxGrowthStage;
     int timesGrown;
     // Add more flags and properties as needed
@@ -48,6 +49,7 @@ public:
     bool following_Player;
     void SetShadow(Texture2D load1, Texture2D load2);
     void setLimit(int newLimit);
+    void SetNewGrowthStage();
     int GetLimit();
     int GetStage();
 

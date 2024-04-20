@@ -107,6 +107,7 @@ void NPC::Update() {
         if (NPCEventData.maxGrowthStage < Stage){
             NPCEventData.maxGrowthStage = Stage;
             NPCEventData.hasGrown = true;
+            NPCEventData.newGrowthStage += 1;
         }
         updateTexture("growth");
         updateAnimationFrameDimensions("growth");
@@ -357,4 +358,8 @@ void NPC::setNextStage(int NextStage){
 }
 int NPC::GetStage(){
     return Stage;
+}
+
+void NPC::SetNewGrowthStage(){
+    NPCEventData.newGrowthStage += 1;
 }

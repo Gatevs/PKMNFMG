@@ -35,6 +35,7 @@ private:
     // Camera zoom and offset
     Camera2D camera = { 0 };
     Camera2D bigCamera = { 1 };
+    bool lockCamera = false;
     Vector2 targetPos;
     Vector2 BottomBarPos;
     TileMap Outside;

@@ -73,6 +73,12 @@ void GameManager::GameInitialization(){
 void GameManager::CameraUpdate(){
     if (!IntroFinished){
         targetPos = {static_cast<float>(+32), static_cast<float>(0)};
+    }else if (lockCamera){
+        if (Outside.GetLockCameraAxis() == 1){
+            targetPos = {camera.target.x, floor((player.GetPosition().y - (192 / 2.0f)) + (32/ 2.0f))};
+        } else if(Outside.GetLockCameraAxis() == 2){
+            targetPos = {(floor((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32), camera.target.y};
+        }
     }else{
         targetPos = {(floor((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32), floor((player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f))};
     }
@@ -146,6 +152,11 @@ void GameManager::GameLoop(){
     }
     player.Update();
     if (player.IsPlayerMoving()){
+        if (Outside.IsCameraLockNear(player)){
+            lockCamera = true;
+        } else{
+            lockCamera = false;
+        }
         Outside.IsWarpClose(player);
         player.checkCollisions(Outside.GetCOL(), npcs, Outside.GetlevelOffset());
         player.UpdateAnim();

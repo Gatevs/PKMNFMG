@@ -45,6 +45,8 @@ public:
     std::string GetCurLevelName();
     std::string GetSwapLevelName();
     void unloadFarAwayLevel(Player& player_obj, std::vector<tileObj>& Tile_objs);
+    bool IsCameraLockNear(Player& player_obj);
+    int GetLockCameraAxis() const {return LockCameraAxis;}
 
 
 private:
@@ -73,4 +75,5 @@ private:
     Vector2 Warp_Pos;
     int Warp_Dir;
     int SwapLevel_Dir;
+    int LockCameraAxis = 0;
 };
