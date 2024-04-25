@@ -53,7 +53,7 @@ private:
     Texture2D IntroSelect = LoadTexture("assets/MISC/DEBUG_SELECT.png");
     Texture2D VNTest;
     Sound EntityGrowth;
-    Font BagFont = LoadFont("assets/SpriteFont_Bag.png");;
+    Font BagFont = LoadFont("assets/SPRITEFONT/SpriteFont_Bag.png");;
     int DebugID = 1;
     enum UI_Element {
         PAUSE,

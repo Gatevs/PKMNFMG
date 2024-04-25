@@ -8,14 +8,14 @@
 namespace NPCWalk {
     // Function to dynamically construct texture path based on NPC ID and event number
     inline std::string GetTexturePath(int ID, int Stage) {
-        return "assets/" + std::to_string(ID) + "_" + std::to_string(Stage) + ".png";
+        return "assets/OW_SPRITE/" + std::to_string(ID) + "_" + std::to_string(Stage) + ".png";
     }
 }
 
 namespace NPCIdle {
     // Function to dynamically construct texture path based on NPC ID and event number
     inline std::string GetTexturePath(int ID, int Stage) {
-        return "assets/" + std::to_string(ID) + "_I" + std::to_string(Stage) + ".png";
+        return "assets/OW_SPRITE/" + std::to_string(ID) + "_I" + std::to_string(Stage) + ".png";
     }
 }
 
@@ -23,6 +23,6 @@ namespace NPCIdle {
 namespace NPCGrow {
     // Function to dynamically construct texture path based on NPC ID and event number
     inline std::string GetTexturePath(int ID, int Stage) {
-        return "assets/" + std::to_string(ID) + "_G" + std::to_string(Stage) + ".png";
+        return "assets/OW_SPRITE/" + std::to_string(ID) + "_G" + std::to_string(Stage) + ".png";
     }
 }

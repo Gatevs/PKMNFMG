@@ -42,7 +42,7 @@ void GameManager::DebugIntro(){
 }
 
 void GameManager::GameInitialization(){
-    Outside.loadLDtkMap("assets/Outside.ldtk",[&]() {
+    Outside.loadLDtkMap("assets/TILEMAPS/Outside.ldtk",[&]() {
             Outside.initialize("Swolie_Town");
             Outside.loadPlayer(player);
             Outside.loadNPCs(npcs);
@@ -50,15 +50,15 @@ void GameManager::GameInitialization(){
         });
     // Outside.loadWarps(warps);
     SetMasterVolume(0.9f);
-    ShadowCentered = LoadTexture("assets/Shadow_0.png");
-    ShadowOffCenter = LoadTexture("assets/Shadow_1.png");
+    ShadowCentered = LoadTexture("assets/MISC/Shadow_0.png");
+    ShadowOffCenter = LoadTexture("assets/MISC/Shadow_1.png");
 
-    player.parseCSV("assets/NPC_OW_DEF.csv");
+    player.parseCSV("assets/CSV/NPC_OW_DEF.csv");
     Menu.SetPlayerName(player.GetPlayerName());
 
     for (auto& npc : npcs) {
-        npc.parseCSV("assets/Dataset.csv");
-        npc.parseCSV("assets/NPC_OW_DEF.csv");
+        npc.parseCSV("assets/CSV/Dataset.csv");
+        npc.parseCSV("assets/CSV/NPC_OW_DEF.csv");
         npc.SetShadow(ShadowCentered,ShadowOffCenter);
     }
 

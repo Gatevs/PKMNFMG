@@ -323,7 +323,7 @@ void NPC::parseCSV(const std::string& filename) {
     rapidcsv::Document doc(filename);
     const auto& ids = doc.GetColumn<int>("ID");
 
-    if(filename == "assets/Dataset.csv"){
+    if(filename == "assets/CSV/Dataset.csv"){
         // Clear previous data for this NPC
         m_data.clear();
         // Iterate through rows and compare IDs
@@ -333,7 +333,7 @@ void NPC::parseCSV(const std::string& filename) {
                 m_data.push_back(doc.GetRow<std::string>(i));
             }
         }
-    }else if(filename == "assets/NPC_OW_DEF.csv"){
+    }else if(filename == "assets/CSV/NPC_OW_DEF.csv"){
         for (size_t i = 0; i < ids.size(); ++i) {
             if (ids[i] == ID) {
                 // Store entire row in NPC-specific vector

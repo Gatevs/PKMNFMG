@@ -6,11 +6,11 @@
 #include "player.h"
 
 ActionHandler::ActionHandler() {
-    atlasTexture = LoadTexture("assets/UI_Atlas.png");
-    MainFont = LoadFont("assets/SpriteFont_Main.png");
-    BagFont = LoadFont("assets/SpriteFont_Bag.png");
-    screenTexture = LoadTexture("assets/Screens_Atlas.png");
-    StageTexture = LoadTexture("assets/GStage.png");
+    atlasTexture = LoadTexture("assets/MISC/UI_Atlas.png");
+    MainFont = LoadFont("assets/SPRITEFONT/SpriteFont_Main.png");
+    BagFont = LoadFont("assets/SPRITEFONT/SpriteFont_Bag.png");
+    screenTexture = LoadTexture("assets/MISC/Screens_Atlas.png");
+    StageTexture = LoadTexture("assets/MISC/GStage.png");
     smallBeep = LoadSound("assets/SFX/BEEP1.ogg");
     GUIOpen = LoadSound("assets/SFX/GUI_OPEN.ogg");
     GUIClose = LoadSound("assets/SFX/GUI_CLOSE.ogg");
