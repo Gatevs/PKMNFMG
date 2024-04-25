@@ -10,7 +10,7 @@
 Player::Player() {
     Stage = 0;
     Name = "Player";
-    playerTexture = LoadTexture("assets/dummy.png");
+    playerTexture = LoadTexture("assets/MISC/dummy.png");
     Bump = LoadSound("assets/SFX/BUMP.ogg");
     // Initialize member variables
     position = { 32, 32 };
@@ -286,9 +286,7 @@ void Player::UpdatePositionAndCamera() {
     collisionMask.y = position.y - (COLLISION_MASK_HEIGHT / 2.0f);
 }
 
-
-
-void Player::checkCollisions(const ldtk::Layer& collisions,  const std::vector<NPC>& npcs, Vector2 IntGridOffset) {
+bool Player::IntGridValueAtPosition(const ldtk::Layer& collisions, int value, Vector2 IntGridOffset){
     // Calculate the position in front of the player based on direction
     int tile_Col = 0;
     // Get the integer grid value at the specified position
@@ -302,8 +300,16 @@ void Player::checkCollisions(const ldtk::Layer& collisions,  const std::vector<N
     } else{
         tile_Col = tileValue3.value;
     }
+    if (tile_Col == value){
+        return true;
+    } else{
+        return false;
+    }
+}
+
+void Player::checkCollisions(const ldtk::Layer& collisions,  const std::vector<NPC>& npcs, Vector2 IntGridOffset) {
     // Check if the tile value indicates a collision
-    if (tile_Col == 1) {
+    if (IntGridValueAtPosition(collisions,1,IntGridOffset)) {
         // Collision detected, handle accordingly
         if (step_timer != 0){
             past_dir = input_direction;
@@ -475,7 +481,7 @@ void Player::SetLocation(std::string loc){
 void Player::SetPlayerGender(std::string playerGender){
     Gender = playerGender;
     UnloadTexture(playerTexture);
-    std::string TexturePath = "assets/" + playerGender + "_" + std::to_string(Stage) + ".png";
+    std::string TexturePath = "assets/OW_SPRITE/" + playerGender + "_" + std::to_string(Stage) + ".png";
     playerTexture = LoadTexture(TexturePath.c_str());
 }
 
@@ -497,15 +503,15 @@ void Player::setNextStage(int NextStage){
 
 void Player::UpdateTexture(const std::string& animation){
     if (animation == "growth"){
-        std::string TexturePath = "assets/" + Gender + "_G" + std::to_string(Stage) + ".png";
+        std::string TexturePath = "assets/OW_SPRITE/" + Gender + "_G" + std::to_string(Stage) + ".png";
         UnloadTexture(playerTexture);
         playerTexture = LoadTexture(TexturePath.c_str());
     } else if(animation == "walk"){
-        std::string TexturePath = "assets/" + Gender + "_" + std::to_string(Stage) + ".png";
+        std::string TexturePath = "assets/OW_SPRITE/" + Gender + "_" + std::to_string(Stage) + ".png";
         UnloadTexture(playerTexture);
         playerTexture = LoadTexture(TexturePath.c_str());
     }else if(animation == "idle"){
-        std::string TexturePath = "assets/" + Gender + "_I" + std::to_string(Stage) + ".png";
+        std::string TexturePath = "assets/OW_SPRITE/" + Gender + "_I" + std::to_string(Stage) + ".png";
         playerTexture = LoadTexture(TexturePath.c_str());
     }
 
@@ -515,7 +521,7 @@ void Player::parseCSV(const std::string& filename) {
     rapidcsv::Document doc(filename);
     const auto& ids = doc.GetColumn<int>("ID");
 
-    if(filename == "assets/NPC_OW_DEF.csv"){
+    if(filename == "assets/CSV/NPC_OW_DEF.csv"){
         for (size_t i = 0; i < ids.size(); ++i) {
             if (ids[i] == 1) {
                 // Store entire row in NPC-specific vector

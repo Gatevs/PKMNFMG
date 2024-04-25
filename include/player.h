@@ -61,6 +61,7 @@ public:
     std::string GetPlayerGender() const;
     std::string GetPlayerName() const;
     int GetStage() const;
+    bool IntGridValueAtPosition(const ldtk::Layer& collisions, int value, Vector2 IntGridOffset);
 
 private:
     void Growth();

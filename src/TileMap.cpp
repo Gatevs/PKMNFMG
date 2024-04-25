@@ -5,7 +5,8 @@
 #include <string>
 
 TileMap::TileMap() {
-    locationCard_Texture = LoadTexture("assets/LocationCard.png");
+    locationCard_Texture = LoadTexture("assets/TILEMAPS/LocationCard.png");
+    tallGrass_Texture = LoadTexture("assets/MISC/tall_grass.png");
     DrawLoadedLevel = false;
     NextLevelLoaded = false;
     onWarp = false;
@@ -38,7 +39,7 @@ void TileMap::initialize(const std::string& Lvl) {
     const auto& tiles_vector = layer.allTiles();
 
     // Load texture and renderer
-    texture = LoadTexture(("assets/" + layer.getTileset().path).c_str());
+    texture = LoadTexture(("assets/TILEMAPS/" + layer.getTileset().path).c_str());
     renderer = LoadRenderTexture(level.size.x, level.size.y);
 
     curLevel_Pos = (Vector2) {static_cast<float>(level.position.x), static_cast<float>(level.position.y)};
@@ -411,6 +412,118 @@ const ldtk::Layer& TileMap::GetCOL() {
     return collisions;
 }
 
+void TileMap::PlayerInTallGrass(Player& player_obj){
+    // Check if the tile value indicates a collision
+    if (player_obj.IntGridValueAtPosition(GetCOL(),2,GetlevelOffset())) {
+        // Collision detected, handle accordingly
+        grass.Visible = true;
+        grass.Active = true;
+    } else{
+        grass.Visible = false;
+        grass.Position1 = {0,0};
+        grass.Position2 = {0,0};
+        grass.Position3 = {0,0};
+    }
+}
+
+void TileMap::DrawGrass(Player& player_obj, std::vector<tileObj>& Tile_objs){
+    if (grass.Visible){
+        int inGridX = int(player_obj.ColOffset(true).x) % 16;
+        int inGridY = int(player_obj.ColOffset(true).y) % 16;
+
+        // Store player position
+        Vector2 playerPosition = {player_obj.ColOffset(true).x, player_obj.ColOffset(true).y};
+
+        for (auto& tile : Tile_objs) {
+            int tileID = tile.GetID();
+            // If the player is in a valid tile set the positions for the grass animations
+            if (inGridX == 0 && inGridY == 0){
+                if (!grass.set){
+                    grass.startAnim = false;
+                    grass.Position3 = grass.Position2;
+                    grass.Position2 = grass.Position1;
+                    grass.trailTimer.push_back(std::make_pair(0.0f, grass.TrailIndex));
+                    grass.TrailIndex += 1;
+                    grass.trailPos.push_back(grass.Position2);
+                    grass.set = true;
+                }
+                grass.Position1 = playerPosition;
+            } else {
+                grass.set = false;
+            }
+            // Move the grass object to the player's position'
+            if (tileID == 2){
+                if (player_obj.IsPlayerMoving()) {
+                    tile.ResetFrames(0);
+                }
+                if (player_obj.GetPlayerDir() == 90 && player_obj.GetPlayerFollower() != 0) {
+                    tile.ResetGrass();
+                } else if (player_obj.GetPlayerDir() == 270 && player_obj.IsPlayerMoving()) {
+                    tile.ResetGrass();
+                } else if (grass.set) {
+                    tile.SetPosition(grass.Position1);
+                }
+            }
+            // Move the other grass object behind the player's current position'
+            if (tileID == 3){
+                if (player_obj.IsPlayerMoving()) {
+                    tile.ResetFrames(1);
+                }
+                if (grass.set) {
+                    tile.SetOffet(-8);
+                    tile.SetPosition(grass.Position2);
+                }
+            }
+        }
+    }
+    // If the player is away from grass tiles
+    if (grass.Active){
+        GrassTrail();
+        if (!grass.Visible || !player_obj.IsPlayerMoving()){
+            grass.startAnim = true;
+        }
+        for (auto& tile : Tile_objs) {
+            int tileID = tile.GetID();
+
+            if (!tile.GetGrassAnim() && grass.startAnim){
+                if (tileID == 2 || tileID == 3 || tileID == 4){
+                    tile.AnimateGrass();
+                }
+            }
+
+            if ((tileID == 4 || tileID == 3) && tile.GetGrassAnim()){
+                if (player_obj.GetPlayerFollower() != 0 && !grass.Visible){
+                    tile.ResetGrass();
+                }
+                if (player_obj.GetPlayerFollower() == 0){
+                    tile.ResetGrass();
+                }
+            }
+
+            if (player_obj.GetPlayerDir() == 270 && !grass.Visible){
+                tile.ResetGrass();
+            } else if (tileID == 2 && tile.GetGrassAnim() && !grass.Visible){
+                grass.Active = false;
+                tile.ResetGrass();
+                grass.trailTimer.clear();
+                grass.trailPos.clear();
+                grass.TrailIndex = 0;
+            }
+        }
+    }
+}
+
+
+void TileMap::GrassTrail(){
+    for (auto& trail : grass.trailTimer ){
+        if (trail.first < 1.0f){
+            trail.first += GetFrameTime();
+            DrawTextureRec(texture,{32,112,16,16},grass.trailPos[trail.second],WHITE);
+            DrawTextureRec(tallGrass_Texture,{static_cast<float>(16 * int(4 * (trail.first))),0,16,16},grass.trailPos[trail.second],WHITE);
+        }
+    }
+}
+
 void TileMap::loadPlayer(Player& player_obj){
     const auto& world = ldtk_project.getWorld();
     const auto& level = world.getLevel(curLevel);
@@ -445,6 +558,9 @@ void TileMap::loadTileObjs(const std::string lvl, std::vector<tileObj>& Tile_obj
         auto tileObj_Rect = tObj.getTextureRect();
         Tile_objs.push_back(tileObj(tileObj_ID, lvl, Vector2{(float)(tileObj_Pos.x), (float)(tileObj_Pos.y)}, tileObj_Rect, texture));
     }
+    for (int i = 2 ; i < 5; i++){
+        Tile_objs.push_back(tileObj(i, lvl, Vector2{(float)(0), (float)(0)}, {0,0,16,16}, tallGrass_Texture));
+    }
 }
 
 void TileMap::Unload() {
@@ -454,7 +570,7 @@ void TileMap::Unload() {
 }
 
 void TileMap::parseCSV(){
-    rapidcsv::Document doc("assets/OW_LEVEL_DEF.csv");
+    rapidcsv::Document doc("assets/CSV/OW_LEVEL_DEF.csv");
     const auto& levels = doc.GetColumn<std::string>("Level");
     const auto& LevelX = doc.GetColumn<int>("Index_X");
     const auto& LevelY = doc.GetColumn<int>("Index_Y");

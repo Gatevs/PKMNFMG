@@ -47,7 +47,9 @@ public:
     void unloadFarAwayLevel(Player& player_obj, std::vector<tileObj>& Tile_objs);
     bool IsCameraLockNear(Player& player_obj);
     int GetLockCameraAxis() const {return LockCameraAxis;}
+    void PlayerInTallGrass(Player& player_obj);
     void DrawLocationCard();
+    void DrawGrass(Player& player_obj,std::vector<tileObj>& Tile_objs);
     void parseCSV();
 
 
@@ -60,6 +62,22 @@ private:
     RenderTexture2D renderer;
     RenderTexture2D inFront;
     RenderTexture2D swapRender;
+
+    Texture2D tallGrass_Texture;
+    struct TallGrass{
+        bool Visible = false;
+        bool Active = false;
+        bool set = false;
+        bool startAnim = false;
+        Vector2 Position1;
+        Vector2 Position2;
+        Vector2 Position3;
+        int TrailIndex = 0;
+        std::vector<std::pair<float, int>> trailTimer;
+        std::vector<Vector2> trailPos;
+    };
+    TallGrass grass;
+    void GrassTrail();
 
     void LoadNextLevel(const ldtk::Entity& warpObj);
     void EnterNextlevel(Vector2 warpPos, Player& player_obj, int dir);

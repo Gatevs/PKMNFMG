@@ -158,6 +158,7 @@ void GameManager::GameLoop(){
             lockCamera = false;
         }
         Outside.IsWarpClose(player);
+        Outside.PlayerInTallGrass(player);
         player.checkCollisions(Outside.GetCOL(), npcs, Outside.GetlevelOffset());
         player.UpdateAnim();
         player.UpdatePositionAndCamera();
@@ -194,6 +195,7 @@ void GameManager::DrawWorld(){
         if (Outside.GetDrawNextLevel()){
             Outside.draw("Swap", Outside.GetSwapLevel());
         }
+        Outside.DrawGrass(player,tileObjs);
         // Create a vector to hold pointers to GameObjects
         std::vector<GameObject*> objects;
 
