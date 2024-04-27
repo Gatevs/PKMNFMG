@@ -32,6 +32,10 @@ endfunction()
 
 # Include assets from different directories
 preprocess_directory("assets")
+preprocess_directory("assets/OW_SPRITE")
+preprocess_directory("assets/SPRITEFONT")
+preprocess_directory("assets/TILEMAPS")
+preprocess_directory("assets/CSV")
 preprocess_directory("assets/STAT_SPRITES")
 preprocess_directory("assets/MISC")
 preprocess_directory("assets/SFX")

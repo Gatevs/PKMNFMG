@@ -429,6 +429,7 @@ void ActionHandler::UpdateScreenState() {
 
 void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
     std::string defaultLine = "";
+    std::string defaultAction = "";
     bool foundNonEmpty = false;
 
     for (auto& npc : NPC_objs) {
@@ -444,16 +445,19 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
                     if (!row[EVENT_CONDITION].empty()) {
                         if (CompareDialogueConditions(row[EVENT_CONDITION],row[EVENT_VALUE],npc)){
                             foundNonEmpty = true;
+                            SetDialogueAction(ActionFromCondition);
                             SetNPCDialogue(row[TEXT_DIALOGUE]);
                             break;
                         }
                     } else if (PLAYER_GENDER == row[GENDER] || row[GENDER].empty()) {
                         defaultLine = row[TEXT_DIALOGUE];
+                        defaultAction = row[EVENT_VALUE];
                     }
                 }
             }
 
             if (!foundNonEmpty) {
+                SetDialogueAction(defaultAction);
                 SetNPCDialogue(defaultLine);
             }
             return;
@@ -464,9 +468,7 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
 }
 
 bool ActionHandler::CompareDialogueConditions(std::string condition, std::string value, NPC& npc){
-    if (value == "FollowNo"){
-        NPC_FollowReject = true;
-    }
+    ActionFromCondition = value;
     if (condition == "HasGrown" && npc.GetNPCEventState().hasGrown) {
         return true;
     }
@@ -480,6 +482,13 @@ bool ActionHandler::CompareDialogueConditions(std::string condition, std::string
     return false;
 }
 
+void ActionHandler::SetDialogueAction(std::string action){
+    if (action == "FollowNo"){
+        NPC_FollowReject = true;
+    } else {
+        return;
+    }
+}
 
 void ActionHandler::SetNPCDialogue(std::string text){
     DialogueText = text;

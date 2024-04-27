@@ -42,6 +42,7 @@ private:
     void DrawActionUI();
     void SetVNSprite();
     void SetNPCDialogue(std::string text);
+    void SetDialogueAction(std::string action);
     bool CompareDialogueConditions(std::string condition, std::string value, NPC& npc);
     void CloseUI(Player& player);
     static void DrawTextBoxed(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint);
@@ -77,6 +78,7 @@ private:
     std::string NextText;
     std::string RemainingText;
     std::string DialogueText;
+    std::string ActionFromCondition;
     std::string NPC_NAME;
     std::string PLAYER_NAME;
     std::string PLAYER_GENDER;
