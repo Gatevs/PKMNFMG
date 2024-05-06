@@ -29,7 +29,7 @@ ActionHandler::ActionHandler() {
     CurText = "";
     textFinished = false;
     TEXT_SPEED = 3.0f;
-    InteractionID = 0;
+    NPCInfo.ID = 0;
     selection = 0;
     Fade = 0;
     fadeInComplete = false;
@@ -86,9 +86,10 @@ void ActionHandler::typewriterEffect(std::string& text) {
 
 // Function to handle different types of actions
 void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
+    CameraPos = drawPos;
     switch (actionType) {
         case ActionType::Pause_M:
-            MainPos = Vector2{drawPos.x + 42, drawPos.y - 74};
+            MainPos = Vector2{drawPos.x + 122, drawPos.y + 6};
             MainSelPos = Vector2{MainPos.x + 4, MainPos.y + 5};
             ICOPos = (Vector2){MainSelPos.x + 3, MainSelPos.y};
             MainMap = pauseMap;
@@ -99,10 +100,10 @@ void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
             inUI = PAUSE;
             break;
         case ActionType::Action_M:
-            MainPos = Vector2{drawPos.x - 110, drawPos.y - 74};
+            MainPos = Vector2{drawPos.x - 30, drawPos.y + 6};
             MainSelPos = Vector2{MainPos.x + 4, MainPos.y + 5};
             ICOPos = (Vector2){MainSelPos.x + 3, MainSelPos.y};
-            fadePos = (Vector2){drawPos.x - 112, drawPos.y - 80};
+            fadePos = (Vector2){drawPos.x - 32, drawPos.y};
             MainMap = actionMap;
             MainSelector = selectorMap;
             ICO[1] = MenuICOMap.width;
@@ -111,8 +112,8 @@ void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
             inUI = ACTION;
             break;
         case ActionType::Dialogue_Box:
-            MainPos = Vector2{drawPos.x - 110, drawPos.y + 65};
-            fadePos = (Vector2){drawPos.x - 112, drawPos.y - 80};
+            MainPos = Vector2{drawPos.x - 30, drawPos.y + 144};
+            fadePos = (Vector2){drawPos.x - 32, drawPos.y};
             MainMap = DialogueMap;
             stopPlayerInput = true;
             PlaySound(smallBeep);
@@ -181,7 +182,7 @@ void ActionHandler::pause(Player& p) {
 }
 
 void ActionHandler::SetVNSprite(){
-    std::string text = "assets/VN_SPRITE/" + std::to_string(InteractionID) + "_" + std::to_string(NPC_Stage) + ".png";
+    std::string text = "assets/VN_SPRITE/" + std::to_string(NPCInfo.ID) + "_" + std::to_string(NPCInfo.Stage) + ".png";
     VN_Sprite = LoadTexture(text.c_str());
     int FRAME_X;
     int FRAME_Y;
@@ -276,7 +277,7 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
             selection = menuID;
             textTimer = 0;
         if (selection == 1 && screenState == OFF){
-            std::string text = "assets/STAT_SPRITES/" + std::to_string(InteractionID) + "_" + std::to_string(NPC_Stage) + ".png";
+            std::string text = "assets/STAT_SPRITES/" + std::to_string(NPCInfo.ID) + "_" + std::to_string(NPCInfo.Stage) + ".png";
             if (!IsTextureReady(StatSprite)){
                 StatSprite = LoadTexture(text.c_str());
             }
@@ -288,14 +289,14 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
         }
         switch (selection){
             case 2:
-                if (p.GetPlayerFollower() != InteractionID && textTimer >= 10){
+                if (p.GetPlayerFollower() != NPCInfo.ID && textTimer >= 10){
                     int npcIdInFront = p.CheckForNPCInFront(NPC_objs);
                     if (npcIdInFront != -1) {
                         // Set NPC as follower and update directions
                         for (auto& npc : NPC_objs) {
                             if (npc.GetID() == npcIdInFront) {
                                 getNPCInfo(npc.GetID(),NPC_objs, 3);
-                                if (!NPC_FollowReject){
+                                if (!NPCInfo.FollowReject){
                                     p.SetFollowerID(npcIdInFront);
                                     npc.following_Player = true;
                                     switch (p.GetPlayerDir()){
@@ -320,15 +321,15 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
                                 for (int i = 0; i < 8; ++i) {
                                     ICO[i] = 0;
                                 }
-                                handleAction(ActionType::Dialogue_Box,p.GetPosition());
-                                NPC_FollowReject = false;
+                                handleAction(ActionType::Dialogue_Box,CameraPos);
+                                NPCInfo.FollowReject = false;
                                 break;
                             }
                         }
                     }
-                }else if (p.GetPlayerFollower() == InteractionID && textTimer >= 10){
+                }else if (p.GetPlayerFollower() == NPCInfo.ID && textTimer >= 10){
                     for (auto& npc : NPC_objs) {
-                        if (npc.GetID() == InteractionID) {
+                        if (npc.GetID() == NPCInfo.ID) {
                             npc.following_Player = false;
                             npc.lookAtPlayer(p.GetPlayerDir());
                             getNPCInfo(npc.GetID(),NPC_objs, 4);
@@ -339,7 +340,7 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
                                 ICO[i] = 0;
                             }
                             p.SetFollowerID(0);
-                            handleAction(ActionType::Dialogue_Box,p.GetPosition());
+                            handleAction(ActionType::Dialogue_Box,CameraPos);
                             break;
                         }
                     }
@@ -347,15 +348,15 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
                 break;
             case 3:
                 if (fadeOutComplete){
-                    if (InteractionID == 1){
+                    if (NPCInfo.ID == 1){
                         p.setNextStage(menuID - 1);
                         CloseUI(p);
                         break;
                     }
                     for (auto& npc : NPC_objs) {
-                        if (npc.GetID() == InteractionID) {
+                        if (npc.GetID() == NPCInfo.ID) {
                             npc.setNextStage(menuID - 1);
-                            if (InteractionID == p.GetPlayerFollower()){
+                            if (NPCInfo.ID == p.GetPlayerFollower()){
                                 p.SetFollowerID(0);
                             }
                             CloseUI(p);
@@ -379,7 +380,7 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
             if (textTimer < 10){
                 textTimer += 1;
             }
-            if (p.GetPlayerFollower() != InteractionID){
+            if (p.GetPlayerFollower() != NPCInfo.ID){
                 SubMap = (Rectangle){YesNoMap.x,YesNoMap.y,YesNoMap.width,YesNoMap.height};
             } else{
                 SubMap = (Rectangle){YesNoMap.x,YesNoMap.y - 45,YesNoMap.width,YesNoMap.height};
@@ -387,7 +388,7 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
             SubPos = Vector2{MainPos.x + 102, MainPos.y};
             break;
         case 3:
-            MAX_DOWN = NPC_Limit + 1;
+            MAX_DOWN = NPCInfo.Limit + 1;
             MAX_UP = 1;
             UpdateScreenState();
             if (screenState == SHUTTNG_OFF){
@@ -435,13 +436,13 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
     for (auto& npc : NPC_objs) {
         if (npc.GetID() == ID) {
             std::string targetValue = npc.GetCombinedValues(Event);
-            InteractionID = npc.GetID();
-            NPC_Limit = npc.GetLimit();
-            NPC_Stage = npc.GetStage();
+            NPCInfo.ID = npc.GetID();
+            NPCInfo.Limit = npc.GetLimit();
+            NPCInfo.Stage = npc.GetStage();
 
             for (const auto& row : npc.GetNPCDialogue()) {
                 if (row[COMBINED_VALUES] == targetValue) {
-                    NPC_NAME = row[NAME];
+                    NPCInfo.Name = row[NAME];
                     if (!row[EVENT_CONDITION].empty()) {
                         if (CompareDialogueConditions(row[EVENT_CONDITION],row[EVENT_VALUE],npc)){
                             foundNonEmpty = true;
@@ -484,7 +485,7 @@ bool ActionHandler::CompareDialogueConditions(std::string condition, std::string
 
 void ActionHandler::SetDialogueAction(std::string action){
     if (action == "FollowNo"){
-        NPC_FollowReject = true;
+        NPCInfo.FollowReject = true;
     } else {
         return;
     }
@@ -498,9 +499,9 @@ void ActionHandler::SetNPCDialogue(std::string text){
 }
 
 void ActionHandler::getPlayerInfo(int ID, Player player_Obj, int Event){
-    NPC_Limit = 1;
-    NPC_Stage = player_Obj.GetStage();
-    NPC_NAME = player_Obj.GetPlayerName();
+    NPCInfo.Limit = 1;
+    NPCInfo.Stage = player_Obj.GetStage();
+    NPCInfo.Name = player_Obj.GetPlayerName();
 }
 
 
@@ -597,7 +598,7 @@ void ActionHandler::claenText(){
 }
 
 void ActionHandler::SetInteractionID(int ID){
-    InteractionID = ID;
+    NPCInfo.ID = ID;
 }
 
 void ActionHandler::CloseUI(Player& player){
@@ -797,7 +798,7 @@ void ActionHandler::DrawActionUI(){
         case 1:
             if (screenState == ON || screenState == WAIT){
                 DrawTextureRec(screenTexture, StatsMap, fadePos, WHITE);
-                DrawTextBoxed(MainFont, NPC_NAME.c_str(), (Rectangle){fadePos.x + 185, fadePos.y + 6, 60, 30}, MainFont.baseSize, -5, wordWrap, WHITE);
+                DrawTextBoxed(MainFont, NPCInfo.Name.c_str(), (Rectangle){fadePos.x + 185, fadePos.y + 6, 60, 30}, MainFont.baseSize, -5, wordWrap, WHITE);
                 DrawTexture(StatSprite,(fadePos.x + 128) - (StatSprite.width / 2.0f),(fadePos.y + 175) - StatSprite.height,WHITE);
             }
             break;

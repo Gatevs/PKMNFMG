@@ -70,6 +70,7 @@ private:
     Vector2 SubSelPos;
     Vector2 ICOPos;
     Vector2 fadePos;
+    Vector2 CameraPos;
     bool wordWrap;
     bool fadeInComplete;
     bool fadeOutComplete;
@@ -79,14 +80,9 @@ private:
     std::string RemainingText;
     std::string DialogueText;
     std::string ActionFromCondition;
-    std::string NPC_NAME;
     std::string PLAYER_NAME;
     std::string PLAYER_GENDER;
     int curTextSize;
-    int InteractionID;
-    int NPC_Limit;
-    int NPC_Stage;
-    bool NPC_FollowReject = false;
     int VN_Frame;
     float VN_Timer;
     int frameFlip;
@@ -100,6 +96,13 @@ private:
     float TEXT_SPEED;
     int MAX_DOWN;
     int MAX_UP;
+    struct NPCInfo {
+        std::string Name;
+        int ID;
+        int Limit;
+        int Stage;
+        bool FollowReject = false;
+    } NPCInfo;
     enum UI_Types{
         NONE,
         PAUSE,
