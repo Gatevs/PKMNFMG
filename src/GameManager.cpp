@@ -51,11 +51,13 @@ void GameManager::DebugIntro(){
 
 void GameManager::GameInitialization(std::string map){
     Outside.loadLDtkMap("assets/TILEMAPS/Outside.ldtk",[&]() {
-            Outside.initialize(map);
-            Outside.loadPlayer(player);
-            Outside.loadNPCs(player, npcs);
-            Outside.loadTileObjs(Outside.GetCurLevelName(), tileObjs);
+        Outside.initialize(map);
+        Outside.loadPlayer(player);
+        Outside.loadNPCs(player, npcs);
+        Outside.loadTileObjs(Outside.GetCurLevelName(), tileObjs);
     });
+    Menu.SetFade(255);
+    WarpingPlayer = 2;
     // Outside.loadWarps(warps);
     if (Outside.IsCameraLockNear(player)){
         lockCamera = true;
@@ -82,8 +84,6 @@ void GameManager::GameInitialization(std::string map){
     camera.target = (Vector2){((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32, (player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f)};
     camera.rotation = 0.0f;
     camera.zoom = 1.0f;
-    WarpingPlayer = 2;
-    Menu.SetFade(255);
 }
 
 void GameManager::CameraUpdate(){
@@ -125,7 +125,6 @@ void GameManager::GameLoop(){
         WarpPlayer(Outside.IndoorWarpTo(player));
     } else if (WarpingPlayer == 2){
         Menu.SetFadePos({camera.target.x - 32, camera.target.y});
-        std::cout << Menu.IsFadeOutComplete() << std::endl;
         if(!Menu.IsFadeOutComplete()){
             Menu.fadeOut();
         }else{
@@ -180,9 +179,9 @@ void GameManager::GameLoop(){
         }
     }
     // Handle player input and update player and npc state
-    if (!Menu.stopPlayerInput){
+    if (!Menu.stopPlayerInput && WarpingPlayer == 0){
         player.HandleInput(npcs);
-    } else{
+    } else if (Menu.stopPlayerInput){
         Menu.InputUI(npcs, player);
     }
     player.Update();
@@ -347,49 +346,65 @@ void GameManager::JsonSaveNPCData() {
     std::cout << "NPC data saved to npc_data.json" << std::endl;
 }
 
-void GameManager::JsonLoadNPCData(){
+void GameManager::JsonLoadNPCData() {
     using json = nlohmann::json;
-    // Read JSON file
+
     std::ifstream inFile("npc_data.json");
     if (!inFile.is_open()) {
         std::cerr << "INFO: Temporary file npc_data.json doesn't exist yet." << std::endl;
-    } else{
-        // Parse JSON data
-        json npcData;
-        inFile >> npcData;
-        inFile.close();
+        return;
+    }
 
-        // Retrieve NPCs array from JSON data
-        json npcArray = npcData["NPCs"];
+    json npcData;
+    inFile >> npcData;
+    inFile.close();
 
-        // Iterate over NPCs array and populate NPC vector
-        for (const auto& npcObject : npcArray) {
-            bool npcExists = false;
-            int npcID = npcObject["ID"];
-            Vector2 npcPos = {npcObject["Pos_X"], npcObject["Pos_Y"]};
-            for (auto& npc : npcs){
-                if (npc.GetID() == npcObject["ID"] && npcObject["Location"] == Outside.GetCurLevelName()){
-                    npc.SetPosition({npcObject["Pos_X"], npcObject["Pos_Y"]});
-                    npc.SetStage(npcObject["Stage"]);
-                    if (npcObject["IdleAnim"] == "Yes"){npc.updateTexture("idle"); npc.updateAnimationFrameDimensions("idle");}
-                    npcExists = true;
-                    break;
-                } else if (npc.GetID() == npcObject["ID"] && npcObject["Location"] != Outside.GetCurLevelName() && npcObject["Follower"] != "Yes"){
-                    npcs.erase(std::remove_if(npcs.begin(), npcs.end(), [&](const NPC& obj) {
-                        return obj.GetID() == npcObject["ID"];
-                    }), npcs.end());
+    json npcArray = npcData["NPCs"];
+
+    for (const auto& npcObject : npcArray) {
+        int npcID = npcObject["ID"];
+        Vector2 npcPos = {npcObject["Pos_X"], npcObject["Pos_Y"]};
+
+        // Check if NPC already exists
+        auto existingNPC = std::find_if(npcs.begin(), npcs.end(), [npcID](const NPC& npc) { return npc.GetID() == npcID; });
+        if (existingNPC != npcs.end()) {
+            // Update NPC data if in the same location
+            if (npcObject["Location"] == Outside.GetCurLevelName()) {
+                existingNPC->SetPosition(npcPos);
+                existingNPC->SetStage(npcObject["Stage"]);
+                if (npcObject["IdleAnim"] == "Yes") {
+                    existingNPC->updateTexture("idle");
+                    existingNPC->updateAnimationFrameDimensions("idle");
                 }
             }
-            if (!npcExists && npcObject["Location"] == Outside.GetCurLevelName()){
-                NPC loadnew(npcID,Outside.GetCurLevelName(),npcPos);
-                loadnew.SetStage(npcObject["Stage"]);
-                if (npcObject["IdleAnim"] == "Yes"){loadnew.updateTexture("idle"); loadnew.updateAnimationFrameDimensions("idle");}
-                npcs.push_back(loadnew);
+            // Remove NPC if not in the current location and not a follower
+            else if (npcObject["Location"] != Outside.GetCurLevelName() && npcObject["Follower"] != "Yes") {
+                npcs.erase(existingNPC);
+            }
+            // Update position and stage if NPC is a follower but not in the current location
+            else if (npcObject["Location"] != Outside.GetCurLevelName() && npcObject["Follower"] == "Yes") {
+                existingNPC->SetPosition(npcPos);
+                existingNPC->SetStage(npcObject["Stage"]);
+                if (npcObject["IdleAnim"] == "Yes") {
+                    existingNPC->updateTexture("idle");
+                    existingNPC->updateAnimationFrameDimensions("idle");
+                }
+            }
+        } else {
+            // Add new NPC if it doesn't exist and is in the current location
+            if (npcObject["Location"] == Outside.GetCurLevelName()) {
+                NPC newNPC(npcID, Outside.GetCurLevelName(), npcPos);
+                newNPC.SetStage(npcObject["Stage"]);
+                if (npcObject["IdleAnim"] == "Yes") {
+                    newNPC.updateTexture("idle");
+                    newNPC.updateAnimationFrameDimensions("idle");
+                }
+                npcs.push_back(newNPC);
             }
         }
-
     }
 }
+
 
 void GameManager::WarpPlayer(std::string where){
     Menu.SetFadePos({camera.target.x - 32, camera.target.y});
