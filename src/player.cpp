@@ -17,7 +17,7 @@ Player::Player() {
     currentAnimation = ANIM_UP;
     currentFrame = 0;
     direction = 1;
-    m_dir = 0;
+    m_dir = 90;
     step_timer = 0;
     animating = false;
     move = false;

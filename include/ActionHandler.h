@@ -26,10 +26,14 @@ public:
     void SetPlayerName(std::string player);
     void SetPlayerGender(std::string player);
     void SetInteractionID(int ID);
+    void SetFadePos(Vector2 newFadePos){fadePos = newFadePos;}
     void Draw();
     void claenText();
     void fadeIn();
     void fadeOut();
+    bool IsFadeInComplete() const {return fadeInComplete;}
+    bool IsFadeOutComplete() const {return fadeOutComplete;}
+    void SetFade(int fadeAmount);
     bool stopPlayerInput;
     bool textFinished;
 

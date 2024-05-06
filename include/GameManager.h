@@ -16,7 +16,7 @@ public:
     ~GameManager();
 
     void DebugIntro();
-    void GameInitialization();
+    void GameInitialization(std::string map);
     void CameraUpdate();
     void GameLoop();
     void DrawWorld();
@@ -27,6 +27,9 @@ public:
     void DrawIntro();
     void DrawVN();
 private:
+    void JsonSaveNPCData();
+    void JsonLoadNPCData();
+    void WarpPlayer(std::string where);
     int test;
     Color green = {20,160,133,254};
     const int gameWidth = 256;
@@ -36,6 +39,7 @@ private:
     Camera2D camera = { 0 };
     Camera2D bigCamera = { 1 };
     bool lockCamera = false;
+    int WarpingPlayer = 0;
     Vector2 targetPos;
     Vector2 BottomBarPos;
     TileMap Outside;

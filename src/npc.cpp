@@ -8,6 +8,7 @@
 
 NPC::NPC(int npcID, std::string loc, Vector2 NPCPos) {
     ID = npcID;
+    location = loc;
     Stage = 0;
     lvl = 1;
     NPCTexture = LoadTexture(NPCWalk::GetTexturePath(ID, Stage).c_str());
@@ -356,10 +357,23 @@ int NPC::GetLimit(){
 void NPC::setNextStage(int NextStage){
     wantedStage = NextStage;
 }
-int NPC::GetStage(){
-    return Stage;
+
+void NPC::SetPosition(Vector2 pos){
+    position = pos;
+    collisionMask.x = position.x - (COLLISION_MASK_WIDTH / 2.0f);
+    collisionMask.y = position.y - (COLLISION_MASK_HEIGHT / 2.0f);
 }
 
 void NPC::SetNewGrowthStage(){
     NPCEventData.newGrowthStage += 1;
+}
+
+void NPC::SetStage(int newStage){
+    Stage = newStage;
+    updateTexture("walk");
+    DrawnTexture = NPCTexture;
+    updateAnimationFrameDimensions("walk");
+    if (newStage > 0){
+        NPCEventData.hasGrown = true;
+    }
 }

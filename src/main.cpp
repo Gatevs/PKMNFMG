@@ -48,7 +48,7 @@ int main() {
     SetWindowMinSize(256, 192);
     InitAudioDevice();
     GameManager Game;
-    Game.GameInitialization();
+    Game.GameInitialization("Player_Home");
 
 #if defined(PLATFORM_WEB)
     emscripten_set_main_loop_arg((em_arg_callback_func)UpdateDrawFrame, &Game, 0, 1);

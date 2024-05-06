@@ -39,7 +39,7 @@ public:
 
     // Accessors
     float GetYPosition() const override { return position.y; }
-    std::string GetLocation() {return location;}
+    std::string GetLocation() const {return location;}
     int GetID() const { return ID; }
     Rectangle GetCollisionMask() const { return collisionMask; }
     std::string GetCombinedValues(int Event);
@@ -51,7 +51,12 @@ public:
     void setLimit(int newLimit);
     void SetNewGrowthStage();
     int GetLimit();
-    int GetStage();
+    int GetStage() const {return Stage;};
+    void SetStage(int newStage);
+    Vector2 GetPosition() const { return position;}
+    std::string GetNPCLocation() const {return location;}
+    void SetPosition(Vector2 pos);
+    bool GetIdleAnim() const {return idle;}
 
 private:
     // Graphics
@@ -94,8 +99,8 @@ private:
 
     // Collision detection
     Rectangle collisionMask;
-    const int COLLISION_MASK_WIDTH = 16;
-    const int COLLISION_MASK_HEIGHT = 16;
+    int COLLISION_MASK_WIDTH = 16;
+    int COLLISION_MASK_HEIGHT = 16;
 
     // NPC properties
     int ID;

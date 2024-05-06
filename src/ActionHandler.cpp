@@ -831,3 +831,13 @@ void ActionHandler::SetPlayerName(std::string player){
 void ActionHandler::SetPlayerGender(std::string player){
     PLAYER_GENDER = player;
 }
+
+void ActionHandler::SetFade(int fadeAmount){
+    if (fadeAmount == -1){
+        fadeInComplete = false;
+        fadeOutComplete = false;
+        Fade = 0;
+    } else{
+        Fade = fadeAmount;
+    }
+}

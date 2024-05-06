@@ -31,7 +31,7 @@ public:
     const ldtk::Layer& GetCOL();
     ldtk::Project ldtk_project;
     void loadPlayer(Player& player_obj);
-    void loadNPCs(std::vector<NPC>& NPC_objs);
+    void loadNPCs(Player& player_obj, std::vector<NPC>& NPC_objs);
     void loadTileObjs(const std::string lvl, std::vector<tileObj>& Tile_objs);
     void IsWarpClose(Player& player_obj);
     Vector2 GetSwapLevel();
@@ -42,21 +42,24 @@ public:
     void SwapLevels(Player& player_obj);
     bool GetDrawNextLevel();
     void SetDrawNextLevel();
+    bool GetLoadingDone() const {return loadingDone; }
     std::string GetCurLevelName();
     std::string GetSwapLevelName();
     void unloadFarAwayLevel(Player& player_obj, std::vector<tileObj>& Tile_objs);
     bool IsCameraLockNear(Player& player_obj);
-    int GetLockCameraAxis() const {return LockCameraAxis;}
+    Vector2 GetLockCameraAxis() const {return LockCameraAxis;}
     void PlayerInTallGrass(Player& player_obj);
     void DrawLocationCard();
     void DrawGrass(Player& player_obj,std::vector<tileObj>& Tile_objs);
     void parseCSV();
-
+    Vector2 InitLockDirection(Player& player_obj);
+    std::string IndoorWarpTo(Player& player_obj);
 
 private:
     std::map<std::string, std::vector<int>> tileAnimationsMap;
     std::vector<std::pair<std::string, int>> firstFrameIds; // Vector to store animation name and first frame ID
     std::vector<int> frontTiles;
+    bool loadingDone = false;
     Texture2D texture;
     Texture2D locationCard_Texture;
     RenderTexture2D renderer;
@@ -109,5 +112,5 @@ private:
     Vector2 Warp_Pos;
     int Warp_Dir;
     int SwapLevel_Dir;
-    int LockCameraAxis = 0;
+    Vector2 LockCameraAxis = {0,0};
 };

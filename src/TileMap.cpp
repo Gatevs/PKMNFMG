@@ -11,7 +11,7 @@ TileMap::TileMap() {
     NextLevelLoaded = false;
     onWarp = false;
     TILE_ANIM_TIME = 50;
-    curLevel = "Swolie_Town";
+    curLevel = "Player_Home";
     nextLevel = "Swolie_Town";
 }
 
@@ -32,6 +32,7 @@ void TileMap::loadLDtkMap(const std::string& filePath, std::function<void()> cal
 
 // Configure the tilemap
 void TileMap::initialize(const std::string& Lvl) {
+    loadingDone = false;
     curLevel = Lvl;
     const auto& world = ldtk_project.getWorld();
     const auto& level = world.getLevel(Lvl);
@@ -81,7 +82,7 @@ void TileMap::initialize(const std::string& Lvl) {
         DrawTextureRec(texture, src, dest, WHITE);
     }
     EndTextureMode();
-
+    loadingDone = true;
 }
 
 // Draw the tilemap
@@ -185,6 +186,23 @@ void TileMap::update(const std::string lvl, unrelated& animationState, Player& p
     }
 }
 
+std::string TileMap::IndoorWarpTo(Player& player_obj){
+    const auto& world = ldtk_project.getWorld();
+    const auto& level = world.getLevel(curLevel);
+    const auto& objects = level.getLayer("Objects");
+    const int TILE_SIZE = 16;
+    for (const ldtk::Entity& wObj : objects.getEntitiesByName("Indoor_Warp")) {
+        Rectangle WarpCol = {static_cast<float>(wObj.getWorldPosition().x - (TILE_SIZE)),static_cast<float>((wObj.getWorldPosition().y- (TILE_SIZE/2.0f) - TILE_SIZE)),TILE_SIZE,TILE_SIZE};
+        std::string WarpGoingTo = wObj.getField<std::string>("Going_To").value();
+        if (CheckCollisionRecs(player_obj.ColOffset(false),WarpCol)){
+            return WarpGoingTo;
+        }else {
+            return "NULL";
+        }
+    }
+    return "NULL";
+}
+
 void TileMap::IsWarpClose(Player& player_obj){
     const int TILE_SIZE = 16;
     int dirvalue = 0;
@@ -193,7 +211,7 @@ void TileMap::IsWarpClose(Player& player_obj){
     const auto& level = world.getLevel(curLevel);
     const auto& objects = level.getLayer("Objects");
 
-    for (const ldtk::Entity& wObj : objects.getEntitiesByTag("Warps")) {
+    for (const ldtk::Entity& wObj : objects.getEntitiesByName("OW_Warp")) {
         auto wObj_Pos = wObj.getWorldPosition();
         auto wObj_Width = wObj.getSize().x;
         auto wObj_Height = wObj.getSize().y;
@@ -355,18 +373,34 @@ bool TileMap::IsCameraLockNear(Player& player_obj){
         auto CameraL_pos = CameraL.getWorldPosition();
         auto CameraL_Width = CameraL.getSize().x;
         auto CameraL_Height = CameraL.getSize().y;
+        auto CameraL_Type = CameraL.getField<int>("Type").value();
         Rectangle CameraLRec = {static_cast<float>(CameraL_pos.x), static_cast<float>(CameraL_pos.y), static_cast<float>(CameraL_Width),static_cast<float>(CameraL_Height)};
 
         if (CheckCollisionRecs(player_obj.ColOffset(false),CameraLRec)){
-            if (CameraL_Width < CameraL_Height){
-                LockCameraAxis = 1;
-            } else if (CameraL_Width > CameraL_Height){
-                LockCameraAxis = 2;
+            if (CameraL_Height > CameraL_Width){
+                LockCameraAxis.x = 1;
+                LockCameraAxis.y = 0;
+            }
+            if (CameraL_Height < CameraL_Width){
+                LockCameraAxis.y = 1;
+                LockCameraAxis.x = 0;
             }
             return true;
         }
     }
     return false;
+}
+
+Vector2 TileMap::InitLockDirection(Player& player_obj){
+    const auto& world = ldtk_project.getWorld();
+    const auto& level = world.getLevel(curLevel);
+    int MinLevel_X = level.position.x - (level.size.x / 2);
+    int MaxLevel_X = level.position.x + (level.size.x / 2);
+
+    if (player_obj.GetPosition().x > MinLevel_X){
+        return Vector2 {static_cast<float>(MinLevel_X + (level.size.x/2.0f) + (player_obj.GetPosition().x/2.0f) + 4),player_obj.GetPosition().y};
+    }
+    return Vector2 {0,0};
 }
 
 void TileMap::ShowLocationCard(Player& player_obj){
@@ -529,26 +563,44 @@ void TileMap::loadPlayer(Player& player_obj){
     const auto& level = world.getLevel(curLevel);
     const auto& objects = level.getLayer("Objects");
     for (const ldtk::Entity& playerEnt : objects.getEntitiesByName("Player")) {
-        auto player_pos = playerEnt.getPosition();
+        auto player_pos = playerEnt.getWorldPosition();
 
         player_obj.setPosition(Vector2{(float(player_pos.x)-8),(float(player_pos.y)-16)});
         player_obj.SetLocation(curLevel);
     }
 }
 
-void TileMap::loadNPCs(std::vector<NPC>& NPC_objs) {
+void TileMap::loadNPCs(Player& player_obj, std::vector<NPC>& NPC_objs) {
     const auto& world = ldtk_project.getWorld();
     const auto& level = world.getLevel(curLevel);
     const auto& objects = level.getLayer("Objects");
     for (const ldtk::Entity& npcObj : objects.getEntitiesByName("NPC")) {
         auto npc_ID = npcObj.getField<int>("NPC_ID").value();
-        auto npc_pos = npcObj.getWorldPosition();
-        NPC_objs.push_back(NPC(npc_ID, curLevel, Vector2{(float)(npc_pos.x - 8), (float)(npc_pos.y - 16)}));
+
+        // Check if an NPC with the same ID already exists in NPC_objs
+        bool npcExists = false;
+        for (const NPC& npc : NPC_objs) {
+            if (npc.GetID() == npc_ID) {
+                npcExists = true;
+                break;
+            }
+        }
+
+        // If the NPC with the same ID doesn't exist, add it to NPC_objs
+        if (!npcExists) {
+            auto npc_pos = npcObj.getWorldPosition();
+            NPC_objs.push_back(NPC(npc_ID, curLevel, Vector2{(float)(npc_pos.x - 8), (float)(npc_pos.y - 16)}));
+        }
+    }
+    if (player_obj.GetPlayerFollower() != 0){
+        NPC_objs.erase(std::remove_if(NPC_objs.begin(), NPC_objs.end(), [&](const NPC& obj) {
+            return obj.GetID() == player_obj.GetPlayerFollower();
+        }), NPC_objs.end());
+        NPC_objs.push_back(NPC(player_obj.GetPlayerFollower(), curLevel, player_obj.GetPosition()));
     }
 }
 
 void TileMap::loadTileObjs(const std::string lvl, std::vector<tileObj>& Tile_objs) {
-
     const auto& world = ldtk_project.getWorld();
     const auto& level = world.getLevel(lvl);
     const auto& objects = level.getLayer("Objects");
@@ -569,6 +621,7 @@ void TileMap::Unload() {
     UnloadTexture(texture);
 }
 
+// This is for the location card xd
 void TileMap::parseCSV(){
     rapidcsv::Document doc("assets/CSV/OW_LEVEL_DEF.csv");
     const auto& levels = doc.GetColumn<std::string>("Level");
