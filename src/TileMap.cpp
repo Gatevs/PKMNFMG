@@ -109,10 +109,10 @@ void TileMap::draw(const std::string render, Vector2 lvl_Pos) {
 }
 
 // Animate Tiles
-void TileMap::update(const std::string lvl, unrelated& animationState, Player& player_obj) {
+void TileMap::update(const std::string lvl, unrelated& animationState, Vector2 pos) {
     RenderTexture2D drawer;
     if (Card.Active){
-        ShowLocationCard(player_obj);
+        ShowLocationCard(pos);
     }
     if (lvl == curLevel){
         drawer = renderer;
@@ -134,7 +134,7 @@ void TileMap::update(const std::string lvl, unrelated& animationState, Player& p
     }
 
     if (animationState.animFrame){
-        Vector2 StartPos = (Vector2){player_obj.GetPosition().x - 112, player_obj.GetPosition().y - 96};
+        Vector2 StartPos = (Vector2){pos.x - 112, pos.y - 96};
         Vector2 EndPos = (Vector2){StartPos.x + 256, StartPos.y + 208};
         // Update the current frame index based on the tile animation direction.
         animationState.currentFrameIndex += animationState.tileAnimReverse ? -1 : 1;
@@ -240,7 +240,7 @@ void TileMap::IsWarpClose(Player& player_obj){
                 Warp_Pos = (Vector2){static_cast<float>(wObj_Pos.x), static_cast<float>(wObj_Pos.y)};
                 Warp_Dir = wObj_Dir;
                 if (!Card.Active) {parseCSV();}
-                ShowLocationCard(player_obj);
+                Card.Active = true;
                 onWarp = true;
             }
         }
@@ -403,14 +403,10 @@ Vector2 TileMap::InitLockDirection(Player& player_obj){
     return Vector2 {0,0};
 }
 
-void TileMap::ShowLocationCard(Player& player_obj){
-    if (!Card.Active){
-        Card.Position = {player_obj.GetPosition().x - 110, player_obj.GetPosition().y - 110};
-        Card.Active = true;
-    }
+void TileMap::ShowLocationCard(Vector2 pos){
     if (Card.Active){
-        Card.Position.x = player_obj.GetPosition().x - 110;
-        Card.Position.y = (player_obj.GetPosition().y - 110) + Card.CardYPos;
+        Card.Position.x = 0 - 30;
+        Card.Position.y = (0 - 30) + Card.CardYPos;
         if (Card.CardYPos < 32 && !Card.Hide){
             Card.CardYPos += 0.5f;
         }else{

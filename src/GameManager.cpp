@@ -56,16 +56,7 @@ void GameManager::GameInitialization(std::string map){
         Outside.loadNPCs(player, npcs);
         Outside.loadTileObjs(Outside.GetCurLevelName(), tileObjs);
     });
-    Menu.SetFade(255);
-    WarpingPlayer = 2;
     // Outside.loadWarps(warps);
-    if (Outside.IsCameraLockNear(player)){
-        lockCamera = true;
-        targetPos = Outside.InitLockDirection(player);
-    }else{
-        lockCamera = false;
-    }
-
     JsonLoadNPCData();
     SetMasterVolume(0.9f);
 
@@ -81,9 +72,18 @@ void GameManager::GameInitialization(std::string map){
     //Only at initialization
     player.SetShadow(ShadowCentered);
     player.UpdatePositionAndCamera();
-    camera.target = (Vector2){((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32, (player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f)};
+    targetPos = {(floor((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32), floor((player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f))};
+    if (Outside.IsCameraLockNear(player)){
+        lockCamera = true;
+        targetPos = {Outside.InitLockDirection(player).x,targetPos.y};
+    }else{
+        lockCamera = false;
+    }
     camera.rotation = 0.0f;
     camera.zoom = 1.0f;
+    Menu.SetFadePos({targetPos.x - 32, targetPos.y});
+    Menu.SetFade(255);
+    WarpingPlayer = 2;
 }
 
 void GameManager::CameraUpdate(){
@@ -93,17 +93,17 @@ void GameManager::CameraUpdate(){
         if (Outside.GetLockCameraAxis().x == 1){
             targetPos.x = targetPos.x;
             if (Outside.GetLockCameraAxis().y != 1){
-                targetPos.y = floor((player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f));
+                targetPos.y = float((player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f));
             }
         }
         if(Outside.GetLockCameraAxis().y == 1){
             targetPos.y = targetPos.y;
             if (Outside.GetLockCameraAxis().x != 1){
-                targetPos.x = (floor((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32);
+                targetPos.x = (float((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32);
             }
         }
     }else{
-        targetPos = {(floor((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32), floor((player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f))};
+        targetPos = {(float((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32), float((player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f))};
     }
     // Set the camera zoom and offset
     scaleFactor = MIN(GetScreenWidth() / gameWidth, GetScreenHeight() / gameHeight);
@@ -119,12 +119,11 @@ void GameManager::CameraUpdate(){
 }
 
 void GameManager::GameLoop(){
-    Outside.update(Outside.GetCurLevelName(), cur, player);
+    Outside.update(Outside.GetCurLevelName(), cur, player.GetPosition());
     // std::cout << Menu.stopPlayerInput << std::endl;
     if (WarpingPlayer == 1){
         WarpPlayer(Outside.IndoorWarpTo(player));
     } else if (WarpingPlayer == 2){
-        Menu.SetFadePos({camera.target.x - 32, camera.target.y});
         if(!Menu.IsFadeOutComplete()){
             Menu.fadeOut();
         }else{
@@ -217,7 +216,7 @@ void GameManager::GameLoop(){
             Outside.loadTileObjs(Outside.GetSwapLevelName(), tileObjs);
             Outside.SetDrawNextLevel();
         }else{
-            Outside.update(Outside.GetSwapLevelName(), swapper, player);
+            Outside.update(Outside.GetSwapLevelName(), swapper, player.GetPosition());
         }
     }
 }
@@ -253,7 +252,6 @@ void GameManager::DrawWorld(){
             obj->Draw(); // Draw each object using polymorphism
         }
         Menu.Draw();
-        Outside.DrawLocationCard();
     }
     EndMode2D();
 }
@@ -415,6 +413,7 @@ void GameManager::WarpPlayer(std::string where){
         npcs.clear();
         tileObjs.clear();
         Outside.Unload();
+        player.StopPlayer();
         GameInitialization(where);
         WarpingPlayer = 2;
     }
@@ -430,19 +429,18 @@ void GameManager::Unload(){
 
 }
 
-void GameManager::DrawVN(){
-    int scaleFactorB = MIN(GetScreenWidth() / gameWidth, GetScreenHeight() / gameHeight);
+void GameManager::DrawOutsideItems(){
     int actualGameWidth = gameHeight * scaleFactor;
     int actualGameHeight = gameHeight * scaleFactor;
     // Calculate the offset to center the game in the window
     int offsetX = (GetScreenWidth() - actualGameWidth) / 2;
     int offsetY = (GetScreenHeight() - actualGameHeight) / 2;
-    SetTextureFilter(VNTest,TEXTURE_FILTER_BILINEAR);
-    bigCamera.zoom = 0.2 * scaleFactorB;
+    bigCamera.zoom = scaleFactor;
     bigCamera.target = (Vector2){0,0};
     bigCamera.offset = (Vector2){ (float)offsetX, (float)offsetY };
     BeginMode2D(bigCamera);
     {
-        DrawTexture(VNTest,(VNTest.width / 2.25f) - (VNTest.width / 2.0f),(VNTest.height / 2.0f) - (VNTest.height / 2.0f),WHITE);
+        Outside.DrawLocationCard();
     }
+    EndMode2D();
 }

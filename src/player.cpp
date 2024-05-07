@@ -561,3 +561,10 @@ void Player::updateAnimationFrameDimensions(const std::string& animation) {
         inGrowthPhase = true;
     }
 }
+
+void Player::StopPlayer(){
+    past_dir = input_direction;
+    step_timer = 0;
+    move = false;
+    animating = false;
+}

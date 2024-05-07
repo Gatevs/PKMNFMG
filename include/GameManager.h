@@ -25,7 +25,7 @@ public:
     bool IsIntroFinished() {return IntroFinished;}
     bool IsVNMenu() {return VNMenu;}
     void DrawIntro();
-    void DrawVN();
+    void DrawOutsideItems();
 private:
     void JsonSaveNPCData();
     void JsonLoadNPCData();

@@ -23,10 +23,9 @@ void UpdateDrawFrame(GameManager& game) {
         BeginDrawing();
         {
             game.DrawWorld();
+            game.DrawOutsideItems();
             game.DrawBars();
-            if (game.IsVNMenu()){
-                game.DrawVN();
-            }
+
         }
         EndDrawing();
     } else{

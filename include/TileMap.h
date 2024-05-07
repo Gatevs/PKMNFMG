@@ -26,7 +26,7 @@ public:
     void initialize(const std::string& Lvl);
     void Unload();
     void draw(const std::string render, Vector2 lvl_pos);
-    void update(const std::string lvl, unrelated& animationState, Player& player_obj);
+    void update(const std::string lvl, unrelated& animationState, Vector2 pos);
     void InFrontObjs();
     const ldtk::Layer& GetCOL();
     ldtk::Project ldtk_project;
@@ -84,7 +84,7 @@ private:
 
     void LoadNextLevel(const ldtk::Entity& warpObj);
     void EnterNextlevel(Vector2 warpPos, Player& player_obj, int dir);
-    void ShowLocationCard(Player& player_obj);
+    void ShowLocationCard(Vector2 pos);
 
     int TILE_ANIM_TIME;
     std::string curLevel;
