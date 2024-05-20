@@ -270,11 +270,12 @@ void Player::npcMoving(std::vector<NPC>& npcs){
 
 // Update player position based on movement logic
 void Player::UpdatePositionAndCamera() {
+    float dt = GetFrameTime();
     Rectangle colOffset = ColOffset(false); // Calculate once
 
     if (move) {
         if (step_timer < 16/player_speed) {
-            step_timer += 1;
+            step_timer += (dt * 60);
 
             position.x = colOffset.x + (COLLISION_MASK_WIDTH / 2.0f);
             position.y = colOffset.y + (COLLISION_MASK_HEIGHT / 2.0f);
