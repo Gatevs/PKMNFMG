@@ -268,20 +268,24 @@ void Player::npcMoving(std::vector<NPC>& npcs){
     }
 }
 
-// Update player position based on movement logic
-void Player::UpdatePositionAndCamera() {
-    float dt = GetFrameTime();
+void Player::UpdatePositionAndCamera(float fixedDeltaTime) {
     Rectangle colOffset = ColOffset(false); // Calculate once
 
     if (move) {
-        if (step_timer < 16/player_speed) {
-            step_timer += (dt * 60);
+        if (step_timer < 16 / player_speed) {
+            step_timer += (fixedDeltaTime * 60.0f);
+
+            // Debug output
+            std::cout << "fixedDeltaTime: " << fixedDeltaTime << " step_timer: " << step_timer << std::endl;
 
             position.x = colOffset.x + (COLLISION_MASK_WIDTH / 2.0f);
             position.y = colOffset.y + (COLLISION_MASK_HEIGHT / 2.0f);
-        }
 
+            // Debug output
+            std::cout << "position.x: " << position.x << " position.y: " << position.y << std::endl;
+        }
     }
+
     // Update collision mask position to match player position
     collisionMask.x = position.x - (COLLISION_MASK_WIDTH / 2.0f);
     collisionMask.y = position.y - (COLLISION_MASK_HEIGHT / 2.0f);

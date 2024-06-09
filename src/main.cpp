@@ -11,12 +11,21 @@
 #endif
 
 // Global variables
+const float TARGET_FPS = 60.0f;
+const float FIXED_TIMESTEP = 1.0f / TARGET_FPS;
+float accumulator = 0.0f;
 
 // Update and Draw one frame
 void UpdateDrawFrame(GameManager& game) {
+    float dt = GetFrameTime();
+    accumulator += dt;
+
     // Update
     if (game.IsIntroFinished()){
-        game.GameLoop();
+        while (accumulator >= FIXED_TIMESTEP) {
+            game.GameLoop(FIXED_TIMESTEP);
+            accumulator -= FIXED_TIMESTEP;
+        }
         game.CameraUpdate();
 
         // Draw
