@@ -32,8 +32,8 @@ private:
     void WarpPlayer(std::string where);
     int test;
     Color green = {20,160,133,254};
-    const int gameWidth = 256;
-    const int gameHeight = 192;
+    int gameWidth = 256;
+    int gameHeight = 192;
     int scaleFactor;
     // Camera zoom and offset
     Camera2D camera = { 0 };

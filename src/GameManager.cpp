@@ -16,6 +16,7 @@
 #include <fstream>
 #include "json.hpp"
 #include <cstdlib>
+#include "ControllerSingleton.h"
 
 GameManager::GameManager(){
     EntityGrowth = LoadSound("assets/SFX/GROWTH.ogg");
@@ -28,6 +29,11 @@ GameManager::~GameManager(){
 }
 
 void GameManager::DebugIntro(){
+    if (GetTouchPointCount() > 0){
+        ControllerSingleton::GetInstance().EnableTouchController(true);
+        std::cout << "Touch Controller activated" << std::endl;
+    }
+
     if (IsKeyPressed(KEY_RIGHT) && DebugID < 2){
         SelectPos.x += 128;
         DebugID = 2;
@@ -438,9 +444,12 @@ void GameManager::DrawOutsideItems(){
     bigCamera.zoom = scaleFactor;
     bigCamera.target = (Vector2){0,0};
     bigCamera.offset = (Vector2){ (float)offsetX, (float)offsetY };
+    ControllerSingleton::GetInstance().SetOffset(bigCamera.offset);
+    ControllerSingleton::GetInstance().SetScale(scaleFactor);
     BeginMode2D(bigCamera);
     {
         Outside.DrawLocationCard();
+        ControllerSingleton::GetInstance().Draw();
     }
     EndMode2D();
 }

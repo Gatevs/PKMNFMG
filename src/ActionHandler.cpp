@@ -4,6 +4,7 @@
 #include <string>
 #include "npc.h"
 #include "player.h"
+#include "ControllerSingleton.h"
 
 ActionHandler::ActionHandler() {
     atlasTexture = LoadTexture("assets/MISC/UI_Atlas.png");
@@ -141,7 +142,7 @@ void ActionHandler::pause(Player& p) {
     if (textTimer < 10){
         textTimer += 1;
     }
-    if (IsKeyPressed(KEY_DOWN) and menuID < 7){
+    if (ControllerSingleton::GetInstance().IsDownPressed() and menuID < 7){
         switch (selection){
             case 0:
                 for (int i = 0; i < 8; ++i) {
@@ -156,7 +157,7 @@ void ActionHandler::pause(Player& p) {
                 break;
         }
     }
-    if (IsKeyPressed(KEY_UP) and menuID > 1){
+    if (ControllerSingleton::GetInstance().IsUpPressed() and menuID > 1){
         switch (selection){
             case 0:
                 for (int i = 0; i < 8; ++i) {
@@ -171,10 +172,10 @@ void ActionHandler::pause(Player& p) {
                 break;
         }
     }
-    if (IsKeyPressed(KEY_A) && textTimer >= 10 && selection == 0){
+    if (ControllerSingleton::GetInstance().IsXPressed() && textTimer >= 10 && selection == 0){
         CloseUI(p);
     }
-    if (IsKeyPressed(KEY_X)){
+    if (ControllerSingleton::GetInstance().IsBPressed()){
         CloseUI(p);
     }
 
@@ -206,7 +207,7 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
     if (textTimer < 10){
         textTimer += 1;
     }
-    if (IsKeyPressed(KEY_DOWN) and menuID < MAX_DOWN){
+    if (ControllerSingleton::GetInstance().IsDownPressed() and menuID < MAX_DOWN){
         switch (selection){
             case 0:
                 for (int i = 0; i < 5; ++i) {
@@ -223,7 +224,7 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
                 break;
         }
     }
-    if (IsKeyPressed(KEY_UP) and menuID > MAX_UP){
+    if (ControllerSingleton::GetInstance().IsUpPressed() and menuID > MAX_UP){
         switch (selection){
             case 0:
                 for (int i = 0; i < 5; ++i) {
@@ -240,10 +241,10 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
                 break;
         }
     }
-    if (IsKeyPressed(KEY_S) && textTimer >= 10 && selection == 0){
+    if (ControllerSingleton::GetInstance().IsYPressed() && textTimer >= 10 && selection == 0){
         CloseUI(p);
     }
-    if (IsKeyPressed(KEY_X)){
+    if (ControllerSingleton::GetInstance().IsBPressed()){
         switch (selection){
             case 0:
                 CloseUI(p);
@@ -271,7 +272,7 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
                 break;
         }
     }
-    if (IsKeyPressed(KEY_Z)){
+    if (ControllerSingleton::GetInstance().IsAPressed()){
         if (selection == 0){
             PlaySound(smallBeep);
             selection = menuID;
@@ -516,14 +517,14 @@ void ActionHandler::dialogue(Player& player) {
     }
 
     // Adjust text speed based on key state
-    if (IsKeyDown(KEY_Z)){
+    if (ControllerSingleton::GetInstance().IsAHeld()){
         TEXT_SPEED = TEXT_SPEED_FAST;
     }else{
         TEXT_SPEED = TEXT_SPEED_NORMAL;
     }
 
     // Process key press events
-    if (IsKeyPressed(KEY_Z)){
+    if (ControllerSingleton::GetInstance().IsAPressed()){
         if (textFinished && curTextSize == DialogueText.length()){
             // Text finished displaying, reset and stop UI
             stopPlayerInput = false;

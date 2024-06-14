@@ -6,6 +6,7 @@
 #include <vector>
 #include <algorithm>
 #include "rapidcsv.h"
+#include "ControllerSingleton.h"
 
 Player::Player() {
     Stage = 0;
@@ -64,7 +65,8 @@ Player::~Player() {
 void Player::HandleInput(std::vector<NPC>& npcs){
     float MOVEMENT_DELAY = 0.150f;
     // Increase the timer if any directional key is pressed
-    if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_LEFT)) {
+    if (ControllerSingleton::GetInstance().IsUpHeld() || ControllerSingleton::GetInstance().IsDownHeld()
+        || ControllerSingleton::GetInstance().IsRightHeld() || ControllerSingleton::GetInstance().IsLeftHeld()) {
         keyPressTimer += GetFrameTime();
     } else {
         // Reset the timer if no directional key is pressed
@@ -83,7 +85,7 @@ void Player::HandleInput(std::vector<NPC>& npcs){
     if (keyPressTimer >= MOVEMENT_DELAY) {
 
         if (!move) {
-            if (IsKeyDown(KEY_UP)) {
+            if (ControllerSingleton::GetInstance().IsUpHeld()) {
                 currentAnimation = ANIM_UP;
                 animating = true;
                 move = true;
@@ -91,7 +93,7 @@ void Player::HandleInput(std::vector<NPC>& npcs){
                 input_direction.y = -1;
                 input_direction.x = 0;
                 past_pos = position;
-            } else if (IsKeyDown(KEY_DOWN)) {
+            } else if (ControllerSingleton::GetInstance().IsDownHeld()) {
                 currentAnimation = ANIM_DOWN;
                 animating = true;
                 move = true;
@@ -99,7 +101,7 @@ void Player::HandleInput(std::vector<NPC>& npcs){
                 input_direction.y = 1;
                 input_direction.x = 0;
                 past_pos = position;
-            } else if (IsKeyDown(KEY_RIGHT)) {
+            } else if (ControllerSingleton::GetInstance().IsRightHeld()) {
                 currentAnimation = ANIM_RIGHT;
                 animating = true;
                 move = true;
@@ -107,7 +109,7 @@ void Player::HandleInput(std::vector<NPC>& npcs){
                 input_direction.x = 1;
                 input_direction.y = 0;
                 past_pos = position;
-            } else if (IsKeyDown(KEY_LEFT)) {
+            } else if (ControllerSingleton::GetInstance().IsLeftHeld()) {
                 currentAnimation = ANIM_LEFT;
                 animating = true;
                 move = true;
@@ -116,43 +118,43 @@ void Player::HandleInput(std::vector<NPC>& npcs){
                 input_direction.y = 0;
                 past_pos = position;
             }
-            player_speed = IsKeyDown(KEY_X) ? 2 : 1;
+            player_speed = ControllerSingleton::GetInstance().IsBHeld() ? 2 : 1;
             RunFrames = (player_speed == 2) ? 4: 0 ;
 
         }
 
     } else if (step_timer == 0) {
         // Player is not allowed to move yet, only update animation direction
-        if (IsKeyDown(KEY_UP)) {
+        if (ControllerSingleton::GetInstance().IsUpHeld()) {
             currentAnimation = ANIM_UP;
             m_dir = 90;
             animating = true;
-        } else if (IsKeyDown(KEY_DOWN)) {
+        } else if (ControllerSingleton::GetInstance().IsDownHeld()) {
             currentAnimation = ANIM_DOWN;
             m_dir = 270;
             animating = true;
-        } else if (IsKeyDown(KEY_RIGHT)) {
+        } else if (ControllerSingleton::GetInstance().IsRightHeld()) {
             currentAnimation = ANIM_RIGHT;
             m_dir = 0;
             animating = true;
-        } else if (IsKeyDown(KEY_LEFT)) {
+        } else if (ControllerSingleton::GetInstance().IsLeftHeld()) {
             currentAnimation = ANIM_LEFT;
             m_dir = 180;
             animating = true;
         }
     }
 
-    if (IsKeyPressed(KEY_A)){
+    if (ControllerSingleton::GetInstance().IsXPressed()){
         if (!IsPlayerMoving()){
             LoadUI_Element = PAUSE;
         }
     }
-    if (IsKeyPressed(KEY_S)){
+    if (ControllerSingleton::GetInstance().IsYPressed()){
         if (!IsPlayerMoving()){
             LoadUI_Element = ACTION;
         }
     }
-    if (IsKeyPressed(KEY_Z)){
+    if (ControllerSingleton::GetInstance().IsAPressed()){
         if (!IsPlayerMoving()){
             LoadUI_Element = DIALOGUE;
         }
@@ -275,14 +277,8 @@ void Player::UpdatePositionAndCamera(float fixedDeltaTime) {
         if (step_timer < 16 / player_speed) {
             step_timer += (fixedDeltaTime * 60.0f);
 
-            // Debug output
-            std::cout << "fixedDeltaTime: " << fixedDeltaTime << " step_timer: " << step_timer << std::endl;
-
             position.x = colOffset.x + (COLLISION_MASK_WIDTH / 2.0f);
             position.y = colOffset.y + (COLLISION_MASK_HEIGHT / 2.0f);
-
-            // Debug output
-            std::cout << "position.x: " << position.x << " position.y: " << position.y << std::endl;
         }
     }
 

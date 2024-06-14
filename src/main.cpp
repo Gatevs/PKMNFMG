@@ -3,6 +3,7 @@
 #include <vector>
 #include <algorithm>
 #include "GameManager.h"
+#include "ControllerSingleton.h"
 
 //#define PLATFORM_WEB
 
@@ -19,6 +20,8 @@ float accumulator = 0.0f;
 void UpdateDrawFrame(GameManager& game) {
     float dt = GetFrameTime();
     accumulator += dt;
+
+    ControllerSingleton::GetInstance().Update(); // Update controller inputs
 
     // Update
     if (game.IsIntroFinished()){
