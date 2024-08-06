@@ -169,5 +169,6 @@ void Controller::Draw() {
         DrawTextureRec(TouchLayout,{25,25,25,25},{buttonDown.x,buttonDown.y},transparent);
         DrawTextureRec(TouchLayout,{25,50,25,25},{buttonRight.x,buttonRight.y},transparent);
         DrawTextureRec(TouchLayout,{25,75,25,25},{buttonUp.x,buttonUp.y},transparent);
+        DrawRectangleRec({0,140,25,25},{76,77,76,120});
     }
 }

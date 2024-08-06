@@ -48,6 +48,7 @@ void UpdateDrawFrame(GameManager& game) {
         {
             game.DrawIntro();
             game.DrawBars();
+            if (ControllerSingleton::GetInstance().IsTouchEnabled()) { game.DrawOutsideItems(); }
         }
         EndDrawing();
     }

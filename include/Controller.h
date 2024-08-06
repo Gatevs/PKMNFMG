@@ -30,6 +30,8 @@ public:
     bool IsXHeld() const { return X_Down; }
     bool IsYHeld() const { return Y_Down; }
 
+    bool IsTouchEnabled() const { return TouchControllerON;}
+
     void EnableTouchController(bool enable) { TouchControllerON = enable; }
     void SetOffset(Vector2 offset) { ScreenOffset = offset; }
     void SetScale(int scale) { ScreenScale = scale; }
@@ -52,14 +54,14 @@ private:
 
     static constexpr float longPressThreshold = 0.05f; // Threshold for a long press in seconds
 
-    Rectangle buttonA = {190, 125, 25, 25};
-    Rectangle buttonB = {165, 150, 25, 25};
-    Rectangle buttonX = {165, 100, 25, 25};
-    Rectangle buttonY = {140, 125, 25, 25};
-    Rectangle buttonRight = {25, 125, 25, 25};
-    Rectangle buttonDown = {0, 150, 25, 25};
-    Rectangle buttonUp = {0, 100, 25, 25};
-    Rectangle buttonLeft = {-25, 125, 25, 25};
+    Rectangle buttonA = {190, 140, 25, 25};
+    Rectangle buttonB = {165, 165, 25, 25};
+    Rectangle buttonX = {165, 115, 25, 25};
+    Rectangle buttonY = {140, 140, 25, 25};
+    Rectangle buttonRight = {25, 140, 25, 25};
+    Rectangle buttonDown = {0, 165, 25, 25};
+    Rectangle buttonUp = {0, 115, 25, 25};
+    Rectangle buttonLeft = {-25, 140, 25, 25};
 
     float buttonATimer = 0.0f;
     float buttonBTimer = 0.0f;

@@ -41,6 +41,7 @@ private:
     void pause(Player& p);
     void action(std::vector<NPC>& NPC_objs, Player& p);
     void dialogue(Player& player);
+    void PauseMenuBag();
     void UpdateScreenState();
     void DrawPauseUI();
     void DrawActionUI();
@@ -199,5 +200,11 @@ private:
         static_cast<float>(0),
         static_cast<float>(51),
         static_cast<float>(51)
+    };
+        const Rectangle BagMap = {
+        static_cast<float>(512),
+        static_cast<float>(0),
+        static_cast<float>(256),
+        static_cast<float>(192)
     };
 };

@@ -93,6 +93,7 @@ void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
             MainPos = Vector2{drawPos.x + 122, drawPos.y + 6};
             MainSelPos = Vector2{MainPos.x + 4, MainPos.y + 5};
             ICOPos = (Vector2){MainSelPos.x + 3, MainSelPos.y};
+            fadePos = (Vector2){drawPos.x - 32, drawPos.y};
             MainMap = pauseMap;
             MainSelector = selectorMap;
             ICO[1] = MenuICOMap.width;
@@ -142,7 +143,7 @@ void ActionHandler::pause(Player& p) {
     if (textTimer < 10){
         textTimer += 1;
     }
-    if (ControllerSingleton::GetInstance().IsDownPressed() and menuID < 7){
+    if (ControllerSingleton::GetInstance().IsDownPressed() and menuID < MAX_DOWN){
         switch (selection){
             case 0:
                 for (int i = 0; i < 8; ++i) {
@@ -153,11 +154,13 @@ void ActionHandler::pause(Player& p) {
                 ICO[menuID] = MenuICOMap.width;
                 PlaySound(GUICursor);
                 break;
-            case 2:
+            case 3:
+                SubSelPos.y = SubSelPos.y + 15;
+                menuID += 1;
                 break;
         }
     }
-    if (ControllerSingleton::GetInstance().IsUpPressed() and menuID > 1){
+    if (ControllerSingleton::GetInstance().IsUpPressed() and menuID > MAX_UP){
         switch (selection){
             case 0:
                 for (int i = 0; i < 8; ++i) {
@@ -168,18 +171,62 @@ void ActionHandler::pause(Player& p) {
                 ICO[menuID] = MenuICOMap.width;
                 PlaySound(GUICursor);
                 break;
-            case 2:
+            case 3:
+                SubSelPos.y = SubSelPos.y - 15;
+                menuID -= 1;
                 break;
         }
     }
     if (ControllerSingleton::GetInstance().IsXPressed() && textTimer >= 10 && selection == 0){
         CloseUI(p);
     }
-    if (ControllerSingleton::GetInstance().IsBPressed()){
+    if (ControllerSingleton::GetInstance().IsBPressed() && textTimer >= 10 && selection == 0){
         CloseUI(p);
+    }
+    if (ControllerSingleton::GetInstance().IsAPressed()){
+        if (selection == 0){
+            PlaySound(smallBeep);
+            selection = menuID;
+            textTimer = 0;
+        }
+    }
+    switch (selection) {
+        case 0:
+            MAX_DOWN = 7;
+            MAX_UP = 1;
+            break;
+        case 1:
+            selection = 0;
+            break;
+        case 2:
+            selection = 0;
+            break;
+        case 3:
+            PauseMenuBag();
+            break;
+        case 4:
+            selection = 0;
+            break;
+        case 5:
+            selection = 0;
+            break;
+        case 6:
+            selection = 0;
+            break;
+        case 7:
+            CloseUI(p);
+            break;
     }
 
     //std::cout << "Pause action with value: " << menuID << std::endl;
+}
+
+void ActionHandler::PauseMenuBag(){
+    if (screenState == OFF){
+        menuID = 1;
+        SubSelPos = (Vector2){fadePos.x + 105, fadePos.y + 15};
+    }
+    UpdateScreenState();
 }
 
 void ActionHandler::SetVNSprite(){
@@ -788,6 +835,15 @@ void ActionHandler::DrawPauseUI(){
         DrawTextureRec(atlasTexture, (Rectangle) {MenuICOMap.x + ICO[i], MenuICOMap.y + (MenuICOMap.height * (i - 1)), MenuICOMap.width, MenuICOMap.height},(Vector2){ICOPos.x + 1, ICOPos.y + (MenuICOMap.height * (i - 1)) - (i - 1)}, WHITE);
     }
     DrawTextBoxed(MainFont, "Player", (Rectangle){MainPos.x + 33, MainPos.y + 84, 60, 30}, MainFont.baseSize, -5, wordWrap, WHITE);
+    switch (selection) {
+        case 3:
+            if (screenState == ON || screenState == WAIT){
+                DrawTextureRec(screenTexture, BagMap, fadePos, WHITE);
+                DrawTextureRec(atlasTexture,BigSelectMap,SubSelPos, WHITE );
+            }
+            break;
+
+}
 }
 
 void ActionHandler::DrawActionUI(){

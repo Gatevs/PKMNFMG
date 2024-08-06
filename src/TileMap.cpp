@@ -50,7 +50,7 @@ void TileMap::initialize(const std::string& Lvl) {
 
     for (int i = 1; i <= TILE_ANIM_NUM; ++i) {
         std::string animationName = "ANIM_" + std::to_string(i);
-        const auto& animTiles = layer.getTileset().getTilesWithTagEnum(tileAnim[animationName]);
+        const auto& animTiles = layer.getTileset().getTilesByEnumTag(tileAnim[animationName]);
         tileAnimationsMap[animationName] = animTiles;
     }
 
@@ -374,7 +374,7 @@ bool TileMap::IsCameraLockNear(Player& player_obj){
         auto CameraL_Width = CameraL.getSize().x;
         auto CameraL_Height = CameraL.getSize().y;
         auto CameraL_Type = CameraL.getField<int>("Type").value();
-        Rectangle CameraLRec = {static_cast<float>(CameraL_pos.x), static_cast<float>(CameraL_pos.y), static_cast<float>(CameraL_Width),static_cast<float>(CameraL_Height)};
+        Rectangle CameraLRec = {static_cast<float>(CameraL_pos.x), static_cast<float>(CameraL_pos.y + 8), static_cast<float>(CameraL_Width),static_cast<float>(CameraL_Height)};
 
         if (CheckCollisionRecs(player_obj.ColOffset(false),CameraLRec)){
             if (CameraL_Height > CameraL_Width){
@@ -382,8 +382,12 @@ bool TileMap::IsCameraLockNear(Player& player_obj){
                 LockCameraAxis.y = 0;
             }
             if (CameraL_Height < CameraL_Width){
-                LockCameraAxis.y = 1;
                 LockCameraAxis.x = 0;
+                LockCameraAxis.y = 1;
+            }
+            if (CameraL_Height == CameraL_Width){
+                LockCameraAxis.x = 1;
+                LockCameraAxis.y = 1;
             }
             return true;
         }
@@ -566,9 +570,9 @@ void TileMap::loadPlayer(Player& player_obj){
     }
 }
 
-void TileMap::loadNPCs(Player& player_obj, std::vector<NPC>& NPC_objs) {
+void TileMap::loadNPCs(const std::string lvl, Player& player_obj, std::vector<NPC>& NPC_objs, bool initialization) {
     const auto& world = ldtk_project.getWorld();
-    const auto& level = world.getLevel(curLevel);
+    const auto& level = world.getLevel(lvl);
     const auto& objects = level.getLayer("Objects");
     for (const ldtk::Entity& npcObj : objects.getEntitiesByName("NPC")) {
         auto npc_ID = npcObj.getField<int>("NPC_ID").value();
@@ -585,14 +589,14 @@ void TileMap::loadNPCs(Player& player_obj, std::vector<NPC>& NPC_objs) {
         // If the NPC with the same ID doesn't exist, add it to NPC_objs
         if (!npcExists) {
             auto npc_pos = npcObj.getWorldPosition();
-            NPC_objs.push_back(NPC(npc_ID, curLevel, Vector2{(float)(npc_pos.x - 8), (float)(npc_pos.y - 16)}));
+            NPC_objs.push_back(NPC(npc_ID, lvl, Vector2{(float)(npc_pos.x - 8), (float)(npc_pos.y - 16)}));
         }
     }
-    if (player_obj.GetPlayerFollower() != 0){
+    if (initialization == true && player_obj.GetPlayerFollower() != 0){
         NPC_objs.erase(std::remove_if(NPC_objs.begin(), NPC_objs.end(), [&](const NPC& obj) {
             return obj.GetID() == player_obj.GetPlayerFollower();
         }), NPC_objs.end());
-        NPC_objs.push_back(NPC(player_obj.GetPlayerFollower(), curLevel, player_obj.GetPosition()));
+        NPC_objs.push_back(NPC(player_obj.GetPlayerFollower(), lvl, player_obj.GetPosition()));
     }
 }
 

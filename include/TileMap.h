@@ -31,7 +31,7 @@ public:
     const ldtk::Layer& GetCOL();
     ldtk::Project ldtk_project;
     void loadPlayer(Player& player_obj);
-    void loadNPCs(Player& player_obj, std::vector<NPC>& NPC_objs);
+    void loadNPCs(const std::string lvl, Player& player_obj, std::vector<NPC>& NPC_objs, bool initialization);
     void loadTileObjs(const std::string lvl, std::vector<tileObj>& Tile_objs);
     void IsWarpClose(Player& player_obj);
     Vector2 GetSwapLevel();

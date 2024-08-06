@@ -29,20 +29,20 @@ GameManager::~GameManager(){
 }
 
 void GameManager::DebugIntro(){
-    if (GetTouchPointCount() > 0){
+    if (GetTouchPointCount() > 0 || IsKeyPressed(KEY_U)){
         ControllerSingleton::GetInstance().EnableTouchController(true);
         std::cout << "Touch Controller activated" << std::endl;
     }
 
-    if (IsKeyPressed(KEY_RIGHT) && DebugID < 2){
+    if (ControllerSingleton::GetInstance().IsRightPressed() && DebugID < 2){
         SelectPos.x += 128;
         DebugID = 2;
     }
-    if (IsKeyPressed(KEY_LEFT) && DebugID > 1){
+    if (ControllerSingleton::GetInstance().IsLeftPressed() && DebugID > 1){
         SelectPos.x -= 128;
         DebugID = 1;
     }
-    if (IsKeyPressed(KEY_Z) || IsKeyPressed(KEY_ENTER)){
+    if (ControllerSingleton::GetInstance().IsAPressed() || IsKeyPressed(KEY_ENTER)){
         if (DebugID == 1){
             player.SetPlayerGender("PlayerM");
         } else{
@@ -59,7 +59,7 @@ void GameManager::GameInitialization(std::string map){
     Outside.loadLDtkMap("assets/TILEMAPS/Outside.ldtk",[&]() {
         Outside.initialize(map);
         Outside.loadPlayer(player);
-        Outside.loadNPCs(player, npcs);
+        Outside.loadNPCs(Outside.GetCurLevelName(),player, npcs, true);
         Outside.loadTileObjs(Outside.GetCurLevelName(), tileObjs);
     });
     // Outside.loadWarps(warps);
@@ -96,17 +96,21 @@ void GameManager::CameraUpdate(){
     if (!IntroFinished){
         targetPos = {static_cast<float>(+32), static_cast<float>(0)};
     }else if (lockCamera){
-        if (Outside.GetLockCameraAxis().x == 1){
+        if (Outside.GetLockCameraAxis().x == 1 && Outside.GetLockCameraAxis().y != 1){
             targetPos.x = targetPos.x;
             if (Outside.GetLockCameraAxis().y != 1){
                 targetPos.y = float((player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f));
             }
         }
-        if(Outside.GetLockCameraAxis().y == 1){
+        if(Outside.GetLockCameraAxis().y == 1 && Outside.GetLockCameraAxis().x != 1){
             targetPos.y = targetPos.y;
             if (Outside.GetLockCameraAxis().x != 1){
                 targetPos.x = (float((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32);
             }
+        }
+        if(Outside.GetLockCameraAxis().y == 1 && Outside.GetLockCameraAxis().x == 1){
+            targetPos.y = targetPos.y;
+            targetPos.x = targetPos.x;
         }
     }else{
         targetPos = {(float((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32), float((player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f))};
@@ -220,6 +224,14 @@ void GameManager::GameLoop(float FixedDt){
         Outside.unloadFarAwayLevel(player,tileObjs);
         if (!Outside.GetDrawNextLevel()){
             Outside.loadTileObjs(Outside.GetSwapLevelName(), tileObjs);
+            Outside.loadNPCs(Outside.GetSwapLevelName(),player,npcs,false);
+            for (auto& npc : npcs) {
+                if (npc.GetLocation() == Outside.GetSwapLevelName()){
+                    npc.parseCSV("assets/CSV/Dataset.csv");
+                    npc.parseCSV("assets/CSV/NPC_OW_DEF.csv");
+                    npc.SetShadow(ShadowCentered,ShadowOffCenter);
+                }
+            }
             Outside.SetDrawNextLevel();
         }else{
             Outside.update(Outside.GetSwapLevelName(), swapper, player.GetPosition());
