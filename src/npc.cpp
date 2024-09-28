@@ -90,6 +90,7 @@ void NPC::npcMove(Vector2 past_direction, Vector2 past_position, int speed, bool
 }
 
 void NPC::Update() {
+	float dt=1.0f / 60.0f;
     if (NPC_DEF[7] == "1" && !move && !animating && Stage > 0 && !inGrowthPhase && !idle){
         DrawnTexture = NPCTextureIdle;
         updateAnimationFrameDimensions("idle");
@@ -124,9 +125,9 @@ void NPC::Update() {
     // Animate growth if in growth phase
     if (inGrowthPhase) {
         frameRate = 0.250f;
-        frameTimer += GetFrameTime();
+        frameTimer += dt;
         if (frameTimer >= frameRate) {
-            currentFrame += direction;
+            currentFrame += direction * (dt * 60.0f);
             if (currentFrame == lastFrame) {
                 // End of growth animation
                 if (Stage > wantedStage){
@@ -171,9 +172,9 @@ void NPC::Update() {
                 }
             }
             frameRate = (idle == false ) ? 0.125f : 0.500f ;
-            frameTimer += GetFrameTime();
+            frameTimer += dt;
             if (frameTimer >= frameRate) {
-                currentFrame += direction;
+                currentFrame += direction * (dt * 60.0f);
                 if (currentFrame > 2) {
                     currentFrame = 1;
                     direction = -1;

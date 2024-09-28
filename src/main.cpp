@@ -26,7 +26,7 @@ void UpdateDrawFrame(GameManager& game) {
     // Update
     if (game.IsIntroFinished()){
         while (accumulator >= FIXED_TIMESTEP) {
-            game.GameLoop(FIXED_TIMESTEP);
+            game.GameLoop();
             accumulator -= FIXED_TIMESTEP;
         }
         game.CameraUpdate();

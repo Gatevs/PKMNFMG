@@ -162,6 +162,7 @@ void Player::HandleInput(std::vector<NPC>& npcs){
 }
 
 void Player::Growth(){
+	float dt = 1.0f / 60.0f;
         //  Compare the NPC's current stage with the wanted stage, and shrink or grow accordingly
     if (Stage < wantedStage && !inGrowthPhase && wantedStage != -1){
         Stage += 1;
@@ -179,9 +180,9 @@ void Player::Growth(){
     // Animate growth if in growth phase
     if (inGrowthPhase) {
         frameRate = 0.250f;
-        frameTimer += GetFrameTime();
+        frameTimer += dt;
         if (frameTimer >= frameRate) {
-            currentFrame += direction;
+            currentFrame += direction * (dt * 60.0f);
             if (currentFrame == lastFrame) {
                 // End of growth animation
                 if (Stage > wantedStage){
@@ -235,13 +236,14 @@ void Player::UpdateAnim(){
 
 // Animate movement
 void Player::Update() {
+	float dt=1.0f / 60.0f;
     if (Gender == "PlayerF"){
         Growth();
     }
     if (move || animating) {
-        frameTimer += GetFrameTime();
+        frameTimer += dt;
         if (frameTimer >= frameRate) {
-            currentFrame += direction;
+            currentFrame += direction* (dt * 60.0f);
             if (currentFrame > 2) {
                 currentFrame = 1;
                 direction = -1;
@@ -270,12 +272,13 @@ void Player::npcMoving(std::vector<NPC>& npcs){
     }
 }
 
-void Player::UpdatePositionAndCamera(float fixedDeltaTime) {
+void Player::UpdatePositionAndCamera() {
+	float dt = 1.0f / 60.0f;
     Rectangle colOffset = ColOffset(false); // Calculate once
 
     if (move) {
         if (step_timer < 16 / player_speed) {
-            step_timer += (fixedDeltaTime * 60.0f);
+            step_timer += (dt * 60.0f);
 
             position.x = colOffset.x + (COLLISION_MASK_WIDTH / 2.0f);
             position.y = colOffset.y + (COLLISION_MASK_HEIGHT / 2.0f);

@@ -34,7 +34,7 @@ public:
 
     // Movement and position
     void npcMoving(std::vector<NPC>& npcs);
-    void UpdatePositionAndCamera(float FixedDt);
+    void UpdatePositionAndCamera();
     void UpdateAnim ();
     void setPosition(Vector2 newPos);
 

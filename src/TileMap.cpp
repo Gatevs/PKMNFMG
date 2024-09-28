@@ -408,13 +408,14 @@ Vector2 TileMap::InitLockDirection(Player& player_obj){
 }
 
 void TileMap::ShowLocationCard(Vector2 pos){
+	float dt = 1.0f / 60.0f;
     if (Card.Active){
         Card.Position.x = 0 - 30;
         Card.Position.y = (0 - 30) + Card.CardYPos;
         if (Card.CardYPos < 32 && !Card.Hide){
             Card.CardYPos += 0.5f;
         }else{
-            Card.Timer += GetFrameTime();
+            Card.Timer += dt;
         }
         if (Card.Timer >= 3.0f){
             Card.Hide = true;
@@ -549,9 +550,10 @@ void TileMap::DrawGrass(Player& player_obj, std::vector<tileObj>& Tile_objs){
 
 
 void TileMap::GrassTrail(){
+	float dt = 1.0f / 60.0f;
     for (auto& trail : grass.trailTimer ){
         if (trail.first < 1.0f){
-            trail.first += GetFrameTime();
+            trail.first += dt;
             DrawTextureRec(texture,{32,112,16,16},grass.trailPos[trail.second],WHITE);
             DrawTextureRec(tallGrass_Texture,{static_cast<float>(16 * int(4 * (trail.first))),0,16,16},grass.trailPos[trail.second],WHITE);
         }

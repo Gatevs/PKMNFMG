@@ -18,7 +18,7 @@ public:
     void DebugIntro();
     void GameInitialization(std::string map);
     void CameraUpdate();
-    void GameLoop(float FixedDt);
+    void GameLoop();
     void DrawWorld();
     void DrawBars();
     void Unload();

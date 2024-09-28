@@ -77,7 +77,7 @@ void GameManager::GameInitialization(std::string map){
 
     //Only at initialization
     player.SetShadow(ShadowCentered);
-    player.UpdatePositionAndCamera(0.0f);
+    player.UpdatePositionAndCamera();
     targetPos = {(floor((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32), floor((player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f))};
     if (Outside.IsCameraLockNear(player)){
         lockCamera = true;
@@ -128,7 +128,7 @@ void GameManager::CameraUpdate(){
     camera.target = targetPos;
 }
 
-void GameManager::GameLoop(float FixedDt){
+void GameManager::GameLoop(){
     Outside.update(Outside.GetCurLevelName(), cur, player.GetPosition());
     // std::cout << Menu.stopPlayerInput << std::endl;
     if (WarpingPlayer == 1){
@@ -205,7 +205,7 @@ void GameManager::GameLoop(float FixedDt){
         Outside.PlayerInTallGrass(player);
         player.checkCollisions(Outside.GetCOL(), npcs, Outside.GetlevelOffset());
         player.UpdateAnim();
-        player.UpdatePositionAndCamera(FixedDt);
+        player.UpdatePositionAndCamera();
         if (player.GetPlayerFollower() != 0){
             player.npcMoving(npcs);
         }

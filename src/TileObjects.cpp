@@ -18,8 +18,9 @@ void tileObj::Draw(){
 }
 
 void tileObj::AnimateGrass(){
+	float dt = 1.0f / 60.0f;
     float frameRate = 0.25f;
-    GrassTimer += GetFrameTime();
+    GrassTimer += dt;
     if (GrassTimer >= frameRate && GrassFrame < 4){
         ObjSprite = (Rectangle){static_cast<float>(16 * (GrassFrame)), 0,16,16};
         GrassFrame += 1;

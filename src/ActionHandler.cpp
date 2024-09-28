@@ -554,6 +554,7 @@ void ActionHandler::getPlayerInfo(int ID, Player player_Obj, int Event){
 
 
 void ActionHandler::dialogue(Player& player) {
+	float dt=1.0f / 60.0f;
     const float frameRate = 0.400f;
     const float TEXT_SPEED_NORMAL = 3.0f;
     const float TEXT_SPEED_FAST = 1.5f;
@@ -589,9 +590,9 @@ void ActionHandler::dialogue(Player& player) {
         }
     }
     //VN type sprite
-    VN_Timer += GetFrameTime();
+    VN_Timer += dt;
     if (VN_Timer >= frameRate) {
-        VN_Frame += frameFlip;
+        VN_Frame += frameFlip * (dt * 60.0f);
         if (VN_Frame > 0) {
             VN_Frame = 1;
             frameFlip = -1;
