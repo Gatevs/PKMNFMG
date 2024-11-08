@@ -293,6 +293,9 @@ void NPC::setLimit(int newLimit) {
 
 void NPC::lookAtPlayer(int lookingAt){
 
+    std::cout << "lookAtPlayer called with: " << lookingAt << std::endl;
+     std::cout << "NPC ID: " << ID << std::endl;
+
     switch (lookingAt)
     {
     case 270:
@@ -312,6 +315,10 @@ void NPC::lookAtPlayer(int lookingAt){
         currentAnimation = ANIM_LEFT;
         break;
     }
+
+}
+
+void NPC::followPlayer(){
 
 }
 

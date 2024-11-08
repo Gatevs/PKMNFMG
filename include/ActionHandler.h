@@ -48,6 +48,7 @@ private:
     void SetVNSprite();
     void SetNPCDialogue(std::string text);
     void SetDialogueAction(std::string action);
+    void UpdateSelection(int pixels, int &menuID, int MAX_DOWN, int MAX_UP, Vector2 &pos);
     bool CompareDialogueConditions(std::string condition, std::string value, NPC& npc);
     void CloseUI(Player& player);
     static void DrawTextBoxed(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint);
@@ -101,6 +102,7 @@ private:
     float TEXT_SPEED;
     int MAX_DOWN;
     int MAX_UP;
+    int ActiveNPCVectorIndex = -1;
     struct NPCInfo {
         std::string Name;
         int ID;
@@ -133,6 +135,8 @@ private:
         EVENT_VALUE,
         GENDER
     };
+    const int MainMove = 24;
+    const int SubMove = 15;
 
     // Mapping Atlas elements (element X position in atlas, element Y position in atlas, element width, element height)
     const Rectangle pauseMap = {

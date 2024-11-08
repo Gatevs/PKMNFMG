@@ -55,7 +55,7 @@ public:
     int CheckForNPCInFront(const std::vector<NPC>& npcs) const;
     void SetShadow(Texture2D load);
     void StopUI_Element();
-    void SetFollowDir(Vector2 Dir);
+    void SetFollowDir();
     void SetLocation (std::string loc);
     void SetPlayerGender(std::string playerGender);
     std::string GetPlayerGender() const;

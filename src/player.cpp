@@ -474,8 +474,21 @@ void Player::StopUI_Element(){
     LoadUI_Element = NONE;
 }
 
-void Player::SetFollowDir(Vector2 Dir){
-    past_dir = Dir;
+void Player::SetFollowDir(){
+    switch (m_dir){
+        case 270:
+            past_dir = {0,-1};
+            break;
+        case 90:
+            past_dir = {0,1};
+            break;
+        case 0:
+            past_dir = {-1,0};
+            break;
+        case 180:
+            past_dir = {1,0};
+            break;
+    }
 }
 
 void Player::SetLocation(std::string loc){

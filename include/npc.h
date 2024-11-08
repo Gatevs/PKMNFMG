@@ -33,6 +33,7 @@ public:
     // Event handling
     void setNextStage(int nextStage);
     void lookAtPlayer(int lookingAt);
+    void followPlayer();
 
     // CSV parsing
     void parseCSV(const std::string& filename);

@@ -137,45 +137,33 @@ void ActionHandler::InputUI(std::vector<NPC>& NPC_objs, Player& player_Obj){
     }
 }
 
+void ActionHandler::UpdateSelection(int pixels, int &menuID, int MAX_DOWN, int MAX_UP, Vector2 &pos){
+    if (ControllerSingleton::GetInstance().IsDownPressed() && menuID < MAX_DOWN) {
+        std::cout << menuID << std::endl;
+        for (int i = 0; i < 8; ++i) {
+            ICO[i] = 0;
+        }
+        pos.y += pixels; // Adjust as needed based on type
+        menuID+=1;
+        ICO[menuID] = MenuICOMap.width;
+        PlaySound(GUICursor);
+    }
+    if (ControllerSingleton::GetInstance().IsUpPressed() && menuID > MAX_UP) {
+        std::cout << menuID << std::endl;
+        for (int i = 0; i < 8; ++i) {
+            ICO[i] = 0;
+        }
+        pos.y -= pixels;
+        menuID-=1;
+        ICO[menuID] = MenuICOMap.width;
+        PlaySound(GUICursor);
+    }
+}
 
 // Function to handle pause action
 void ActionHandler::pause(Player& p) {
     if (textTimer < 10){
         textTimer += 1;
-    }
-    if (ControllerSingleton::GetInstance().IsDownPressed() and menuID < MAX_DOWN){
-        switch (selection){
-            case 0:
-                for (int i = 0; i < 8; ++i) {
-                    ICO[i] = 0;
-                }
-                MainSelPos.y = MainSelPos.y + 24;
-                menuID += 1;
-                ICO[menuID] = MenuICOMap.width;
-                PlaySound(GUICursor);
-                break;
-            case 3:
-                SubSelPos.y = SubSelPos.y + 15;
-                menuID += 1;
-                break;
-        }
-    }
-    if (ControllerSingleton::GetInstance().IsUpPressed() and menuID > MAX_UP){
-        switch (selection){
-            case 0:
-                for (int i = 0; i < 8; ++i) {
-                    ICO[i] = 0;
-                }
-                MainSelPos.y = MainSelPos.y - 24;
-                menuID -= 1;
-                ICO[menuID] = MenuICOMap.width;
-                PlaySound(GUICursor);
-                break;
-            case 3:
-                SubSelPos.y = SubSelPos.y - 15;
-                menuID -= 1;
-                break;
-        }
     }
     if (ControllerSingleton::GetInstance().IsXPressed() && textTimer >= 10 && selection == 0){
         CloseUI(p);
@@ -194,6 +182,7 @@ void ActionHandler::pause(Player& p) {
         case 0:
             MAX_DOWN = 7;
             MAX_UP = 1;
+            UpdateSelection(MainMove, menuID,MAX_DOWN,MAX_UP,MainSelPos);
             break;
         case 1:
             selection = 0;
@@ -203,6 +192,10 @@ void ActionHandler::pause(Player& p) {
             break;
         case 3:
             PauseMenuBag();
+            UpdateSelection(SubMove, menuID,MAX_DOWN,MAX_UP,SubSelPos);
+            if (screenState == SHUTTNG_OFF){
+                menuID = 3;
+            }
             break;
         case 4:
             selection = 0;
@@ -225,6 +218,12 @@ void ActionHandler::PauseMenuBag(){
     if (screenState == OFF){
         menuID = 1;
         SubSelPos = (Vector2){fadePos.x + 105, fadePos.y + 15};
+    }
+    if (ControllerSingleton::GetInstance().IsBPressed()){
+        if (screenState == ON && fadeOutComplete){
+            fadeIn();
+            screenState = WAIT;
+        }
     }
     UpdateScreenState();
 }
@@ -253,40 +252,6 @@ void ActionHandler::SetVNSprite(){
 void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
     if (textTimer < 10){
         textTimer += 1;
-    }
-    if (ControllerSingleton::GetInstance().IsDownPressed() and menuID < MAX_DOWN){
-        switch (selection){
-            case 0:
-                for (int i = 0; i < 5; ++i) {
-                    ICO[i] = 0;
-                }
-                MainSelPos.y = MainSelPos.y + 24;
-                menuID += 1;
-                ICO[menuID] = MenuICOMap.width;
-                PlaySound(GUICursor);
-                break;
-            case 3:
-                SubSelPos.y = SubSelPos.y + 15;
-                menuID += 1;
-                break;
-        }
-    }
-    if (ControllerSingleton::GetInstance().IsUpPressed() and menuID > MAX_UP){
-        switch (selection){
-            case 0:
-                for (int i = 0; i < 5; ++i) {
-                    ICO[i] = 0;
-                }
-                MainSelPos.y = MainSelPos.y - 24;
-                menuID -= 1;
-                ICO[menuID] = MenuICOMap.width;
-                PlaySound(GUICursor);
-                break;
-            case 3:
-                SubSelPos.y = SubSelPos.y - 15;
-                menuID -= 1;
-                break;
-        }
     }
     if (ControllerSingleton::GetInstance().IsYPressed() && textTimer >= 10 && selection == 0){
         CloseUI(p);
@@ -338,60 +303,24 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
         switch (selection){
             case 2:
                 if (p.GetPlayerFollower() != NPCInfo.ID && textTimer >= 10){
-                    int npcIdInFront = p.CheckForNPCInFront(NPC_objs);
-                    if (npcIdInFront != -1) {
-                        // Set NPC as follower and update directions
-                        for (auto& npc : NPC_objs) {
-                            if (npc.GetID() == npcIdInFront) {
-                                getNPCInfo(npc.GetID(),NPC_objs, 3);
-                                if (!NPCInfo.FollowReject){
-                                    p.SetFollowerID(npcIdInFront);
-                                    npc.following_Player = true;
-                                    switch (p.GetPlayerDir()){
-                                        case 270:
-                                            p.SetFollowDir({0,-1});
-                                            break;
-                                        case 90:
-                                            p.SetFollowDir({0,1});
-                                            break;
-                                        case 0:
-                                            p.SetFollowDir({-1,0});
-                                            break;
-                                        case 180:
-                                            p.SetFollowDir({1,0});
-                                            break;
-                                    }
-                                }
-                                npc.lookAtPlayer(p.GetPlayerDir());
-                                menuID = 1;
-                                textTimer = 0;
-                                selection = 0;
-                                for (int i = 0; i < 8; ++i) {
-                                    ICO[i] = 0;
-                                }
-                                handleAction(ActionType::Dialogue_Box,CameraPos);
-                                NPCInfo.FollowReject = false;
-                                break;
-                            }
-                        }
+                    getNPCInfo(NPCInfo.ID,NPC_objs, 3);
+                    if (!NPCInfo.FollowReject){
+                        p.SetFollowerID(NPCInfo.ID);
+                        NPC_objs[ActiveNPCVectorIndex].following_Player = true;
+                        NPC_objs[ActiveNPCVectorIndex].lookAtPlayer(p.GetPlayerDir());
+                        p.SetFollowDir();
                     }
+                    handleAction(ActionType::Dialogue_Box,CameraPos);
+                    NPCInfo.FollowReject = false;
+                    break;
+
                 }else if (p.GetPlayerFollower() == NPCInfo.ID && textTimer >= 10){
-                    for (auto& npc : NPC_objs) {
-                        if (npc.GetID() == NPCInfo.ID) {
-                            npc.following_Player = false;
-                            npc.lookAtPlayer(p.GetPlayerDir());
-                            getNPCInfo(npc.GetID(),NPC_objs, 4);
-                            menuID = 1;
-                            textTimer = 0;
-                            selection = 0;
-                            for (int i = 0; i < 8; ++i) {
-                                ICO[i] = 0;
-                            }
-                            p.SetFollowerID(0);
-                            handleAction(ActionType::Dialogue_Box,CameraPos);
-                            break;
-                        }
-                    }
+                    NPC_objs[ActiveNPCVectorIndex].following_Player = true;
+                    NPC_objs[ActiveNPCVectorIndex].lookAtPlayer(p.GetPlayerDir());
+                    getNPCInfo(NPCInfo.ID,NPC_objs, 4);
+                    p.SetFollowerID(0);
+                    handleAction(ActionType::Dialogue_Box,CameraPos);
+                    break;
                 }
                 break;
             case 3:
@@ -400,17 +329,14 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
                         p.setNextStage(menuID - 1);
                         CloseUI(p);
                         break;
-                    }
-                    for (auto& npc : NPC_objs) {
-                        if (npc.GetID() == NPCInfo.ID) {
-                            npc.setNextStage(menuID - 1);
-                            if (NPCInfo.ID == p.GetPlayerFollower()){
-                                p.SetFollowerID(0);
-                            }
-                            CloseUI(p);
-                            break;
+                    }else{
+                        NPC_objs[ActiveNPCVectorIndex].setNextStage(menuID - 1);
+                        if (NPCInfo.ID == p.GetPlayerFollower()){
+                            p.SetFollowerID(0);
                         }
                     }
+                    CloseUI(p);
+                    break;
                 }
                 break;
         }
@@ -420,6 +346,7 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
         case 0:
             MAX_DOWN = 4;
             MAX_UP = 1;
+            UpdateSelection(MainMove, menuID,MAX_DOWN,MAX_UP,MainSelPos);
             break;
         case 1:
             UpdateScreenState();
@@ -438,6 +365,7 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
         case 3:
             MAX_DOWN = NPCInfo.Limit + 1;
             MAX_UP = 1;
+            UpdateSelection(SubMove, menuID,MAX_DOWN,MAX_UP,SubSelPos);
             UpdateScreenState();
             if (screenState == SHUTTNG_OFF){
                     menuID = 3;
@@ -482,6 +410,7 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
     bool foundNonEmpty = false;
 
     for (auto& npc : NPC_objs) {
+        if (ActiveNPCVectorIndex == -1) ActiveNPCVectorIndex += 1;
         if (npc.GetID() == ID) {
             std::string targetValue = npc.GetCombinedValues(Event);
             NPCInfo.ID = npc.GetID();
@@ -578,7 +507,7 @@ void ActionHandler::dialogue(Player& player) {
             stopPlayerInput = false;
             claenText();
             curTextSize = 0;
-            player.StopUI_Element();
+            CloseUI(player);
         } else if (textFinished && curTextSize != DialogueText.length()){
             // Display next portion of text
             curTextSize += 1;
@@ -669,6 +598,7 @@ void ActionHandler::CloseUI(Player& player){
         StatSprite.width = 0;
         StatSprite.mipmaps = 0;
     }
+    ActiveNPCVectorIndex = -1;
     PlaySound(GUIClose);
     player.StopUI_Element();
 }
