@@ -11,7 +11,8 @@
 enum class ActionType {
     Pause_M,
     Action_M,
-    Dialogue_Box
+    Dialogue_Box,
+    Battle_M
 };
 
 class ActionHandler {
@@ -38,24 +39,35 @@ public:
     bool textFinished;
 
 private:
+    void actionFollowMenu(std::vector<NPC>& NPC_objs, Player& player_Obj);
+    void actionGrowthMenu(std::vector<NPC>& NPC_objs, Player& player_Obj);
+    void actionStatsMenu();
+    void actionBagMenu();
+    void actionBattleMenu(Player& player);
     void pause(Player& p);
     void action(std::vector<NPC>& NPC_objs, Player& p);
     void dialogue(Player& player);
-    void PauseMenuBag();
     void UpdateScreenState();
     void DrawPauseUI();
     void DrawActionUI();
+    void DrawBattleUI();
     void SetVNSprite();
     void SetNPCDialogue(std::string text);
     void SetDialogueAction(std::string action);
     void UpdateSelection(int pixels, int &menuID, int MAX_DOWN, int MAX_UP, Vector2 &pos);
     bool CompareDialogueConditions(std::string condition, std::string value, NPC& npc);
     void CloseUI(Player& player);
+    void LeaveMenu();
     static void DrawTextBoxed(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint);
     static void DrawTextBoxedSelectable(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint, int selectStart, int selectLength, Color selectTint, Color selectBackTint);
     void typewriterEffect(std::string& text);
     Texture2D atlasTexture;
     Texture2D screenTexture;
+
+    Texture2D BattleBGTexture;
+    Texture2D BattleBGBaseTexture;
+    Texture2D BattleHPCardTexture;
+
     Texture2D StageTexture;
     Texture2D StatSprite;
     Texture2D VN_Sprite;
@@ -77,6 +89,8 @@ private:
     Vector2 ICOPos;
     Vector2 fadePos;
     Vector2 CameraPos;
+    Vector2 HPCardEnemy;
+    Vector2 HPCardFriend;
     bool wordWrap;
     bool fadeInComplete;
     bool fadeOutComplete;
@@ -95,6 +109,7 @@ private:
     int ICO[11]{0,0,0,0,0,0,0,0,0,0};
     int textTimer;
     int menuID;
+    int lastMenuID;
     int inUI;
     int selection;
     int Fade;
@@ -103,6 +118,17 @@ private:
     int MAX_DOWN;
     int MAX_UP;
     int ActiveNPCVectorIndex = -1;
+
+    int battleState;
+    Vector2 BattleUIPos = {0,0};
+    int BaseEnemyX = -180;
+    int baseFriendlyX = -248;
+    int BattleTextBoxOpacity = 0;
+
+    struct EnemyPKMNInfo {
+        std::string Name = "Test";
+        int Lvl;
+    }EnemyPKMNInfo;
     struct NPCInfo {
         std::string Name;
         int ID;
@@ -110,11 +136,21 @@ private:
         int Stage;
         bool FollowReject = false;
     } NPCInfo;
+    enum Battle_States{
+        LOADING_ELEMENTS,
+    };
+    enum Menu_Type{
+        STATS,
+        FOLLOW,
+        GROWTH,
+        OUTFIT
+    };
     enum UI_Types{
         NONE,
         PAUSE,
         ACTION,
-        DIALOGUE
+        DIALOGUE,
+        BATTLE
     };
     enum Screen_States{
         OFF,
@@ -210,5 +246,35 @@ private:
         static_cast<float>(0),
         static_cast<float>(256),
         static_cast<float>(192)
+    };
+        const Rectangle BaseEnemyMap = {
+        static_cast<float>(0),
+        static_cast<float>(0),
+        static_cast<float>(128),
+        static_cast<float>(64)
+    };
+        const Rectangle BaseFriendlyMap = {
+        static_cast<float>(0),
+        static_cast<float>(64),
+        static_cast<float>(256),
+        static_cast<float>(32)
+    };
+        const Rectangle HPCardFriendMap = {
+        static_cast<float>(0),
+        static_cast<float>(40),
+        static_cast<float>(128),
+        static_cast<float>(53)
+    };
+        const Rectangle HPCardEnemyMap = {
+        static_cast<float>(0),
+        static_cast<float>(0),
+        static_cast<float>(128),
+        static_cast<float>(35)
+    };
+        Rectangle HealthPointMap = {
+        static_cast<float>(0),
+        static_cast<float>(36),
+        static_cast<float>(48),
+        static_cast<float>(3)
     };
 };

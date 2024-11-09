@@ -12,6 +12,9 @@ ActionHandler::ActionHandler() {
     BagFont = LoadFont("assets/SPRITEFONT/SpriteFont_Bag.png");
     screenTexture = LoadTexture("assets/MISC/Screens_Atlas.png");
     StageTexture = LoadTexture("assets/MISC/GStage.png");
+    BattleBGTexture = LoadTexture("assets/MISC/BattleBGScroll.png");
+    BattleBGBaseTexture = LoadTexture("assets/MISC/BattleBases.png");
+    BattleHPCardTexture = LoadTexture("assets/MISC/BattleHPCard.png");
     smallBeep = LoadSound("assets/SFX/BEEP1.ogg");
     GUIOpen = LoadSound("assets/SFX/GUI_OPEN.ogg");
     GUIClose = LoadSound("assets/SFX/GUI_CLOSE.ogg");
@@ -122,6 +125,13 @@ void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
             SetVNSprite();
             inUI = DIALOGUE;
             break;
+        case ActionType::Battle_M:
+            fadePos = (Vector2){drawPos.x - 32, drawPos.y};
+            HPCardEnemy = {fadePos.x - 128,fadePos.y + 20};
+            stopPlayerInput = true;
+            battleState = LOADING_ELEMENTS;
+            inUI = BATTLE;
+            break;
     }
 }
 
@@ -134,6 +144,9 @@ void ActionHandler::InputUI(std::vector<NPC>& NPC_objs, Player& player_Obj){
     }
     if (inUI == ACTION){
         action(NPC_objs, player_Obj);
+    }
+    if (inUI == BATTLE){
+        actionBattleMenu(player_Obj);
     }
 }
 
@@ -175,6 +188,7 @@ void ActionHandler::pause(Player& p) {
         if (selection == 0){
             PlaySound(smallBeep);
             selection = menuID;
+            lastMenuID = menuID;
             textTimer = 0;
         }
     }
@@ -191,11 +205,7 @@ void ActionHandler::pause(Player& p) {
             selection = 0;
             break;
         case 3:
-            PauseMenuBag();
-            UpdateSelection(SubMove, menuID,MAX_DOWN,MAX_UP,SubSelPos);
-            if (screenState == SHUTTNG_OFF){
-                menuID = 3;
-            }
+            actionBagMenu();
             break;
         case 4:
             selection = 0;
@@ -214,18 +224,141 @@ void ActionHandler::pause(Player& p) {
     //std::cout << "Pause action with value: " << menuID << std::endl;
 }
 
-void ActionHandler::PauseMenuBag(){
+void ActionHandler::actionBagMenu(){
+    UpdateSelection(SubMove, menuID,MAX_DOWN,MAX_UP,SubSelPos);
     if (screenState == OFF){
         menuID = 1;
         SubSelPos = (Vector2){fadePos.x + 105, fadePos.y + 15};
     }
     if (ControllerSingleton::GetInstance().IsBPressed()){
-        if (screenState == ON && fadeOutComplete){
-            fadeIn();
-            screenState = WAIT;
-        }
+        LeaveMenu();
     }
     UpdateScreenState();
+}
+
+void ActionHandler::LeaveMenu(){
+    if (screenState == ON && fadeOutComplete){
+        fadeIn();
+        screenState = WAIT;
+    }
+}
+
+void ActionHandler::actionStatsMenu(){
+    UpdateScreenState();
+    if (selection == 1 && screenState == OFF){
+        std::string text = "assets/STAT_SPRITES/" + std::to_string(NPCInfo.ID) + "_" + std::to_string(NPCInfo.Stage) + ".png";
+        if (!IsTextureReady(StatSprite)){
+            StatSprite = LoadTexture(text.c_str());
+        }
+    }
+    if (ControllerSingleton::GetInstance().IsBPressed()){
+        LeaveMenu();
+    }
+}
+
+void ActionHandler::actionFollowMenu(std::vector<NPC>& NPC_objs, Player& p){
+    if (textTimer < 10){
+        textTimer += 1;
+    }
+    if (p.GetPlayerFollower() != NPCInfo.ID){
+        SubMap = (Rectangle){YesNoMap.x,YesNoMap.y,YesNoMap.width,YesNoMap.height};
+    } else{
+        SubMap = (Rectangle){YesNoMap.x,YesNoMap.y - 45,YesNoMap.width,YesNoMap.height};
+    }
+    SubPos = Vector2{MainPos.x + 102, MainPos.y};
+
+    if (ControllerSingleton::GetInstance().IsAPressed()){
+        if (p.GetPlayerFollower() != NPCInfo.ID && textTimer >= 10){
+            getNPCInfo(NPCInfo.ID,NPC_objs, 3);
+            if (!NPCInfo.FollowReject){
+                p.SetFollowerID(NPCInfo.ID);
+                NPC_objs[ActiveNPCVectorIndex].following_Player = true;
+                NPC_objs[ActiveNPCVectorIndex].lookAtPlayer(p.GetPlayerDir());
+                p.SetFollowDir();
+            }
+            handleAction(ActionType::Dialogue_Box,CameraPos);
+            NPCInfo.FollowReject = false;
+
+        }else if (p.GetPlayerFollower() == NPCInfo.ID && textTimer >= 10){
+            NPC_objs[ActiveNPCVectorIndex].following_Player = true;
+            NPC_objs[ActiveNPCVectorIndex].lookAtPlayer(p.GetPlayerDir());
+            getNPCInfo(NPCInfo.ID,NPC_objs, 4);
+            p.SetFollowerID(0);
+            handleAction(ActionType::Dialogue_Box,CameraPos);
+        }
+    }
+    if (ControllerSingleton::GetInstance().IsBPressed()){
+        selection = 0;
+    }
+}
+
+void ActionHandler::actionGrowthMenu(std::vector<NPC>& NPC_objs, Player& p){
+    MAX_DOWN = NPCInfo.Limit + 1;
+    MAX_UP = 1;
+    UpdateSelection(SubMove, menuID,MAX_DOWN,MAX_UP,SubSelPos);
+    UpdateScreenState();
+    std::cout << menuID << std::endl;
+
+
+    if (ControllerSingleton::GetInstance().IsAPressed()){
+        if (screenState == OFF){
+            menuID = 1;
+            SubSelPos = (Vector2){fadePos.x + 105, fadePos.y + 15};
+        }
+        if (fadeOutComplete){
+            if (NPCInfo.ID == 1){
+                p.setNextStage(menuID - 1);
+                CloseUI(p);
+            }else{
+                NPC_objs[ActiveNPCVectorIndex].setNextStage(menuID - 1);
+                if (NPCInfo.ID == p.GetPlayerFollower()){
+                    p.SetFollowerID(0);
+                }
+            }
+            CloseUI(p);
+        }
+    }
+    if (ControllerSingleton::GetInstance().IsBPressed()){
+        LeaveMenu();
+    }
+}
+
+void ActionHandler::actionBattleMenu(Player& player){
+    float dt = 1.0f / 60.0f;
+    const int MAX_FADE_VALUE = 255;
+    const int FADE_INCREMENT = 10; // Adjust the increment value as needed
+    if (IsKeyPressed(KEY_I)){
+        HealthPointMap.width = 48;
+    }
+
+    switch(battleState){
+        case LOADING_ELEMENTS:
+            if (BattleUIPos.x < 144){
+                BattleUIPos.x += (dt * (60.0f * 2.0f));
+            }
+            if (BattleUIPos.y < 48){
+                BattleUIPos.y += (dt * (60.0f * 3.0f));
+            }
+            if (BaseEnemyX < 128){
+                BaseEnemyX += (dt * (60.0f * 4.0f));
+            }
+            if (baseFriendlyX < 60){
+                baseFriendlyX += (dt * (60.0f * 4.0f));
+            } else {
+                if (HPCardEnemy.x < 0){
+                    HPCardEnemy.x += (dt * (60.0f * 8.0f));
+                }
+                if (BattleTextBoxOpacity < MAX_FADE_VALUE) {
+                    BattleTextBoxOpacity = std::min(BattleTextBoxOpacity + FADE_INCREMENT, MAX_FADE_VALUE);
+                } else {
+                    BattleTextBoxOpacity = MAX_FADE_VALUE;
+                }
+            }
+            break;
+    }
+    if (ControllerSingleton::GetInstance().IsBPressed()){
+        CloseUI(player);
+    }
 }
 
 void ActionHandler::SetVNSprite(){
@@ -257,88 +390,16 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
         CloseUI(p);
     }
     if (ControllerSingleton::GetInstance().IsBPressed()){
-        switch (selection){
-            case 0:
-                CloseUI(p);
-                break;
-            case 1:
-                if (screenState == ON && fadeOutComplete){
-                    fadeIn();
-                    screenState = WAIT;
-                }
-                break;
-            case 2:
-                selection = 0;
-                break;
-            case 3:
-                if (screenState == ON && fadeOutComplete){
-                    fadeIn();
-                    screenState = WAIT;
-                }
-                break;
-            case 4:
-                if (screenState == ON && fadeOutComplete){
-                    fadeIn();
-                    screenState = WAIT;
-                }
-                break;
+        if (selection == 0){
+            CloseUI(p);
         }
     }
     if (ControllerSingleton::GetInstance().IsAPressed()){
         if (selection == 0){
             PlaySound(smallBeep);
             selection = menuID;
+            lastMenuID = menuID;
             textTimer = 0;
-        if (selection == 1 && screenState == OFF){
-            std::string text = "assets/STAT_SPRITES/" + std::to_string(NPCInfo.ID) + "_" + std::to_string(NPCInfo.Stage) + ".png";
-            if (!IsTextureReady(StatSprite)){
-                StatSprite = LoadTexture(text.c_str());
-            }
-        }
-        }
-        if (selection == 3 && screenState == OFF){
-            menuID = 1;
-            SubSelPos = (Vector2){fadePos.x + 105, fadePos.y + 15};
-        }
-        switch (selection){
-            case 2:
-                if (p.GetPlayerFollower() != NPCInfo.ID && textTimer >= 10){
-                    getNPCInfo(NPCInfo.ID,NPC_objs, 3);
-                    if (!NPCInfo.FollowReject){
-                        p.SetFollowerID(NPCInfo.ID);
-                        NPC_objs[ActiveNPCVectorIndex].following_Player = true;
-                        NPC_objs[ActiveNPCVectorIndex].lookAtPlayer(p.GetPlayerDir());
-                        p.SetFollowDir();
-                    }
-                    handleAction(ActionType::Dialogue_Box,CameraPos);
-                    NPCInfo.FollowReject = false;
-                    break;
-
-                }else if (p.GetPlayerFollower() == NPCInfo.ID && textTimer >= 10){
-                    NPC_objs[ActiveNPCVectorIndex].following_Player = true;
-                    NPC_objs[ActiveNPCVectorIndex].lookAtPlayer(p.GetPlayerDir());
-                    getNPCInfo(NPCInfo.ID,NPC_objs, 4);
-                    p.SetFollowerID(0);
-                    handleAction(ActionType::Dialogue_Box,CameraPos);
-                    break;
-                }
-                break;
-            case 3:
-                if (fadeOutComplete){
-                    if (NPCInfo.ID == 1){
-                        p.setNextStage(menuID - 1);
-                        CloseUI(p);
-                        break;
-                    }else{
-                        NPC_objs[ActiveNPCVectorIndex].setNextStage(menuID - 1);
-                        if (NPCInfo.ID == p.GetPlayerFollower()){
-                            p.SetFollowerID(0);
-                        }
-                    }
-                    CloseUI(p);
-                    break;
-                }
-                break;
         }
     }
 
@@ -349,30 +410,13 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
             UpdateSelection(MainMove, menuID,MAX_DOWN,MAX_UP,MainSelPos);
             break;
         case 1:
-            UpdateScreenState();
+            actionStatsMenu();
             break;
         case 2:
-            if (textTimer < 10){
-                textTimer += 1;
-            }
-            if (p.GetPlayerFollower() != NPCInfo.ID){
-                SubMap = (Rectangle){YesNoMap.x,YesNoMap.y,YesNoMap.width,YesNoMap.height};
-            } else{
-                SubMap = (Rectangle){YesNoMap.x,YesNoMap.y - 45,YesNoMap.width,YesNoMap.height};
-            }
-            SubPos = Vector2{MainPos.x + 102, MainPos.y};
+            actionFollowMenu(NPC_objs,p);
             break;
         case 3:
-            MAX_DOWN = NPCInfo.Limit + 1;
-            MAX_UP = 1;
-            UpdateSelection(SubMove, menuID,MAX_DOWN,MAX_UP,SubSelPos);
-            UpdateScreenState();
-            if (screenState == SHUTTNG_OFF){
-                    menuID = 3;
-                }
-            break;
-        case 4:
-            UpdateScreenState();
+            actionGrowthMenu(NPC_objs,p);
             break;
     }
 }
@@ -394,6 +438,13 @@ void ActionHandler::UpdateScreenState() {
         // Screen is fading out after waiting period
         screenState = SHUTTNG_OFF;
         fadeOutComplete = false;
+    }
+    if (screenState == SHUTTNG_OFF && !fadeOutComplete){
+        menuID = lastMenuID;
+        for (int i = 0; i < 8; ++i) {
+            ICO[i] = 0;
+        }
+        ICO[menuID] = MenuICOMap.width;
     }
     if (fadeOutComplete && screenState == SHUTTNG_OFF) {
         // Screen is fully faded out and turned off
@@ -755,6 +806,17 @@ void ActionHandler::Draw(){
                 DrawTextureRec(atlasTexture, MainMap, MainPos, WHITE);
                 DrawActionUI();
                 break;
+            case BATTLE:
+                DrawTextureRec(BattleBGTexture,{BattleUIPos.x,0,256,192},fadePos,WHITE);
+                DrawTextureRec(BattleBGBaseTexture,BaseEnemyMap,{fadePos.x + (BaseEnemyX),fadePos.y + 56},WHITE);
+                DrawTextureRec(BattleBGBaseTexture,BaseFriendlyMap,{fadePos.x - (baseFriendlyX),fadePos.y + 112},WHITE);
+                DrawTextureRec(BattleHPCardTexture,HPCardEnemyMap,HPCardEnemy,WHITE);
+                DrawTextureRec(BattleHPCardTexture,HealthPointMap,{HPCardEnemy.x + 50, HPCardEnemy.y + 24},WHITE);
+                DrawTextBoxed(MainFont, EnemyPKMNInfo.Name.c_str(), (Rectangle){HPCardEnemy.x + 1, HPCardEnemy.y + 8, 60, 30}, MainFont.baseSize, -5, wordWrap, WHITE);
+                DrawRectangleV({fadePos.x,float((fadePos.y + 192.0f)- BattleUIPos.y)},{256,48},{33,33,33,255});
+                DrawTextureRec(atlasTexture, DialogueMap, {fadePos.x + 2,fadePos.y + 145.0f}, {255,255,255,static_cast<unsigned char>(BattleTextBoxOpacity)});
+                DrawBattleUI();
+                break;
         }
     }
     // Fade in and out
@@ -810,6 +872,9 @@ void ActionHandler::DrawActionUI(){
             }
             break;
     }
+}
+
+void ActionHandler::DrawBattleUI(){
 }
 
 void ActionHandler::SetPlayerName(std::string player){

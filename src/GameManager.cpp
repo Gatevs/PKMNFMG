@@ -129,6 +129,10 @@ void GameManager::CameraUpdate(){
 }
 
 void GameManager::GameLoop(){
+    if (IsKeyPressed(KEY_K)){
+        Menu.handleAction(ActionType::Battle_M,camera.target);
+    }
+
     Outside.update(Outside.GetCurLevelName(), cur, player.GetPosition());
     // std::cout << Menu.stopPlayerInput << std::endl;
     if (WarpingPlayer == 1){
