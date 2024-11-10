@@ -192,7 +192,7 @@ void GameManager::GameLoop(){
         }
     }
     // Handle player input and update player and npc state
-    if (!Menu.stopPlayerInput && WarpingPlayer == 0){
+    if (!Menu.stopPlayerInput && WarpingPlayer == 0 && !player.IsPlayerGrowing()){
         player.HandleInput(npcs);
     } else if (Menu.stopPlayerInput){
         Menu.InputUI(npcs, player);

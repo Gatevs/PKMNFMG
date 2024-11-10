@@ -23,7 +23,7 @@ public:
     void updateAnimationFrameDimensions(const std::string& animation);
 
     void setNextStage(int nextStage);
-    bool IsNPCGrowing() const { return inGrowthPhase; }
+    bool IsPlayerGrowing() const { return inGrowthPhase; }
 
     // CSV parsing
     void parseCSV(const std::string& filename);

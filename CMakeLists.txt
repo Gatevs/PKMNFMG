@@ -45,6 +45,8 @@ if (EMSCRIPTEN)
     preprocess_directory("assets/MISC")
     preprocess_directory("assets/SFX")
     preprocess_directory("assets/VN_SPRITE")
+    preprocess_directory("assets/POKEMON_BACKSPRITE")
+    preprocess_directory("assets/TRAINER_BACKSPRITE")
 
     # Concatenate all preload files into a single string
     string(REPLACE ";" " " PRELOAD_FILES "${PRELOAD_FILES}")

@@ -68,6 +68,7 @@ private:
     Texture2D BattleBGBaseTexture;
     Texture2D BattleHPCardTexture;
     Texture2D BattlePlayerTexture;
+    Texture2D BattlePKMNTexture;
 
     Texture2D StageTexture;
     Texture2D StatSprite;
@@ -127,6 +128,9 @@ private:
     int BaseEnemyX = -180;
     int baseFriendlyX = -248;
     int BattleTextBoxOpacity = 0;
+    float battleTimer = 0.0f;
+    int PlayerAnimFrame = 0;
+    int PlayerSpriteOffscreen = 0;
 
     struct EnemyPKMNInfo {
         int Index = 23;
@@ -145,7 +149,9 @@ private:
     } NPCInfo;
     enum Battle_States{
         LOADING_ELEMENTS,
-        ENEMY_INTRO
+        SET_FIELD,
+        ENEMY_INTRO,
+        PLAYERPKMN_INTRO
     };
     enum Menu_Type{
         STATS,
