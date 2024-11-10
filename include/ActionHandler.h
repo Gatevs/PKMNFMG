@@ -67,6 +67,7 @@ private:
     Texture2D BattleBGTexture;
     Texture2D BattleBGBaseTexture;
     Texture2D BattleHPCardTexture;
+    Texture2D BattlePlayerTexture;
 
     Texture2D StageTexture;
     Texture2D StatSprite;
@@ -77,6 +78,7 @@ private:
     Sound GUICursor;
     Font MainFont;
     Font BagFont;
+    Font BattleFont;
     Rectangle MainMap;
     Rectangle SubMap;
     Rectangle MainSelector;
@@ -91,6 +93,7 @@ private:
     Vector2 CameraPos;
     Vector2 HPCardEnemy;
     Vector2 HPCardFriend;
+    Vector2 PlayerBackspriteFrame = {1,0};
     bool wordWrap;
     bool fadeInComplete;
     bool fadeOutComplete;
@@ -126,9 +129,13 @@ private:
     int BattleTextBoxOpacity = 0;
 
     struct EnemyPKMNInfo {
+        int Index = 23;
         std::string Name = "Test";
-        int Lvl;
-    }EnemyPKMNInfo;
+        int Gender = 0;
+        int Lvl = 4;
+        int GStage = 0;
+    } EnemyPKMNInfo;
+
     struct NPCInfo {
         std::string Name;
         int ID;
@@ -138,6 +145,7 @@ private:
     } NPCInfo;
     enum Battle_States{
         LOADING_ELEMENTS,
+        ENEMY_INTRO
     };
     enum Menu_Type{
         STATS,
@@ -276,5 +284,11 @@ private:
         static_cast<float>(36),
         static_cast<float>(48),
         static_cast<float>(3)
+    };
+        Rectangle GenderIcon = {
+        static_cast<float>(48),
+        static_cast<float>(36),
+        static_cast<float>(8),
+        static_cast<float>(10)
     };
 };

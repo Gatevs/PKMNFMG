@@ -10,6 +10,7 @@ ActionHandler::ActionHandler() {
     atlasTexture = LoadTexture("assets/MISC/UI_Atlas.png");
     MainFont = LoadFont("assets/SPRITEFONT/SpriteFont_Main.png");
     BagFont = LoadFont("assets/SPRITEFONT/SpriteFont_Bag.png");
+    BattleFont = LoadFont("assets/SPRITEFONT/SpriteFont_Battle.png");
     screenTexture = LoadTexture("assets/MISC/Screens_Atlas.png");
     StageTexture = LoadTexture("assets/MISC/GStage.png");
     BattleBGTexture = LoadTexture("assets/MISC/BattleBGScroll.png");
@@ -126,6 +127,7 @@ void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
             inUI = DIALOGUE;
             break;
         case ActionType::Battle_M:
+            MainPos = Vector2{drawPos.x - 30, drawPos.y + 144};
             fadePos = (Vector2){drawPos.x - 32, drawPos.y};
             HPCardEnemy = {fadePos.x - 128,fadePos.y + 20};
             stopPlayerInput = true;
@@ -327,12 +329,33 @@ void ActionHandler::actionBattleMenu(Player& player){
     float dt = 1.0f / 60.0f;
     const int MAX_FADE_VALUE = 255;
     const int FADE_INCREMENT = 10; // Adjust the increment value as needed
+    std::string EnemySprite = "assets/STAT_SPRITES/" + std::to_string(EnemyPKMNInfo.Index) + "_" + std::to_string(EnemyPKMNInfo.GStage) + ".png";
+    std::string PlayerSprite = "assets/TRAINER_BACKSPRITE/" + player.GetPlayerGender() + "_" + std::to_string(player.GetStage()) + ".png";
+    bool HasWalkingPKMN = true;
+    int textureWidth;
+    int textureHeight;
+    float FrameY;
+    if (HasWalkingPKMN){
+        FrameY = 3.0f;
+    } else{
+        FrameY = 4.0f;
+    }
     if (IsKeyPressed(KEY_I)){
         HealthPointMap.width = 48;
     }
 
     switch(battleState){
         case LOADING_ELEMENTS:
+            if (!IsTextureReady(StatSprite)){
+                StatSprite = LoadTexture(EnemySprite.c_str());
+                BattlePlayerTexture = LoadTexture(PlayerSprite.c_str());
+            }
+            if (IsTextureReady(BattlePlayerTexture)){
+                textureWidth = BattlePlayerTexture.width;
+                textureHeight = BattlePlayerTexture.height;
+                PlayerBackspriteFrame.x = textureWidth / 1.0f;
+                PlayerBackspriteFrame.y = textureHeight / FrameY;
+            }
             if (BattleUIPos.x < 144){
                 BattleUIPos.x += (dt * (60.0f * 2.0f));
             }
@@ -345,14 +368,19 @@ void ActionHandler::actionBattleMenu(Player& player){
             if (baseFriendlyX < 60){
                 baseFriendlyX += (dt * (60.0f * 4.0f));
             } else {
-                if (HPCardEnemy.x < 0){
-                    HPCardEnemy.x += (dt * (60.0f * 8.0f));
-                }
-                if (BattleTextBoxOpacity < MAX_FADE_VALUE) {
-                    BattleTextBoxOpacity = std::min(BattleTextBoxOpacity + FADE_INCREMENT, MAX_FADE_VALUE);
-                } else {
-                    BattleTextBoxOpacity = MAX_FADE_VALUE;
-                }
+                battleState = ENEMY_INTRO;
+                SetNPCDialogue("A wild ENEMYPKMN appeared!");
+            }
+            break;
+        case ENEMY_INTRO:
+            if (HPCardEnemy.x < 0){
+                HPCardEnemy.x += (dt * (60.0f * 8.0f));
+            }
+            if (BattleTextBoxOpacity < MAX_FADE_VALUE) {
+                BattleTextBoxOpacity = std::min(BattleTextBoxOpacity + FADE_INCREMENT, MAX_FADE_VALUE);
+            } else {
+                BattleTextBoxOpacity = MAX_FADE_VALUE;
+                dialogue(player);
             }
             break;
     }
@@ -523,6 +551,7 @@ void ActionHandler::SetNPCDialogue(std::string text){
     DialogueText = text;
     replaceAll(DialogueText,"PLAYERNAME", PLAYER_NAME);
     replaceAll(DialogueText,"¬", "\n");
+    replaceAll(DialogueText,"ENEMYPKMN", EnemyPKMNInfo.Name);
     splitDialogue(DialogueText,CurText,RemainingText);
 }
 
@@ -558,7 +587,7 @@ void ActionHandler::dialogue(Player& player) {
             stopPlayerInput = false;
             claenText();
             curTextSize = 0;
-            CloseUI(player);
+            player.StopUI_Element();
         } else if (textFinished && curTextSize != DialogueText.length()){
             // Display next portion of text
             curTextSize += 1;
@@ -807,14 +836,6 @@ void ActionHandler::Draw(){
                 DrawActionUI();
                 break;
             case BATTLE:
-                DrawTextureRec(BattleBGTexture,{BattleUIPos.x,0,256,192},fadePos,WHITE);
-                DrawTextureRec(BattleBGBaseTexture,BaseEnemyMap,{fadePos.x + (BaseEnemyX),fadePos.y + 56},WHITE);
-                DrawTextureRec(BattleBGBaseTexture,BaseFriendlyMap,{fadePos.x - (baseFriendlyX),fadePos.y + 112},WHITE);
-                DrawTextureRec(BattleHPCardTexture,HPCardEnemyMap,HPCardEnemy,WHITE);
-                DrawTextureRec(BattleHPCardTexture,HealthPointMap,{HPCardEnemy.x + 50, HPCardEnemy.y + 24},WHITE);
-                DrawTextBoxed(MainFont, EnemyPKMNInfo.Name.c_str(), (Rectangle){HPCardEnemy.x + 1, HPCardEnemy.y + 8, 60, 30}, MainFont.baseSize, -5, wordWrap, WHITE);
-                DrawRectangleV({fadePos.x,float((fadePos.y + 192.0f)- BattleUIPos.y)},{256,48},{33,33,33,255});
-                DrawTextureRec(atlasTexture, DialogueMap, {fadePos.x + 2,fadePos.y + 145.0f}, {255,255,255,static_cast<unsigned char>(BattleTextBoxOpacity)});
                 DrawBattleUI();
                 break;
         }
@@ -875,6 +896,20 @@ void ActionHandler::DrawActionUI(){
 }
 
 void ActionHandler::DrawBattleUI(){
+    DrawTextureRec(BattleBGTexture,{BattleUIPos.x,0,256,192},fadePos,WHITE);
+    DrawTextureRec(BattleBGBaseTexture,BaseEnemyMap,{fadePos.x + (BaseEnemyX),fadePos.y + 56},WHITE);
+    DrawTexture(StatSprite,((fadePos.x + 60) + BaseEnemyX) - (StatSprite.width / 2.0f),(fadePos.y + 92) - StatSprite.height,WHITE);
+    DrawTextureRec(BattleBGBaseTexture,BaseFriendlyMap,{fadePos.x - (baseFriendlyX),fadePos.y + 112},WHITE);
+    DrawTextureRec(BattlePlayerTexture,{0,0,PlayerBackspriteFrame.x,PlayerBackspriteFrame.y},{(fadePos.x + 80) - (baseFriendlyX),(fadePos.y - 40) + 112},WHITE);
+    DrawTextureRec(BattleHPCardTexture,HPCardEnemyMap,HPCardEnemy,WHITE);
+    DrawTextureRec(BattleHPCardTexture,HealthPointMap,{HPCardEnemy.x + 50, HPCardEnemy.y + 24},WHITE);
+    DrawTextureRec(BattleHPCardTexture,{GenderIcon.x + (8 * EnemyPKMNInfo.Gender),GenderIcon.y,GenderIcon.width,GenderIcon.height},{HPCardEnemy.x + 65, HPCardEnemy.y + 8},WHITE);
+    DrawTextBoxed(MainFont, EnemyPKMNInfo.Name.c_str(), (Rectangle){HPCardEnemy.x + 1, HPCardEnemy.y + 8, 60, 30}, MainFont.baseSize, -5, wordWrap, WHITE);
+    DrawTextBoxed(BattleFont, (std::to_string(EnemyPKMNInfo.Lvl).c_str()), (Rectangle){HPCardEnemy.x + 81, HPCardEnemy.y + 7, 60, 30}, MainFont.baseSize, -4, wordWrap, WHITE);
+    DrawRectangleV({fadePos.x,float((fadePos.y + 192.0f)- BattleUIPos.y)},{256,48},{33,33,33,255});
+    DrawTextureRec(atlasTexture, DialogueMap, {fadePos.x + 2,fadePos.y + 145.0f}, {255,255,255,static_cast<unsigned char>(BattleTextBoxOpacity)});
+    DrawTextBoxed(MainFont, DestTXT.c_str(), (Rectangle){ MainPos.x + 16, MainPos.y +8, 220, 60 }, MainFont.baseSize, -5, wordWrap, WHITE);
+
 }
 
 void ActionHandler::SetPlayerName(std::string player){
