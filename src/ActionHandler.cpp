@@ -155,7 +155,6 @@ void ActionHandler::InputUI(std::vector<NPC>& NPC_objs, Player& player_Obj){
 
 void ActionHandler::UpdateSelection(int pixels, int &menuID, int MAX_DOWN, int MAX_UP, Vector2 &pos){
     if (ControllerSingleton::GetInstance().IsDownPressed() && menuID < MAX_DOWN) {
-        std::cout << menuID << std::endl;
         for (int i = 0; i < 8; ++i) {
             ICO[i] = 0;
         }
@@ -165,7 +164,6 @@ void ActionHandler::UpdateSelection(int pixels, int &menuID, int MAX_DOWN, int M
         PlaySound(GUICursor);
     }
     if (ControllerSingleton::GetInstance().IsUpPressed() && menuID > MAX_UP) {
-        std::cout << menuID << std::endl;
         for (int i = 0; i < 8; ++i) {
             ICO[i] = 0;
         }
@@ -300,7 +298,6 @@ void ActionHandler::actionGrowthMenu(std::vector<NPC>& NPC_objs, Player& p){
     MAX_UP = 1;
     UpdateSelection(SubMove, menuID,MAX_DOWN,MAX_UP,SubSelPos);
     UpdateScreenState();
-    std::cout << menuID << std::endl;
 
 
     if (ControllerSingleton::GetInstance().IsAPressed()){
@@ -525,19 +522,29 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
     std::string defaultAction = "";
     bool foundNonEmpty = false;
 
-    for (auto& npc : NPC_objs) {
-        if (ActiveNPCVectorIndex == -1) ActiveNPCVectorIndex += 1;
+    // Iterate through NPC_objs using an index
+    for (size_t i = 0; i < NPC_objs.size(); ++i) {
+        auto& npc = NPC_objs[i];
+
+        // Check if the current NPC's ID matches the target ID
         if (npc.GetID() == ID) {
+            // Store the index of the NPC in the ActiveNPCVectorIndex variable
+            ActiveNPCVectorIndex = i;
+
             std::string targetValue = npc.GetCombinedValues(Event);
             NPCInfo.ID = npc.GetID();
+            std::cout << "ActiveNPCVectorIndex: " << ActiveNPCVectorIndex << std::endl;
+            std::cout << "NPCInfo.ID: " << NPCInfo.ID << std::endl;
+
             NPCInfo.Limit = npc.GetLimit();
             NPCInfo.Stage = npc.GetStage();
 
+            // Process the NPC's dialogue and actions
             for (const auto& row : npc.GetNPCDialogue()) {
                 if (row[COMBINED_VALUES] == targetValue) {
                     NPCInfo.Name = row[NAME];
                     if (!row[EVENT_CONDITION].empty()) {
-                        if (CompareDialogueConditions(row[EVENT_CONDITION],row[EVENT_VALUE],npc)){
+                        if (CompareDialogueConditions(row[EVENT_CONDITION], row[EVENT_VALUE], npc)){
                             foundNonEmpty = true;
                             SetDialogueAction(ActionFromCondition);
                             SetNPCDialogue(row[TEXT_DIALOGUE]);
@@ -550,6 +557,7 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
                 }
             }
 
+            // If no conditions were met, use the default dialogue and action
             if (!foundNonEmpty) {
                 SetDialogueAction(defaultAction);
                 SetNPCDialogue(defaultLine);
@@ -558,7 +566,7 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
         }
     }
     // Error handling if NPC with the given ID is not found
-    // You may want to log an error message or throw an exception
+    std::cerr << "Error: NPC with ID " << ID << " not found." << std::endl;
 }
 
 bool ActionHandler::CompareDialogueConditions(std::string condition, std::string value, NPC& npc){
@@ -625,7 +633,7 @@ void ActionHandler::dialogue(Player& player) {
                 stopPlayerInput = false;
                 claenText();
                 curTextSize = 0;
-                player.StopUI_Element();
+                CloseUI(player);
             }
         } else if (textFinished && curTextSize != DialogueText.length()){
             // Display next portion of text
@@ -718,7 +726,7 @@ void ActionHandler::CloseUI(Player& player){
         StatSprite.mipmaps = 0;
     }
     ActiveNPCVectorIndex = -1;
-    PlaySound(GUIClose);
+    if (inUI != DIALOGUE){PlaySound(GUIClose);}
     player.StopUI_Element();
 }
 
