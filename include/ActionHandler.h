@@ -52,7 +52,9 @@ private:
     void UpdateScreenState();
     void DrawPauseUI();
     void DrawActionUI();
+    void unloadTextureFull(Texture2D& texture);
 
+    void ExitBattle(Player& player);
     void DrawBattleUI();
     void Draw_BattleBG();
     void Draw_EnemyElements();
@@ -73,10 +75,10 @@ private:
     Texture2D screenTexture;
 
     Texture2D BattleBGTexture;
-    Texture2D BattleBGBaseTexture;
-    Texture2D BattleHPCardTexture;
-    Texture2D BattlePlayerTexture;
-    Texture2D BattlePKMNTexture;
+    Texture2D BaseTexture;
+    Texture2D HPCardTexture;
+    Texture2D PlayerBattleTexture;
+    Texture2D PKMNBattleTexture;
     Texture2D BattleButtonsTexture;
 
     Texture2D StageTexture;
@@ -101,10 +103,18 @@ private:
     Vector2 ICOPos;
     Vector2 fadePos;
     Vector2 CameraPos;
-    Vector2 HPCardEnemy;
-    Vector2 HPCardFriend;
-    Vector2 PlayerBackspriteFrame = {1,0};
+
+    Vector2 BattleUIPos = {0,0};
+    Vector2 HPCardEnemyPos;
+    Vector2 HPCardFriendPos;
     Vector2 BattleButtonsPos;
+    Vector2 EnemyBasePos;
+    Vector2 PlayerBasePos;
+    Vector2 PlayerSpritePos;
+    Vector2 PlayerPKMNSpritePos;
+    Vector2 EnemyPKMNSpritePos;
+    Vector2 PlayerBackspriteFrame = {1,0};
+
     bool wordWrap;
     bool fadeInComplete;
     bool fadeOutComplete;
@@ -133,15 +143,10 @@ private:
     int MAX_UP;
     int ActiveNPCVectorIndex = -1;
 
-    int battleState;
-    Vector2 BattleUIPos = {0,0};
-    int BaseEnemyX = -180;
-    int baseFriendlyX = -248;
-    int BattleTextBoxOpacity = 0;
+    int battlePhase;
+    int TextBoxOpacity = 0;
     float battleTimer = 0.0f;
     int PlayerAnimFrame = 0;
-    int PlayerSpriteOffscreen = 0;
-    int PlayerPKMNOffscreen;
     int UIJumpCount = 0;
     int PKMNSpriteJiggle = 0;
 
@@ -291,13 +296,13 @@ private:
         static_cast<float>(128),
         static_cast<float>(64)
     };
-        const Rectangle BaseFriendlyMap = {
+        const Rectangle BasePlayerMap = {
         static_cast<float>(0),
         static_cast<float>(64),
         static_cast<float>(256),
         static_cast<float>(32)
     };
-        const Rectangle HPCardFriendMap = {
+        const Rectangle HPCardPlayerMap = {
         static_cast<float>(0),
         static_cast<float>(53),
         static_cast<float>(128),
@@ -315,7 +320,7 @@ private:
         static_cast<float>(48),
         static_cast<float>(3)
     };
-        Rectangle GenderIcon = {
+        Rectangle GenderIconMap = {
         static_cast<float>(48),
         static_cast<float>(36),
         static_cast<float>(8),
