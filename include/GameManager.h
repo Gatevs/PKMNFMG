@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ActionHandler.h"
+#include "PKMN.h"
 #include "TileMap.h"
 #include <raylib.h>
 #include "TileObjects.h"
@@ -46,6 +47,7 @@ private:
     ActionHandler Menu;
     Player player;
     std::vector<NPC> npcs;
+    std::vector<PKMN> PlayerParty;
     std::vector<tileObj> tileObjs;
     Texture2D ShadowCentered;
     Texture2D ShadowOffCenter;

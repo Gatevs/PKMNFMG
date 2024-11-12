@@ -1,5 +1,6 @@
 #pragma once
 
+#include "PKMN.h"
 #include "npc.h"
 #include "player.h"
 #include <iostream>
@@ -23,6 +24,7 @@ public:
     void handleAction(ActionType actionType, Vector2 drawPos);
     void getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event);
     void getPlayerInfo(int ID, Player player_Obj, int Event);
+    void getPKMNPartyInfo(std::vector<PKMN>& PKMNParty);
     void InputUI(std::vector<NPC>& NPC_objs, Player& player_Obj);
     void SetPlayerName(std::string player);
     void SetPlayerGender(std::string player);
@@ -50,7 +52,13 @@ private:
     void UpdateScreenState();
     void DrawPauseUI();
     void DrawActionUI();
+
     void DrawBattleUI();
+    void Draw_BattleBG();
+    void Draw_EnemyElements();
+    void Draw_PlayerElements();
+    void Draw_BattleTextBox();
+
     void SetVNSprite();
     void SetNPCDialogue(std::string text);
     void SetDialogueAction(std::string action);
@@ -69,6 +77,7 @@ private:
     Texture2D BattleHPCardTexture;
     Texture2D BattlePlayerTexture;
     Texture2D BattlePKMNTexture;
+    Texture2D BattleButtonsTexture;
 
     Texture2D StageTexture;
     Texture2D StatSprite;
@@ -95,6 +104,7 @@ private:
     Vector2 HPCardEnemy;
     Vector2 HPCardFriend;
     Vector2 PlayerBackspriteFrame = {1,0};
+    Vector2 BattleButtonsPos;
     bool wordWrap;
     bool fadeInComplete;
     bool fadeOutComplete;
@@ -131,6 +141,9 @@ private:
     float battleTimer = 0.0f;
     int PlayerAnimFrame = 0;
     int PlayerSpriteOffscreen = 0;
+    int PlayerPKMNOffscreen;
+    int UIJumpCount = 0;
+    int PKMNSpriteJiggle = 0;
 
     struct EnemyPKMNInfo {
         int Index = 23;
@@ -139,6 +152,16 @@ private:
         int Lvl = 4;
         int GStage = 0;
     } EnemyPKMNInfo;
+
+    struct PlayerPKMNInfo {
+        int Index;
+        std::string Name;
+        int Gender;
+        int Lvl;
+        int GStage;
+        int HP;
+        int curHP;
+    } PlayerPKMNInfo;
 
     struct NPCInfo {
         std::string Name;
@@ -151,7 +174,8 @@ private:
         LOADING_ELEMENTS,
         SET_FIELD,
         ENEMY_INTRO,
-        PLAYERPKMN_INTRO
+        PLAYERPKMN_INTRO,
+        WAIT_INPUT
     };
     enum Menu_Type{
         STATS,
@@ -275,9 +299,9 @@ private:
     };
         const Rectangle HPCardFriendMap = {
         static_cast<float>(0),
-        static_cast<float>(40),
+        static_cast<float>(53),
         static_cast<float>(128),
-        static_cast<float>(53)
+        static_cast<float>(47)
     };
         const Rectangle HPCardEnemyMap = {
         static_cast<float>(0),
@@ -296,5 +320,11 @@ private:
         static_cast<float>(36),
         static_cast<float>(8),
         static_cast<float>(10)
+    };
+        Rectangle BattleButtonsMap = {
+        static_cast<float>(0),
+        static_cast<float>(0),
+        static_cast<float>(132),
+        static_cast<float>(48)
     };
 };

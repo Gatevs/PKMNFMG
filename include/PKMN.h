@@ -14,11 +14,15 @@ public:
     int GetID() const { return ID; }
     int GetGStage() const { return GSTAGE; }
     int GetGender() const { return GENDER; }
+    int GetCurHp() const { return CUR_HP; }
+    int GetMaxHP() const { return HP; }
     std::string GetPKMN_Name() const { return PKMN_DEF[NAME];}
+    std::string GetPKMN_NickName();
 
     void SetNickname(const std::string& newName) { nickname = newName; }
     void SetLevel(int newLevel) { LVL = newLevel; }
     void SetAbility(const std::string& newAbility) { ability = newAbility; }
+    void SetStatValues();
 
     void parseCSV(const std::string& filename);
 
@@ -27,6 +31,10 @@ private:
     int LVL;
     int GSTAGE;
     int GENDER;
+    int CUR_HP;
+    int HP;
+    int IV_HP;
+    int EV_HP = 0;
     std::string location;
     std::string nickname;
     std::string ability;

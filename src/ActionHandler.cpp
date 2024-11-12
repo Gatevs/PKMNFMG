@@ -1,11 +1,12 @@
 #include "ActionHandler.h"
+#include <cctype>
 #include <cstring>
 #include <raylib.h>
 #include <string>
 #include "npc.h"
 #include "player.h"
 #include "ControllerSingleton.h"
-#include "PKMN.h"
+#include <algorithm>
 
 ActionHandler::ActionHandler() {
     atlasTexture = LoadTexture("assets/MISC/UI_Atlas.png");
@@ -131,6 +132,8 @@ void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
             MainPos = Vector2{drawPos.x - 30, drawPos.y + 144};
             fadePos = (Vector2){drawPos.x - 32, drawPos.y};
             HPCardEnemy = {fadePos.x - 128,fadePos.y + 20};
+            HPCardFriend = {fadePos.x + (256),fadePos.y + (187 - (DialogueMap.height + HPCardFriendMap.height))};
+            BattleButtonsPos = {fadePos.x + (256 +21),fadePos.y + (192 - BattleButtonsMap.height)};
             stopPlayerInput = true;
             battleState = LOADING_ELEMENTS;
             inUI = BATTLE;
@@ -327,8 +330,10 @@ void ActionHandler::actionBattleMenu(Player& player){
     float dt = 1.0f / 60.0f;
     const int MAX_FADE_VALUE = 255;
     const int FADE_INCREMENT = 10; // Adjust the increment value as needed
+    const int SCREEN_WIDTH = 256;
     std::string EnemySprite;
     std::string PlayerSprite = "assets/TRAINER_BACKSPRITE/" + player.GetPlayerGender() + "_" + std::to_string(player.GetStage()) + ".png";
+    std::string PKMNTexture = "assets/PKMN_BACKSPRITE/" + std::to_string(PlayerPKMNInfo.Index) + "_" + std::to_string(PlayerPKMNInfo.GStage) + ".png";
     bool HasWalkingPKMN = true;
     int textureWidth;
     int textureHeight;
@@ -345,7 +350,7 @@ void ActionHandler::actionBattleMenu(Player& player){
 
     switch(battleState){
         case LOADING_ELEMENTS:
-            if (BattlePlayerTexture.id == 0){
+            if (!IsTextureReady(BattlePlayerTexture)){
                 battleTimer = 1.0f;
                 PKMN EnemyPKMN(19,4,0,0);
                 EnemyPKMN.parseCSV("assets/CSV/PKMN_DB.csv");
@@ -353,10 +358,14 @@ void ActionHandler::actionBattleMenu(Player& player){
                 EnemyPKMNInfo.Lvl = EnemyPKMN.GetLevel();
                 EnemyPKMNInfo.Gender = EnemyPKMN.GetGender();
                 EnemyPKMNInfo.Name = EnemyPKMN.GetPKMN_Name();
+                std::transform(EnemyPKMNInfo.Name.begin(),EnemyPKMNInfo.Name.end(),EnemyPKMNInfo.Name.begin (),::toupper);
                 EnemyPKMNInfo.GStage = EnemyPKMN.GetGStage();
-                EnemySprite = "assets/STAT_SPRITES/" + std::to_string(EnemyPKMNInfo.Index) + "_" + std::to_string(EnemyPKMNInfo.GStage) + ".png";
+                EnemySprite = "assets/PKMN_BATTLESPRITE/" + std::to_string(EnemyPKMNInfo.Index) + "_" + std::to_string(EnemyPKMNInfo.GStage) + ".png";
+                BattleButtonsTexture = LoadTexture("assets/MISC/BattleButtons.png");
                 StatSprite = LoadTexture(EnemySprite.c_str());
                 BattlePlayerTexture = LoadTexture(PlayerSprite.c_str());
+                BattlePKMNTexture = LoadTexture(PKMNTexture.c_str());
+                PlayerPKMNOffscreen = BattlePKMNTexture.width + (BattlePKMNTexture.width/4);
             }
             if (battleTimer > 0){
                 battleTimer -= (dt * (60.0f * 1.0f));
@@ -387,10 +396,10 @@ void ActionHandler::actionBattleMenu(Player& player){
             }
             break;
         case ENEMY_INTRO:
-            if (HPCardEnemy.x < 0){
+            if (HPCardEnemy.x < fadePos.x){
                 HPCardEnemy.x += (dt * (60.0f * 8.0f));
             } else {
-                HPCardEnemy.x = 0;
+                HPCardEnemy.x = fadePos.x;
             }
             if (BattleTextBoxOpacity < MAX_FADE_VALUE) {
                 BattleTextBoxOpacity = std::min(BattleTextBoxOpacity + FADE_INCREMENT, MAX_FADE_VALUE);
@@ -405,6 +414,7 @@ void ActionHandler::actionBattleMenu(Player& player){
             }
             break;
         case PLAYERPKMN_INTRO:
+            dialogue(player);
             if (PlayerAnimFrame < MAX_FRAMES - 1){
                 battleTimer += dt;
             }
@@ -412,10 +422,72 @@ void ActionHandler::actionBattleMenu(Player& player){
                 PlayerAnimFrame += (dt * 60.0f);
                 battleTimer = 0.0f;
             }
-            if (PlayerSpriteOffscreen < BattlePlayerTexture.width + BattlePlayerTexture.width/2){
+            if (PlayerSpriteOffscreen < BattlePlayerTexture.width + BattlePlayerTexture.width/4){
                 PlayerSpriteOffscreen += (dt * 120.0f);
             }
-            dialogue(player);
+            if (PlayerPKMNOffscreen > 0){
+                PlayerPKMNOffscreen -= (dt * 120.0f);
+            } else if (HPCardFriend.x > fadePos.x + (SCREEN_WIDTH - HPCardFriendMap.width)){
+                HPCardFriend.x -= (dt * (60.0f * 8.0f));
+            } else {
+                HPCardFriend.x = fadePos.x + (SCREEN_WIDTH - HPCardFriendMap.width);
+                if (BattleButtonsPos.x > fadePos.x + (SCREEN_WIDTH - BattleButtonsMap.width)){
+                    menuID = 0;
+                    BattleButtonsPos.x -= (dt * (60.0f * 7.0f));
+                }else {
+                    BattleButtonsPos.x = fadePos.x + (SCREEN_WIDTH - BattleButtonsMap.width);
+                    claenText();
+                    SetNPCDialogue("What will ¬PLAYERPKMN do?");
+                    menuID = 1;
+                    battleState = WAIT_INPUT;
+                }
+            }
+            break;
+        case WAIT_INPUT:
+            bool Jiggle = false;
+            int UPPER_LIMIT = 4;
+            int LOWER_LIMIT = 1;
+            frameRate = 0.180f;
+            DestTXT = DialogueText;
+            battleTimer += dt;
+            if (battleTimer >= frameRate){
+                UIJumpCount += 1;
+                Jiggle = true;
+                battleTimer = 0;
+            }
+            if (Jiggle){
+                switch (UIJumpCount){
+                    case 1:
+                        HPCardFriend.y += 1;
+                        PKMNSpriteJiggle -= 1;
+                        break;
+                    case 2:
+                        HPCardFriend.y -= 1;
+                        PKMNSpriteJiggle += 1;
+                        break;
+                    case 3:
+                        HPCardFriend.y -= 1;
+                        PKMNSpriteJiggle += 1;
+                        break;
+                    case 4:
+                        HPCardFriend.y += 1;
+                        PKMNSpriteJiggle -= 1;
+                        UIJumpCount = 0;
+                        break;
+                }
+            }
+            if (ControllerSingleton::GetInstance().IsRightPressed() && menuID < UPPER_LIMIT){
+                menuID += 1;
+            }
+            if (ControllerSingleton::GetInstance().IsDownPressed() && menuID < UPPER_LIMIT - 1){
+                menuID += 2;
+            }
+            if (ControllerSingleton::GetInstance().IsLeftPressed() && menuID > LOWER_LIMIT){
+                menuID -= 1;
+            }
+            if (ControllerSingleton::GetInstance().IsUpPressed() && menuID > LOWER_LIMIT + 1){
+                menuID -= 2;
+            }
             break;
     }
     if (ControllerSingleton::GetInstance().IsBPressed()){
@@ -569,6 +641,18 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
     std::cerr << "Error: NPC with ID " << ID << " not found." << std::endl;
 }
 
+void ActionHandler::getPKMNPartyInfo(std::vector<PKMN>& PKMNParty){
+    int Selected = 0;
+
+    PlayerPKMNInfo.Index = PKMNParty[Selected].GetID();
+    PlayerPKMNInfo.Name = PKMNParty[Selected].GetPKMN_NickName();
+    PlayerPKMNInfo.Lvl = PKMNParty[Selected].GetLevel();
+    PlayerPKMNInfo.Gender = PKMNParty[Selected].GetGender();
+    PlayerPKMNInfo.GStage = PKMNParty[Selected].GetGStage();
+    PlayerPKMNInfo.HP = PKMNParty[Selected].GetMaxHP();
+    PlayerPKMNInfo.curHP = PKMNParty[Selected].GetCurHp();
+}
+
 bool ActionHandler::CompareDialogueConditions(std::string condition, std::string value, NPC& npc){
     ActionFromCondition = value;
     if (condition == "HasGrown" && npc.GetNPCEventState().hasGrown) {
@@ -597,6 +681,7 @@ void ActionHandler::SetNPCDialogue(std::string text){
     replaceAll(DialogueText,"PLAYERNAME", PLAYER_NAME);
     replaceAll(DialogueText,"¬", "\n");
     replaceAll(DialogueText,"ENEMYPKMN", EnemyPKMNInfo.Name);
+    replaceAll(DialogueText,"PLAYERPKMN", PlayerPKMNInfo.Name);
     splitDialogue(DialogueText,CurText,RemainingText);
 }
 
@@ -944,21 +1029,69 @@ void ActionHandler::DrawActionUI(){
 
 void ActionHandler::DrawBattleUI(){
     if (battleState != LOADING_ELEMENTS){
-        DrawTextureRec(BattleBGTexture,{BattleUIPos.x,0,256,192},fadePos,WHITE);
-        DrawTextureRec(BattleBGBaseTexture,BaseEnemyMap,{fadePos.x + (BaseEnemyX),fadePos.y + 56},WHITE);
-        DrawTexture(StatSprite,((fadePos.x + 60) + BaseEnemyX) - (StatSprite.width / 2.0f),(fadePos.y + 92) - StatSprite.height,WHITE);
-        DrawTextureRec(BattleBGBaseTexture,BaseFriendlyMap,{fadePos.x - (baseFriendlyX),fadePos.y + 112},WHITE);
-        DrawTextureRec(BattlePlayerTexture,{0,0 + (PlayerBackspriteFrame.y * PlayerAnimFrame),PlayerBackspriteFrame.x,PlayerBackspriteFrame.y},{(fadePos.x + 80) - (baseFriendlyX) - PlayerSpriteOffscreen,(fadePos.y - 40) + 112},WHITE);
-        DrawTextureRec(BattleHPCardTexture,HPCardEnemyMap,HPCardEnemy,WHITE);
-        DrawTextureRec(BattleHPCardTexture,HealthPointMap,{HPCardEnemy.x + 50, HPCardEnemy.y + 24},WHITE);
-        DrawTextureRec(BattleHPCardTexture,{GenderIcon.x + (8 * EnemyPKMNInfo.Gender),GenderIcon.y,GenderIcon.width,GenderIcon.height},{HPCardEnemy.x + 65, HPCardEnemy.y + 8},WHITE);
-        DrawTextBoxed(MainFont, EnemyPKMNInfo.Name.c_str(), (Rectangle){HPCardEnemy.x + 1, HPCardEnemy.y + 8, 60, 30}, MainFont.baseSize, -5, wordWrap, WHITE);
-        DrawTextBoxed(BattleFont, (std::to_string(EnemyPKMNInfo.Lvl).c_str()), (Rectangle){HPCardEnemy.x + 81, HPCardEnemy.y + 7, 60, 30}, MainFont.baseSize, -4, wordWrap, WHITE);
-        DrawRectangleV({fadePos.x,float((fadePos.y + 192.0f)- BattleUIPos.y)},{256,48},{33,33,33,255});
-        DrawTextureRec(atlasTexture, DialogueMap, {fadePos.x + 2,fadePos.y + 145.0f}, {255,255,255,static_cast<unsigned char>(BattleTextBoxOpacity)});
-        DrawTextBoxed(MainFont, DestTXT.c_str(), (Rectangle){ MainPos.x + 16, MainPos.y +8, 220, 60 }, MainFont.baseSize, -5, wordWrap, WHITE);
+        Draw_BattleBG();
+        Draw_EnemyElements();
+        Draw_PlayerElements();
+        Draw_BattleTextBox();
     }
 
+}
+
+void ActionHandler::Draw_BattleBG(){
+    // Battle screen background
+    DrawTextureRec(BattleBGTexture, {BattleUIPos.x, 0, 256, 192}, fadePos, WHITE);
+}
+
+void ActionHandler::Draw_EnemyElements(){
+    // Enemy base
+    DrawTextureRec(BattleBGBaseTexture, BaseEnemyMap, {fadePos.x + BaseEnemyX, fadePos.y + 56}, WHITE);
+    // Enemy Pokemon sprite
+    DrawTexture(StatSprite, ((fadePos.x + 60) + BaseEnemyX) - (StatSprite.width / 2.0f), (fadePos.y + 92) - StatSprite.height, WHITE);
+    // Enemy HP Card
+    DrawTextureRec(BattleHPCardTexture, HPCardEnemyMap, HPCardEnemy, WHITE);
+    // Enemy health points
+    DrawTextureRec(BattleHPCardTexture, HealthPointMap, {HPCardEnemy.x + 50, HPCardEnemy.y + 24}, WHITE);
+    // Enemy gender
+    DrawTextureRec(BattleHPCardTexture, {GenderIcon.x + (8 * EnemyPKMNInfo.Gender), GenderIcon.y, GenderIcon.width, GenderIcon.height}, {HPCardEnemy.x + 65, HPCardEnemy.y + 8}, WHITE);
+    // Enemy name
+    DrawTextBoxed(MainFont, EnemyPKMNInfo.Name.c_str(), {HPCardEnemy.x + 4, HPCardEnemy.y + 7, 60, 30}, MainFont.baseSize, -5, wordWrap, WHITE);
+    // Enemy level
+    DrawTextBoxed(BattleFont, std::to_string(EnemyPKMNInfo.Lvl).c_str(), {HPCardEnemy.x + 81, HPCardEnemy.y + 7, 60, 30}, MainFont.baseSize, -4, wordWrap, WHITE);
+}
+
+void ActionHandler::Draw_PlayerElements(){
+    // Player's base
+    DrawTextureRec(BattleBGBaseTexture, BaseFriendlyMap, {fadePos.x - baseFriendlyX, fadePos.y + 112}, WHITE);
+    // Player's Pokemon sprite
+    DrawTexture(BattlePKMNTexture, ((fadePos.x - PlayerPKMNOffscreen) + baseFriendlyX) - (BattlePKMNTexture.width / 2.0f), (fadePos.y - 40 + (PKMNSpriteJiggle)) + 120, WHITE);
+    // Player's sprite
+    DrawTextureRec(BattlePlayerTexture, {0, 0 + (PlayerBackspriteFrame.y * PlayerAnimFrame), PlayerBackspriteFrame.x, PlayerBackspriteFrame.y}, {fadePos.x + 80 - baseFriendlyX - PlayerSpriteOffscreen, fadePos.y - 40 + 112}, WHITE);
+    // Player's pkmns HPCard
+    DrawTextureRec(BattleHPCardTexture,HPCardFriendMap,HPCardFriend,WHITE);
+    // Player's health points
+    DrawTextureRec(BattleHPCardTexture, HealthPointMap, {HPCardFriend.x + 72, HPCardFriend.y + 25}, WHITE);
+    // Player's gender
+    DrawTextureRec(BattleHPCardTexture, {GenderIcon.x + (8 * PlayerPKMNInfo.Gender), GenderIcon.y, GenderIcon.width, GenderIcon.height}, {HPCardFriend.x + 87, HPCardFriend.y + 9}, WHITE);
+    // Player's name
+    DrawTextBoxed(MainFont, PlayerPKMNInfo.Name.c_str(), {HPCardFriend.x + 24, HPCardFriend.y + 9, 60, 30}, MainFont.baseSize, -5, wordWrap, WHITE);
+    // Player's level
+    DrawTextBoxed(BattleFont, std::to_string(PlayerPKMNInfo.Lvl).c_str(), {HPCardFriend.x + 103, HPCardFriend.y + 8, 60, 30}, MainFont.baseSize, -4, wordWrap, WHITE);
+    //Player's Pokemon CurHP'
+    DrawTextBoxed(BattleFont, std::to_string(PlayerPKMNInfo.curHP).c_str(), {HPCardFriend.x + 72, HPCardFriend.y + 28, 60, 30}, MainFont.baseSize, -4, wordWrap, WHITE);
+    //Player's Pokemon MaxHP'
+    DrawTextBoxed(BattleFont, std::to_string(PlayerPKMNInfo.HP).c_str(), {HPCardFriend.x + 94, HPCardFriend.y + 28, 60, 30}, MainFont.baseSize, -4, wordWrap, WHITE);
+}
+
+void ActionHandler::Draw_BattleTextBox(){
+    // Black overlay bg for text box
+    DrawRectangleV({fadePos.x, float((fadePos.y + 192.0f) - BattleUIPos.y)}, {256, 48}, {33, 33, 33, 255});
+    // Text box texture
+    DrawTextureRec(atlasTexture, DialogueMap, {fadePos.x + 2, fadePos.y + 145.0f}, {255, 255, 255, static_cast<unsigned char>(BattleTextBoxOpacity)});
+    // Battle screen text
+    DrawTextBoxed(MainFont, DestTXT.c_str(), {MainPos.x + 16, MainPos.y + 8, 220, 60}, MainFont.baseSize, -5, wordWrap, WHITE);
+    // Battle UI Input
+    DrawTextureRec(BattleButtonsTexture, {BattleButtonsMap.x, BattleButtonsMap.y + (BattleButtonsMap.height * menuID), BattleButtonsMap.width, BattleButtonsMap.height}, {BattleButtonsPos.x, BattleButtonsPos.y}, WHITE);
+    DrawTextureRec(atlasTexture, {DialogueMap.x + (DialogueMap.width - 21), DialogueMap.y, 21, DialogueMap.height}, {BattleButtonsPos.x - 21, BattleButtonsPos.y + 1}, WHITE);
 }
 
 void ActionHandler::SetPlayerName(std::string player){

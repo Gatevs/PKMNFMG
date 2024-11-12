@@ -52,6 +52,12 @@ void GameManager::DebugIntro(){
         UnloadTexture(IntroSelect);
         Menu.SetPlayerGender(player.GetPlayerGender());
         IntroFinished = true;
+
+        //Testing out adding a PKMN to the party
+        PKMN Test(133,4,0,0);
+        Test.parseCSV("assets/CSV/PKMN_DB.csv");
+        Test.SetStatValues();
+        PlayerParty.push_back(Test);
     }
 }
 
@@ -131,6 +137,7 @@ void GameManager::CameraUpdate(){
 void GameManager::GameLoop(){
     if (IsKeyPressed(KEY_K)){
         Menu.handleAction(ActionType::Battle_M,camera.target);
+        Menu.getPKMNPartyInfo(PlayerParty);
     }
 
     Outside.update(Outside.GetCurLevelName(), cur, player.GetPosition());
