@@ -55,8 +55,6 @@ void GameManager::DebugIntro(){
 
         //Testing out adding a PKMN to the party
         PKMN Test(133,4,0,0);
-        Test.parseCSV("assets/CSV/PKMN_DB.csv");
-        Test.SetStatValues();
         PlayerParty.push_back(Test);
     }
 }

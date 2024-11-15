@@ -23,21 +23,75 @@ public:
     void SetLevel(int newLevel) { LVL = newLevel; }
     void SetAbility(const std::string& newAbility) { ability = newAbility; }
     void SetStatValues();
+    void SetMovements();
 
     void parseCSV(const std::string& filename);
 
+    struct Stats {
+        int HP;
+        int Attack;
+        int Defense;
+        int SP_Attack;
+        int SP_Defense;
+        int Speed;
+        int Accuracy = 100;   // Default accuracy
+        int Evasion = 0;      // Default evasion
+    };
+
+    struct IndividualValues {
+        int HP;
+        int Attack;
+        int Defense;
+        int SP_Attack;
+        int SP_Defense;
+        int Speed;
+    };
+
+    struct EffortValues {
+        int HP;
+        int Attack;
+        int Defense;
+        int SP_Attack;
+        int SP_Defense;
+        int Speed;
+        int Total;
+    };
+
+    struct Moves {
+        std::string Move1;
+        std::string Move2;
+        std::string Move3;
+        std::string Move4;
+    };
+
+    struct OtherAttributes {
+        std::string Nature;
+        std::string Item;
+        std::string Status;
+        std::string Ability;
+        bool Away;
+        bool InOW; // In overworld
+    };
+
+    Moves& GetMovements() {return Moveset;}
+
 private:
+    int SLOT;
     int ID;
     int LVL;
     int GSTAGE;
     int GENDER;
     int CUR_HP;
     int HP;
-    int IV_HP;
-    int EV_HP = 0;
     std::string location;
     std::string nickname;
     std::string ability;
+
+    Stats BaseStats;
+    IndividualValues IV;
+    EffortValues EV;
+    Moves Moveset;
+    OtherAttributes Attributes;
 
     std::vector<std::string> PKMN_DEF;
 

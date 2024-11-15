@@ -76,10 +76,6 @@ void replaceAll(std::string& str, const std::string& oldWord, const std::string&
 // Writes each character with a delay
 void ActionHandler::typewriterEffect(std::string& text) {
     // While the lenght of the text is not the same as the source text, keep the timer going
-    std::cout << "DestTXT: " << DestTXT.length() << std::endl;
-    std::cout << "curTextSize: "<< curTextSize << std::endl;
-    std::cout << "TextFinished: "<< textFinished << std::endl;
-
     if (DestTXT.length() != text.length()){
         textTimer += 1;
         textFinished = false;
@@ -375,6 +371,8 @@ void ActionHandler::actionBattleMenu(Player& player){
                 EnemyPKMNInfo.GStage = EnemyPKMN.GetGStage();
                 EnemySprite = "assets/PKMN_BATTLESPRITE/" + std::to_string(EnemyPKMNInfo.Index) + "_" + std::to_string(EnemyPKMNInfo.GStage) + ".png";
                 BattleButtonsTexture = LoadTexture("assets/MISC/BattleButtons.png");
+                MoveSelectorTexture = LoadTexture("assets/MISC/MoveSelect.png");
+                PKMNTypeTexture = LoadTexture("assets/MISC/Type.png");
                 StatSprite = LoadTexture(EnemySprite.c_str());
                 PlayerBattleTexture = LoadTexture(PlayerSprite.c_str());
                 PKMNBattleTexture = LoadTexture(PKMNTexture.c_str());
@@ -423,7 +421,6 @@ void ActionHandler::actionBattleMenu(Player& player){
                 TextBoxOpacity = MAX_FADE_VALUE;
                 dialogue(player);
                 if (ControllerSingleton::GetInstance().IsAPressed() && textFinished){
-                    std::cout << "we are here" << std::endl;
                     claenText();
                     SetNPCDialogue("Go PLAYERPKMN!");
                     battlePhase = PLAYERPKMN_INTRO;
@@ -461,60 +458,83 @@ void ActionHandler::actionBattleMenu(Player& player){
             }
             break;
         case WAIT_INPUT:
-            bool Jiggle = false;
-            int UPPER_LIMIT = 4;
-            int LOWER_LIMIT = 1;
-            frameRate = 0.180f;
-            DestTXT = DialogueText;
-            battleTimer += dt;
-            if (battleTimer >= frameRate){
-                UIJumpCount += 1;
-                Jiggle = true;
-                battleTimer = 0;
-            }
-            if (Jiggle){
-                switch (UIJumpCount){
-                    case 1:
-                        HPCardFriendPos.y += 1;
-                        PKMNSpriteJiggle -= 1;
-                        break;
-                    case 2:
-                        HPCardFriendPos.y -= 1;
-                        PKMNSpriteJiggle += 1;
-                        break;
-                    case 3:
-                        HPCardFriendPos.y -= 1;
-                        PKMNSpriteJiggle += 1;
-                        break;
-                    case 4:
-                        HPCardFriendPos.y += 1;
-                        PKMNSpriteJiggle -= 1;
-                        UIJumpCount = 0;
-                        break;
-                }
-            }
-            if (ControllerSingleton::GetInstance().IsRightPressed() && menuID < UPPER_LIMIT){
-                menuID += 1;
-            }
-            if (ControllerSingleton::GetInstance().IsDownPressed() && menuID < UPPER_LIMIT - 1){
-                menuID += 2;
-            }
-            if (ControllerSingleton::GetInstance().IsLeftPressed() && menuID > LOWER_LIMIT){
-                menuID -= 1;
-            }
-            if (ControllerSingleton::GetInstance().IsUpPressed() && menuID > LOWER_LIMIT + 1){
-                menuID -= 2;
-            }
-            if (ControllerSingleton::GetInstance().IsAPressed()){
-                selection = menuID;
-            }
+            BattleSpriteJiggle();
+            BattleUISelector();
 
             switch (selection){
+                case 1:
+                    battlePhase = SELECT_MOVE;
+                    menuID = 1;
+                    break;
                 case 4:
                     ExitBattle(player);
                     break;
             }
             break;
+        case SELECT_MOVE:
+            BattleSpriteJiggle();
+            BattleUISelector();
+            if (ControllerSingleton::GetInstance().IsBPressed()){
+                menuID = 1;
+                selection = 0;
+                battlePhase = WAIT_INPUT;
+            }
+            break;
+    }
+}
+
+void ActionHandler::BattleUISelector(){
+    int UPPER_LIMIT = 4;
+    int LOWER_LIMIT = 1;
+
+    if (ControllerSingleton::GetInstance().IsRightPressed() && menuID < UPPER_LIMIT){
+        menuID += 1;
+    }
+    if (ControllerSingleton::GetInstance().IsDownPressed() && menuID < UPPER_LIMIT - 1){
+        menuID += 2;
+    }
+    if (ControllerSingleton::GetInstance().IsLeftPressed() && menuID > LOWER_LIMIT){
+        menuID -= 1;
+    }
+    if (ControllerSingleton::GetInstance().IsUpPressed() && menuID > LOWER_LIMIT + 1){
+        menuID -= 2;
+    }
+    if (ControllerSingleton::GetInstance().IsAPressed()){
+        selection = menuID;
+    }
+}
+
+void ActionHandler::BattleSpriteJiggle(){
+    bool Jiggle = false;
+    float dt = 1.0f / 60.0f;
+    float frameRate = 0.180f;
+    DestTXT = DialogueText;
+    battleTimer += dt;
+    if (battleTimer >= frameRate){
+        UIJumpCount += 1;
+        Jiggle = true;
+        battleTimer = 0;
+    }
+    if (Jiggle){
+        switch (UIJumpCount){
+            case 1:
+                HPCardFriendPos.y += 1;
+                PKMNSpriteJiggle -= 1;
+                break;
+            case 2:
+                HPCardFriendPos.y -= 1;
+                PKMNSpriteJiggle += 1;
+                break;
+            case 3:
+                HPCardFriendPos.y -= 1;
+                PKMNSpriteJiggle += 1;
+                break;
+            case 4:
+                HPCardFriendPos.y += 1;
+                PKMNSpriteJiggle -= 1;
+                UIJumpCount = 0;
+                break;
+        }
     }
 }
 
@@ -701,6 +721,7 @@ void ActionHandler::getPKMNPartyInfo(std::vector<PKMN>& PKMNParty){
     PlayerPKMNInfo.GStage = PKMNParty[Selected].GetGStage();
     PlayerPKMNInfo.HP = PKMNParty[Selected].GetMaxHP();
     PlayerPKMNInfo.curHP = PKMNParty[Selected].GetCurHp();
+    std::cout << PKMNParty[Selected].GetMovements().Move1 << std::endl;
 }
 
 bool ActionHandler::CompareDialogueConditions(std::string condition, std::string value, NPC& npc){
@@ -1143,6 +1164,31 @@ void ActionHandler::Draw_BattleTextBox(){
     // Battle UI Input
     DrawTextureRec(BattleButtonsTexture, {BattleButtonsMap.x, BattleButtonsMap.y + (BattleButtonsMap.height * menuID), BattleButtonsMap.width, BattleButtonsMap.height}, {BattleButtonsPos.x, BattleButtonsPos.y}, WHITE);
     DrawTextureRec(atlasTexture, {DialogueMap.x + (DialogueMap.width - 21), DialogueMap.y, 21, DialogueMap.height}, {BattleButtonsPos.x - 21, BattleButtonsPos.y + 1}, WHITE);
+
+    if (battlePhase == SELECT_MOVE){
+
+        Vector2 UIPos = {fadePos.x, fadePos.y + 144};
+        Vector2 MoveButtonPos = {UIPos.x + 4, UIPos.y + 5};
+        Vector2 SelectorPos = {0,0};
+        Vector2 SelectOffset = {0,0};
+        int Offset = 2;
+        constexpr Vector2 selectorPositions[4] = {{0, 0}, {1, 0}, {0, 1}, {1, 1}};
+        constexpr Vector2 selectorOffsets[4] = {{0, 0}, {-2, 0}, {0, -2}, {-2, -2}};
+
+        SelectorPos = selectorPositions[menuID - 1];
+        SelectOffset = selectorOffsets[menuID - 1];
+
+        DrawTextureRec(MoveSelectorTexture, MovementsUI, {UIPos.x, UIPos.y}, WHITE);
+        // Buttons
+        DrawTextureRec(MoveSelectorTexture, MovementsButtons, {MoveButtonPos.x, MoveButtonPos.y}, WHITE);
+        DrawTextureRec(MoveSelectorTexture, MovementsButtons, {MoveButtonPos.x + MovementsButtons.width + Offset, MoveButtonPos.y}, WHITE);
+        DrawTextureRec(MoveSelectorTexture, MovementsButtons, {MoveButtonPos.x, MoveButtonPos.y + MovementsButtons.height + Offset}, WHITE);
+        DrawTextureRec(MoveSelectorTexture, MovementsButtons, {MoveButtonPos.x + MovementsButtons.width + Offset, MoveButtonPos.y + MovementsButtons.height + Offset}, WHITE);
+        // Type
+        DrawTextureRec(PKMNTypeTexture, {PKMNTypes.x,PKMNTypes.y,PKMNTypes.width,PKMNTypes.height}, {UIPos.x + 208, UIPos.y + 9}, WHITE);
+        // Selector
+        DrawTextureRec(MoveSelectorTexture, MovementsSelector, {MoveButtonPos.x - Offset + (MovementsSelector.width * SelectorPos.x) + SelectOffset.x, MoveButtonPos.y - Offset + (MovementsSelector.height * SelectorPos.y) + SelectOffset.y}, WHITE);
+    }
 }
 
 void ActionHandler::SetPlayerName(std::string player){

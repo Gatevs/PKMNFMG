@@ -60,6 +60,8 @@ private:
     void Draw_EnemyElements();
     void Draw_PlayerElements();
     void Draw_BattleTextBox();
+    void BattleSpriteJiggle();
+    void BattleUISelector();
 
     void SetVNSprite();
     void SetNPCDialogue(std::string text);
@@ -80,6 +82,8 @@ private:
     Texture2D PlayerBattleTexture;
     Texture2D PKMNBattleTexture;
     Texture2D BattleButtonsTexture;
+    Texture2D MoveSelectorTexture;
+    Texture2D PKMNTypeTexture;
 
     Texture2D StageTexture;
     Texture2D StatSprite;
@@ -180,7 +184,8 @@ private:
         SET_FIELD,
         ENEMY_INTRO,
         PLAYERPKMN_INTRO,
-        WAIT_INPUT
+        WAIT_INPUT,
+        SELECT_MOVE
     };
     enum Menu_Type{
         STATS,
@@ -331,5 +336,29 @@ private:
         static_cast<float>(0),
         static_cast<float>(132),
         static_cast<float>(48)
+    };
+        const Rectangle MovementsUI = {
+        static_cast<float>(0),
+        static_cast<float>(0),
+        static_cast<float>(256),
+        static_cast<float>(48)
+    };
+        const Rectangle MovementsButtons = {
+        static_cast<float>(0),
+        static_cast<float>(48),
+        static_cast<float>(92),
+        static_cast<float>(19)
+    };
+        const Rectangle MovementsSelector = {
+        static_cast<float>(92),
+        static_cast<float>(48),
+        static_cast<float>(96),
+        static_cast<float>(23)
+    };
+        const Rectangle PKMNTypes = {
+        static_cast<float>(0),
+        static_cast<float>(0),
+        static_cast<float>(32),
+        static_cast<float>(16)
     };
 };

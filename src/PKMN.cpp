@@ -1,6 +1,6 @@
 #include "PKMN.h"
 #include "raylib.h"
-#include "rapidcsv.h"
+#include "CSVCache.h"
 #include <string>
 #include <random>
 
@@ -10,6 +10,9 @@ PKMN::PKMN(int id, int level, int gender, int gstage){
     GENDER = gender;
     GSTAGE = gstage;
     nickname = "NONE";
+    parseCSV("assets/CSV/PKMN_DB.csv");
+    SetStatValues();
+    Moveset.Move1 ="CBT";
 }
 
 PKMN::~PKMN() {
@@ -17,17 +20,15 @@ PKMN::~PKMN() {
 }
 
 void PKMN::parseCSV(const std::string& filename) {
-    rapidcsv::Document doc(filename);
-    const auto& ids = doc.GetColumn<int>("ID");
+    CSVCache& cache = CSVCache::GetInstance();
+    cache.LoadCSV(filename); // Load the file into memory (if not already loaded)
 
-    if(filename == "assets/CSV/PKMN_DB.csv"){
-        for (size_t i = 0; i < ids.size(); ++i) {
-            if (ids[i] == ID) {
-                // Store entire row in PKMN-specific vector
-                PKMN_DEF = doc.GetRow<std::string>(i);
-                break; // Stop after finding the first matching ID
-            }
-        }
+    try {
+        // Query the row with the matching ID
+        const auto& row = cache.GetRow(filename, 0, ID); // Assuming ID is in column 0
+        PKMN_DEF = row; // Store the row in your Pokémon-specific vector
+    } catch (const std::exception& e) {
+        std::cerr << "Error retrieving Pokémon data: " << e.what() << std::endl;
     }
 }
 
@@ -49,10 +50,10 @@ void PKMN::SetStatValues(){
     std::mt19937 engine(seed());
     std::uniform_int_distribution<int> gen(MIN, MAX); // uniform, unbiased
 
-    IV_HP = gen(engine);
-    std::cout << IV_HP << std::endl;
+    IV.HP = gen(engine);
+    std::cout << IV.HP << std::endl;
 
-    HP = (((2 * std::stoi(PKMN_DEF[BASE_HP]) + IV_HP + (EV_HP / 4)) * LVL) / 100) + LVL + 10;
+    HP = (((2 * std::stoi(PKMN_DEF[BASE_HP]) + IV.HP + (IV.HP / 4)) * LVL) / 100) + LVL + 10;
     CUR_HP = HP;
     std::cout << HP << std::endl;
 }

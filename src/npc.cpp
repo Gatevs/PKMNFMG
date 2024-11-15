@@ -4,7 +4,7 @@
 #include <math.h>
 #include <raylib.h>
 #include <string>
-#include "rapidcsv.h"
+#include "CSVCache.h"
 
 NPC::NPC(int npcID, std::string loc, Vector2 NPCPos) {
     ID = npcID;
@@ -329,26 +329,27 @@ std::string NPC::GetCombinedValues(int Event){
 };
 
 void NPC::parseCSV(const std::string& filename) {
-    rapidcsv::Document doc(filename);
-    const auto& ids = doc.GetColumn<int>("ID");
+    CSVCache& cache = CSVCache::GetInstance();
+    cache.LoadCSV(filename); // Load the file into memory (if not already loaded)
+    const auto& ids = cache.RowNumbers(filename);
 
     if(filename == "assets/CSV/Dataset.csv"){
         // Clear previous data for this NPC
         m_data.clear();
         // Iterate through rows and compare IDs
-        for (size_t i = 0; i < ids.size(); ++i) {
-            if (ids[i] == ID) {
+        for (size_t i = 0; i < ids; ++i) {
+            if (cache.IsIndexAt(filename,1,ID,i)) {
                 // Store entire row in NPC-specific vector
-                m_data.push_back(doc.GetRow<std::string>(i));
+                m_data.push_back(cache.GetRowAt(filename,i));
             }
         }
     }else if(filename == "assets/CSV/NPC_OW_DEF.csv"){
-        for (size_t i = 0; i < ids.size(); ++i) {
-            if (ids[i] == ID) {
-                // Store entire row in NPC-specific vector
-                NPC_DEF = doc.GetRow<std::string>(i);
-                break; // Stop after finding the first matching ID
-            }
+        try {
+            // Query the row with the matching ID
+            const auto& row = cache.GetRow(filename, 0, ID); // Assuming ID is in column 0
+            NPC_DEF = row; // Store the row in your Pokémon-specific vector
+        } catch (const std::exception& e) {
+            std::cerr << "Error retrieving NPC data: " << e.what() << std::endl;
         }
     }
 }
