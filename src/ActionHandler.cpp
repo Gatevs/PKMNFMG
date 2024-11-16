@@ -372,9 +372,11 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                 PlayerPKMNSpritePos = {fadePos.x - PKMNBattleTexture.width ,fadePos.y + PKMNBattleTexture.height};
                 EnemyPKMNSpritePos = {(EnemyBasePos.x + (BaseEnemyMap.width/2)), (fadePos.y + 92)};
                 for (int i = 0; i < 4; i ++){
-                    PlayerPKMNInfo.MoveNames[i] = PKMNParty[PlayerPKMNInfo.SlotID].GetMovementName(PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().Move[i]);
-                    PlayerPKMNInfo.MaxPP[i] = PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().PP[i];
-                    PlayerPKMNInfo.curPP[i] = PlayerPKMNInfo.MaxPP[i];
+                    PlayerPKMNInfo.MoveNames[i] = PKMNParty[PlayerPKMNInfo.SlotID].GetMovementInfo(PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().Move[i],1);
+                    if (PKMNParty[PlayerPKMNInfo.SlotID].GetMovementInfo(PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().Move[i],4) != "NONE"){
+                        PlayerPKMNInfo.MaxPP[i] = std::stoi(PKMNParty[PlayerPKMNInfo.SlotID].GetMovementInfo(PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().Move[i],4));
+                        PlayerPKMNInfo.curPP[i] = PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().PP[i];
+                    }
                     if (PlayerPKMNInfo.MoveNames[i] != "NONE"){
                         PlayerPKMNInfo.MoveSlots += 1;
                     }
@@ -724,7 +726,6 @@ void ActionHandler::getPKMNPartyInfo(std::vector<PKMN>& PKMNParty){
     PlayerPKMNInfo.GStage = PKMNParty[Selected].GetGStage();
     PlayerPKMNInfo.HP = PKMNParty[Selected].GetMaxHP();
     PlayerPKMNInfo.curHP = PKMNParty[Selected].GetCurHp();
-    std::cout << "Movement 1:" << PKMNParty[Selected].GetMovementName(PKMNParty[Selected].GetMovements().Move[1]) << std::endl;
 }
 
 bool ActionHandler::CompareDialogueConditions(std::string condition, std::string value, NPC& npc){
