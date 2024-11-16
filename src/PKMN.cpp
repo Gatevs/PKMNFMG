@@ -12,7 +12,7 @@ PKMN::PKMN(int id, int level, int gender, int gstage){
     nickname = "NONE";
     parseCSV("assets/CSV/PKMN_DB.csv", PKMN_DEF);
     parseCSV("assets/CSV/PKMN_LevelUp.csv", PKMNLVLUP_DEF);
-    SetStatValues();
+    SetInitialStatValues();
     SetMovements();
 }
 
@@ -43,20 +43,61 @@ std::string PKMN::GetPKMN_NickName(){
     }
 }
 
-void PKMN::SetStatValues(){
+void PKMN::SetInitialStatValues(){
     int MIN = 1;
     int MAX = 31;
+    int randomIndex = GetRandomValue(0, sizeof(natureTable) / sizeof(natureTable[0]) - 1);
 
     std::random_device seed;
     std::mt19937 engine(seed());
     std::uniform_int_distribution<int> gen(MIN, MAX); // uniform, unbiased
 
-    IV.HP = gen(engine);
-    std::cout << IV.HP << std::endl;
+    Attributes.Nature = natureTable[randomIndex];
+    std::cout << Attributes.Nature.name << std::endl;
 
-    HP = (((2 * std::stoi(PKMN_DEF[BASE_HP]) + IV.HP + (IV.HP / 4)) * LVL) / 100) + LVL + 10;
-    CUR_HP = HP;
-    std::cout << HP << std::endl;
+    IV.HP = gen(engine);
+    IV.Attack = gen(engine);
+    IV.Defense = gen(engine);
+    IV.SP_Attack = gen(engine);
+    IV.SP_Defense = gen(engine);
+    IV.Speed = gen(engine);
+
+    BaseStats.Attack = OtherStatCalc(std::stoi(PKMN_DEF[BASE_ATTACK]), IV.Attack, EV.Attack, ATTACK);
+    std::cout << "Attack: " <<BaseStats.Attack << std::endl;
+
+    BaseStats.Defense = OtherStatCalc(std::stoi(PKMN_DEF[BASE_DEFENSE]), IV.Defense, EV.Defense, DEFENSE);
+    std::cout << "Defense: " <<BaseStats.Defense << std::endl;
+
+    BaseStats.Speed = OtherStatCalc(std::stoi(PKMN_DEF[BASE_SPEED]), IV.Speed, EV.Speed, SPEED);
+    std::cout << "Speed: " <<BaseStats.Speed << std::endl;
+
+    BaseStats.SP_Attack = OtherStatCalc(std::stoi(PKMN_DEF[BASE_SPATTACK]), IV.SP_Attack, EV.SP_Attack, SP_ATK);
+    std::cout << "SP_Attack: " <<BaseStats.SP_Attack << std::endl;
+
+    BaseStats.SP_Defense = OtherStatCalc(std::stoi(PKMN_DEF[BASE_SPDEFENSE]), IV.SP_Defense, EV.SP_Defense, SP_DEF);
+    std::cout << "SP_Defense: " <<BaseStats.SP_Defense << std::endl;
+
+    BaseStats.HP = HPStatCalc();
+    CurStats.HP = BaseStats.HP;
+}
+
+int PKMN::HPStatCalc(){
+    int calc = (((2 * std::stoi(PKMN_DEF[BASE_HP]) + IV.HP + (EV.HP / 4)) * LVL) / 100) + LVL + 10;
+    return calc;
+}
+
+int PKMN::OtherStatCalc(int Stat, int IV, int EV, int StatID){
+    float StatMultiplier = 1.0f;
+
+    if (StatID == Attributes.Nature.increase){
+        StatMultiplier = 1.1f;
+    }
+    if (StatID == Attributes.Nature.decrease){
+        StatMultiplier = 0.9f;
+    }
+
+    int calc = (((((2 * Stat) + IV + (float(EV)/4)) * LVL) / 100) + 5) * StatMultiplier;
+    return calc;
 }
 
 void PKMN::SetMovements(){
@@ -83,12 +124,10 @@ void PKMN::SetMovements(){
     for (int i = 0; i < assignedMoves.size(); i++){
         Moveset.Move[i] = assignedMoves[i];
         SetPP(Moveset.Move[i], i);
-        std::cout << "Move ID: "<< Moveset.Move[i] << std::endl;
-        std::cout << "PP Value: "<< Moveset.PP[i] << std::endl;
     }
 }
 
-std::string PKMN::GetMovementName(int MovementNum){
+std::string PKMN::GetMovementInfo(int MovementNum, int column){
     CSVCache& cache = CSVCache::GetInstance();
     std::string filename = "assets/CSV/Movements.csv";
     cache.LoadCSV(filename); // Load the file into memory (if not already loaded)
@@ -97,7 +136,7 @@ std::string PKMN::GetMovementName(int MovementNum){
         // Query the row with the matching ID
         if (MovementNum != 0){
             const auto& row = cache.GetRow(filename, 0, MovementNum);
-            return row[1];
+            return row[column];
         } else {
             return "NONE";
         }
