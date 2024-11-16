@@ -62,6 +62,9 @@ void PKMN::SetInitialStatValues(){
     IV.SP_Defense = gen(engine);
     IV.Speed = gen(engine);
 
+    BaseStats.HP = HPStatCalc();
+    CUR_HP = BaseStats.HP;
+
     BaseStats.Attack = OtherStatCalc(std::stoi(PKMN_DEF[BASE_ATTACK]), IV.Attack, EV.Attack, ATTACK);
     std::cout << "Attack: " <<BaseStats.Attack << std::endl;
 
@@ -76,9 +79,6 @@ void PKMN::SetInitialStatValues(){
 
     BaseStats.SP_Defense = OtherStatCalc(std::stoi(PKMN_DEF[BASE_SPDEFENSE]), IV.SP_Defense, EV.SP_Defense, SP_DEF);
     std::cout << "SP_Defense: " <<BaseStats.SP_Defense << std::endl;
-
-    BaseStats.HP = HPStatCalc();
-    CurStats.HP = BaseStats.HP;
 }
 
 int PKMN::HPStatCalc(){

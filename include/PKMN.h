@@ -14,7 +14,7 @@ public:
     int GetID() const { return ID; }
     int GetGStage() const { return GSTAGE; }
     int GetGender() const { return GENDER; }
-    int GetCurHp() const { return CurStats.HP; }
+    int GetCurHp() const { return CUR_HP; }
     int GetMaxHP() const { return BaseStats.HP; }
     std::string GetPKMN_Name() const { return PKMN_DEF[NAME];}
     std::string GetPKMN_NickName();
@@ -87,7 +87,6 @@ public:
     };
 
     Moves& GetMovements() {return Moveset;}
-    Stats& GetCurStats(){return CurStats;}
 
 private:
     int SLOT;
@@ -95,10 +94,10 @@ private:
     int LVL;
     int GSTAGE;
     int GENDER;
+    int CUR_HP;
     std::string location;
     std::string nickname;
 
-    Stats CurStats;
     Stats BaseStats;
     IndividualValues IV;
     EffortValues EV;
