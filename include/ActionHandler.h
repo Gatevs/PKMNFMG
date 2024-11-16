@@ -25,7 +25,7 @@ public:
     void getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event);
     void getPlayerInfo(int ID, Player player_Obj, int Event);
     void getPKMNPartyInfo(std::vector<PKMN>& PKMNParty);
-    void InputUI(std::vector<NPC>& NPC_objs, Player& player_Obj);
+    void InputUI(std::vector<NPC>& NPC_objs, Player& player_Obj, std::vector<PKMN>& PKMNParty);
     void SetPlayerName(std::string player);
     void SetPlayerGender(std::string player);
     void SetInteractionID(int ID);
@@ -45,7 +45,7 @@ private:
     void actionGrowthMenu(std::vector<NPC>& NPC_objs, Player& player_Obj);
     void actionStatsMenu();
     void actionBagMenu();
-    void actionBattleMenu(Player& player);
+    void actionBattleMenu(Player& player, std::vector<PKMN>& PKMNParty);
     void pause(Player& p);
     void action(std::vector<NPC>& NPC_objs, Player& p);
     void dialogue(Player& player);
@@ -61,7 +61,8 @@ private:
     void Draw_PlayerElements();
     void Draw_BattleTextBox();
     void BattleSpriteJiggle();
-    void BattleUISelector();
+    void BattleUISelector(int max);
+    void Draw_Buttons(Vector2 pos, int offset);
 
     void SetVNSprite();
     void SetNPCDialogue(std::string text);
@@ -163,8 +164,13 @@ private:
     } EnemyPKMNInfo;
 
     struct PlayerPKMNInfo {
+        int SlotID;
         int Index;
         std::string Name;
+        std::string MoveNames[4];
+        int curPP[4];
+        int MaxPP[4];
+        int MoveSlots = 0;
         int Gender;
         int Lvl;
         int GStage;

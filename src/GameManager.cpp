@@ -200,7 +200,7 @@ void GameManager::GameLoop(){
     if (!Menu.stopPlayerInput && WarpingPlayer == 0 && !player.IsPlayerGrowing()){
         player.HandleInput(npcs);
     } else if (Menu.stopPlayerInput){
-        Menu.InputUI(npcs, player);
+        Menu.InputUI(npcs, player, PlayerParty);
     }
     player.Update();
     if (player.IsPlayerMoving()){

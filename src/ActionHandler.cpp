@@ -144,7 +144,7 @@ void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
     }
 }
 
-void ActionHandler::InputUI(std::vector<NPC>& NPC_objs, Player& player_Obj){
+void ActionHandler::InputUI(std::vector<NPC>& NPC_objs, Player& player_Obj, std::vector<PKMN>& PKMNParty){
     if (inUI == PAUSE){
         pause(player_Obj);
     }
@@ -155,7 +155,7 @@ void ActionHandler::InputUI(std::vector<NPC>& NPC_objs, Player& player_Obj){
         action(NPC_objs, player_Obj);
     }
     if (inUI == BATTLE){
-        actionBattleMenu(player_Obj);
+        actionBattleMenu(player_Obj, PKMNParty);
     }
 }
 
@@ -329,7 +329,7 @@ void ActionHandler::actionGrowthMenu(std::vector<NPC>& NPC_objs, Player& p){
     }
 }
 
-void ActionHandler::actionBattleMenu(Player& player){
+void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNParty){
     float dt = 1.0f / 60.0f;
     const int MAX_FADE_VALUE = 255;
     const int FADE_INCREMENT = 10; // Adjust the increment value as needed
@@ -353,16 +353,9 @@ void ActionHandler::actionBattleMenu(Player& player){
 
     switch(battlePhase){
         case LOADING_ELEMENTS:
-            std::cout << PlayerBattleTexture.format << std::endl;
-            std::cout << PlayerBattleTexture.id << std::endl;
-            std::cout << PlayerBattleTexture.height << std::endl;
-            std::cout << PlayerBattleTexture.width << std::endl;
-            std::cout << PlayerBattleTexture.mipmaps << std::endl;
-            std::cout << IsTextureReady(PlayerBattleTexture) << std::endl;
             if (!IsTextureReady(PlayerBattleTexture)){
                 battleTimer = 1.0f;
                 PKMN EnemyPKMN(19,4,0,0);
-                EnemyPKMN.parseCSV("assets/CSV/PKMN_DB.csv");
                 EnemyPKMNInfo.Index = EnemyPKMN.GetID();
                 EnemyPKMNInfo.Lvl = EnemyPKMN.GetLevel();
                 EnemyPKMNInfo.Gender = EnemyPKMN.GetGender();
@@ -378,6 +371,14 @@ void ActionHandler::actionBattleMenu(Player& player){
                 PKMNBattleTexture = LoadTexture(PKMNTexture.c_str());
                 PlayerPKMNSpritePos = {fadePos.x - PKMNBattleTexture.width ,fadePos.y + PKMNBattleTexture.height};
                 EnemyPKMNSpritePos = {(EnemyBasePos.x + (BaseEnemyMap.width/2)), (fadePos.y + 92)};
+                for (int i = 0; i < 4; i ++){
+                    PlayerPKMNInfo.MoveNames[i] = PKMNParty[PlayerPKMNInfo.SlotID].GetMovementName(PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().Move[i]);
+                    PlayerPKMNInfo.MaxPP[i] = PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().PP[i];
+                    PlayerPKMNInfo.curPP[i] = PlayerPKMNInfo.MaxPP[i];
+                    if (PlayerPKMNInfo.MoveNames[i] != "NONE"){
+                        PlayerPKMNInfo.MoveSlots += 1;
+                    }
+                }
             }
             if (battleTimer > 0){
                 battleTimer -= (dt * (60.0f * 1.0f));
@@ -459,7 +460,7 @@ void ActionHandler::actionBattleMenu(Player& player){
             break;
         case WAIT_INPUT:
             BattleSpriteJiggle();
-            BattleUISelector();
+            BattleUISelector(4);
 
             switch (selection){
                 case 1:
@@ -473,7 +474,7 @@ void ActionHandler::actionBattleMenu(Player& player){
             break;
         case SELECT_MOVE:
             BattleSpriteJiggle();
-            BattleUISelector();
+            BattleUISelector(PlayerPKMNInfo.MoveSlots);
             if (ControllerSingleton::GetInstance().IsBPressed()){
                 menuID = 1;
                 selection = 0;
@@ -483,8 +484,8 @@ void ActionHandler::actionBattleMenu(Player& player){
     }
 }
 
-void ActionHandler::BattleUISelector(){
-    int UPPER_LIMIT = 4;
+void ActionHandler::BattleUISelector(int max){
+    int UPPER_LIMIT = max;
     int LOWER_LIMIT = 1;
 
     if (ControllerSingleton::GetInstance().IsRightPressed() && menuID < UPPER_LIMIT){
@@ -546,6 +547,7 @@ void ActionHandler::ExitBattle(Player& player){
     PlayerAnimFrame = 0;
     TextBoxOpacity = 0;
     BattleUIPos = {0,0};
+    PlayerPKMNInfo.MoveSlots = 0;
     unloadTextureFull(PlayerBattleTexture);
     unloadTextureFull(PKMNBattleTexture);
     unloadTextureFull(BattleButtonsTexture);
@@ -714,6 +716,7 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
 void ActionHandler::getPKMNPartyInfo(std::vector<PKMN>& PKMNParty){
     int Selected = 0;
 
+    PlayerPKMNInfo.SlotID = Selected;
     PlayerPKMNInfo.Index = PKMNParty[Selected].GetID();
     PlayerPKMNInfo.Name = PKMNParty[Selected].GetPKMN_NickName();
     PlayerPKMNInfo.Lvl = PKMNParty[Selected].GetLevel();
@@ -721,7 +724,7 @@ void ActionHandler::getPKMNPartyInfo(std::vector<PKMN>& PKMNParty){
     PlayerPKMNInfo.GStage = PKMNParty[Selected].GetGStage();
     PlayerPKMNInfo.HP = PKMNParty[Selected].GetMaxHP();
     PlayerPKMNInfo.curHP = PKMNParty[Selected].GetCurHp();
-    std::cout << PKMNParty[Selected].GetMovements().Move1 << std::endl;
+    std::cout << "Movement 1:" << PKMNParty[Selected].GetMovementName(PKMNParty[Selected].GetMovements().Move[1]) << std::endl;
 }
 
 bool ActionHandler::CompareDialogueConditions(std::string condition, std::string value, NPC& npc){
@@ -1171,7 +1174,7 @@ void ActionHandler::Draw_BattleTextBox(){
         Vector2 MoveButtonPos = {UIPos.x + 4, UIPos.y + 5};
         Vector2 SelectorPos = {0,0};
         Vector2 SelectOffset = {0,0};
-        int Offset = 2;
+        int OFFSET = 2;
         constexpr Vector2 selectorPositions[4] = {{0, 0}, {1, 0}, {0, 1}, {1, 1}};
         constexpr Vector2 selectorOffsets[4] = {{0, 0}, {-2, 0}, {0, -2}, {-2, -2}};
 
@@ -1180,15 +1183,48 @@ void ActionHandler::Draw_BattleTextBox(){
 
         DrawTextureRec(MoveSelectorTexture, MovementsUI, {UIPos.x, UIPos.y}, WHITE);
         // Buttons
-        DrawTextureRec(MoveSelectorTexture, MovementsButtons, {MoveButtonPos.x, MoveButtonPos.y}, WHITE);
-        DrawTextureRec(MoveSelectorTexture, MovementsButtons, {MoveButtonPos.x + MovementsButtons.width + Offset, MoveButtonPos.y}, WHITE);
-        DrawTextureRec(MoveSelectorTexture, MovementsButtons, {MoveButtonPos.x, MoveButtonPos.y + MovementsButtons.height + Offset}, WHITE);
-        DrawTextureRec(MoveSelectorTexture, MovementsButtons, {MoveButtonPos.x + MovementsButtons.width + Offset, MoveButtonPos.y + MovementsButtons.height + Offset}, WHITE);
+        Draw_Buttons(MoveButtonPos,OFFSET);
         // Type
         DrawTextureRec(PKMNTypeTexture, {PKMNTypes.x,PKMNTypes.y,PKMNTypes.width,PKMNTypes.height}, {UIPos.x + 208, UIPos.y + 9}, WHITE);
         // Selector
-        DrawTextureRec(MoveSelectorTexture, MovementsSelector, {MoveButtonPos.x - Offset + (MovementsSelector.width * SelectorPos.x) + SelectOffset.x, MoveButtonPos.y - Offset + (MovementsSelector.height * SelectorPos.y) + SelectOffset.y}, WHITE);
+        DrawTextureRec(MoveSelectorTexture, MovementsSelector, {MoveButtonPos.x - OFFSET + (MovementsSelector.width * SelectorPos.x) + SelectOffset.x, MoveButtonPos.y - OFFSET + (MovementsSelector.height * SelectorPos.y) + SelectOffset.y}, WHITE);
     }
+}
+
+void ActionHandler::Draw_Buttons(Vector2 pos, int offset) {
+    Color Dull = {150,150,150,255};
+    int TEXT_OFFSET_X = 11;
+    int TEXT_OFFSET_Y = 4;
+    int PP_OFFSET_X = 211;
+    int PP_OFFSET_Y = 23;
+    Rectangle ButtonBG[4];
+    Vector2 buttonPositions[4] = {
+        {pos.x, pos.y},
+        {pos.x + MovementsButtons.width + offset, pos.y},
+        {pos.x, pos.y + MovementsButtons.height + offset},
+        {pos.x + MovementsButtons.width + offset, pos.y + MovementsButtons.height + offset}
+    };
+
+    for(int i = 0; i < 4; i++) {
+        if(PlayerPKMNInfo.MoveNames[i] != "NONE") {
+            ButtonBG[i] = {MovementsButtons.x, MovementsButtons.y + (MovementsButtons.height * 1), MovementsButtons.width, MovementsButtons.height};
+        } else {
+            ButtonBG[i] = {MovementsButtons.x, MovementsButtons.y, MovementsButtons.width, MovementsButtons.height};
+        }
+        if (menuID == i + 1){
+            DrawTextureRec(MoveSelectorTexture, ButtonBG[i], buttonPositions[i], WHITE);
+        }else{
+            DrawTextureRec(MoveSelectorTexture, ButtonBG[i], buttonPositions[i], Dull);
+        }
+
+        if(PlayerPKMNInfo.MoveNames[i] != "NONE") {
+            DrawTextBoxed(MainFont, PlayerPKMNInfo.MoveNames[i].c_str(),
+                          {buttonPositions[i].x + TEXT_OFFSET_X, buttonPositions[i].y + TEXT_OFFSET_Y, 80, 30},
+                          MainFont.baseSize, -5, wordWrap, WHITE);
+        }
+    }
+    std::string PP_STATUS = std::to_string(PlayerPKMNInfo.curPP[menuID - 1]) + "/" + std::to_string(PlayerPKMNInfo.MaxPP[menuID - 1]);
+    DrawTextBoxed(MainFont, PP_STATUS.c_str(), {pos.x + PP_OFFSET_X, pos.y + PP_OFFSET_Y, 60, 60}, MainFont.baseSize, -5, wordWrap, WHITE);
 }
 
 void ActionHandler::SetPlayerName(std::string player){

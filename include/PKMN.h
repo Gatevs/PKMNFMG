@@ -24,8 +24,10 @@ public:
     void SetAbility(const std::string& newAbility) { ability = newAbility; }
     void SetStatValues();
     void SetMovements();
+    void SetPP(int id, int PPat);
+    std::string GetMovementName(int MovementNum);
 
-    void parseCSV(const std::string& filename);
+    void parseCSV(const std::string& filename, std::vector<std::string>& DEF);
 
     struct Stats {
         int HP;
@@ -58,10 +60,8 @@ public:
     };
 
     struct Moves {
-        std::string Move1;
-        std::string Move2;
-        std::string Move3;
-        std::string Move4;
+        int Move[4] = {0,0,0,0};
+        int PP[4] = {0,0,0,0};
     };
 
     struct OtherAttributes {
@@ -94,6 +94,7 @@ private:
     OtherAttributes Attributes;
 
     std::vector<std::string> PKMN_DEF;
+    std::vector<std::string> PKMNLVLUP_DEF;
 
     enum PKMN_DB{
         INDEX,
