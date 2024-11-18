@@ -76,7 +76,7 @@ private:
     static void DrawTextBoxed(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint);
     static void DrawTextBoxedSelectable(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint, int selectStart, int selectLength, Color selectTint, Color selectBackTint);
     void typewriterEffect(std::string& text);
-    Shader fadeShader = LoadShader(NULL, "assets/MISC/fade_shader.fs");
+    Shader fadeShader;
 
     Texture2D atlasTexture;
     Texture2D screenTexture;

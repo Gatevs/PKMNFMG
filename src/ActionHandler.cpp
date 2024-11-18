@@ -49,6 +49,11 @@ ActionHandler::ActionHandler() {
     VN_Timer = 0.0f;
     frameFlip = 1;
     curTextSize = 0;
+    #if defined(PLATFORM_WEB)
+    fadeShader = LoadShader(NULL, "assets/MISC/fade_shader_web.fs");
+    #else
+    fadeShader = LoadShader(NULL, "assets/MISC/fade_shader_desktop.fs");
+    #endif
 }
 
 
