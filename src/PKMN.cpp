@@ -81,6 +81,68 @@ void PKMN::SetInitialStatValues(){
     std::cout << "SP_Defense: " <<BaseStats.SP_Defense << std::endl;
 }
 
+int PKMN::GetAttackDamage(std::vector<int> enemyTypes, int D, int move){
+    critHit = false;
+    std::random_device seed;
+    std::mt19937 engine(seed());
+    std::uniform_int_distribution<int> crit(1, TemporaryStats.Crit); // uniform, unbiased
+    std::uniform_int_distribution<int> random(85, 100); // uniform, unbiased
+    int CRIT_RTD = crit(engine);
+
+    std::string MOVE_TYPE = GetMovementInfo(move,3);
+    std::string ATTACK_TYPE = GetMovementInfo(move,2);
+    int ATTACK_TYPE_ID = std::stoi(GetMovementInfo(move,8));
+    std::string ABILITY = PKMN_DEF[FIRST_ABILITY];
+    int MOVE_POWER = std::stoi(GetMovementInfo(move,5));
+    int A = BaseStats.Attack;
+    float BURN = 1.0f;
+    float SCREEN = 1.0f;
+    float WEATHER = 1.0f;
+    float FF = 1.0f;
+    float CRITICAL = 1.0f;
+    float ITEM = 1.0f;
+    float FIRST = 1.0f;
+    float RANDOM = random(engine)/100.0f;
+    float STAB = 1.0f;
+    float TYPE_1 = GetTypeEffectiveness(ATTACK_TYPE_ID,enemyTypes[0]);
+    float TYPE_2 = GetTypeEffectiveness(ATTACK_TYPE_ID,enemyTypes[1]);
+    float SRF = 1.0f;
+    float EB = 1.0f;
+    float TL = 1.0f;
+    float BERRY = 1.0f;
+
+    if (STATUS == StatusCondition::BURN && ABILITY != "Guts" && MOVE_TYPE == "Physical"){
+        BURN = 0.5f;
+    }
+    if (CRIT_RTD == 1){
+        critHit = true;
+        CRITICAL = 2.0f;
+        if (ABILITY == "Sniper"){
+            CRITICAL = 3.0f;
+        }
+    }
+    if (Attributes.Item == "Life Orb"){
+        ITEM = 1.3f;
+    }
+    if (move == 382){
+        FIRST = 1.5f;
+    }
+    if (ATTACK_TYPE == PKMN_DEF[TYPE1] or ATTACK_TYPE == PKMN_DEF[TYPE2]){
+        STAB = 1.5f;
+        if (ABILITY == "Adaptability"){
+            STAB = 2.0f;
+        }
+    }
+
+
+    int CALC1 = ((2*LVL)/5) + 2;
+    int CALC2 = (CALC1 * MOVE_POWER * (A/D)) / 50;
+    int CALC3 = CALC2 * BURN * SCREEN * WEATHER * FF + 2;
+    int CALC4 = CALC3 * CRITICAL * ITEM * FIRST * RANDOM * STAB * TYPE_1 * TYPE_2 * SRF * EB * TL * BERRY;
+
+    return CALC4;
+}
+
 int PKMN::HPStatCalc(){
     int calc = (((2 * std::stoi(PKMN_DEF[BASE_HP]) + IV.HP + (EV.HP / 4)) * LVL) / 100) + LVL + 10;
     return calc;
@@ -142,7 +204,7 @@ std::string PKMN::GetMovementInfo(int MovementNum, int column){
         }
 
     } catch (const std::exception& e) {
-        std::cerr << "Error retrieving Pokémon data: " << e.what() << std::endl;
+        std::cerr << "Error retrieving movement data: " << e.what() << std::endl;
         return "Struggle";
     }
 }
@@ -160,4 +222,37 @@ void PKMN::SetPP(int id, int PPat){
     } catch (const std::exception& e) {
         std::cerr << "Error retrieving Pokémon data: " << e.what() << std::endl;
     }
+}
+
+std::vector<int> PKMN::GetPokemonTypes(){
+    std::vector<int> Types;
+    Types.push_back(std::stoi(PKMN_DEF[TYPE_ID_1]));
+    Types.push_back(std::stoi(PKMN_DEF[TYPE_ID_2]));
+    return Types;
+}
+
+float PKMN::GetTypeEffectiveness(int A_Type, int E_Type){
+    float EffectiveValue;
+    CSVCache& cache = CSVCache::GetInstance();
+    std::string filename = "assets/CSV/TypeChart.csv";
+    cache.LoadCSV(filename); // Load the file into memory (if not already loaded)
+    try {
+        // Query the row with the matching ID
+        if (E_Type != 0 ){
+            const auto& row = cache.GetRow(filename, 0, 1);
+            EffectiveValue = std::stof(row[1]);
+            return EffectiveValue;
+        }else{
+            return 1.0f;
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "Error retrieving Type data: " << e.what() << std::endl;
+        return 1.0f;
+    }
+}
+
+float PKMN::GetStatMultiplier(int stat) {
+    if (stat < 0) return 2.0f / ((stat * -1) + 2); // Decrease by ~1/6 per stat
+    else return (stat + 2) / 2.0f;             // Increase by 0.5 per stage
 }

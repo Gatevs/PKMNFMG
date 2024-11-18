@@ -18,6 +18,8 @@ public:
     int GetMaxHP() const { return BaseStats.HP; }
     std::string GetPKMN_Name() const { return PKMN_DEF[NAME];}
     std::string GetPKMN_NickName();
+    std::string GetMoveType(int move) { return GetMovementInfo(move,3);}
+    int GetAttackDamage(std::vector<int> enemyTypes, int D, int move);
 
     void SetNickname(const std::string& newName) { nickname = newName; }
     void SetLevel(int newLevel) { LVL = newLevel; }
@@ -25,6 +27,10 @@ public:
     void SetMovements();
     void SetPP(int id, int PPat);
     std::string GetMovementInfo(int MovementNum, int column);
+    float GetTypeEffectiveness(int A_Type, int E_Type);
+    float GetStatMultiplier(int stat);
+    std::vector<int> GetPokemonTypes();
+    bool IsCrit() {return critHit;}
 
     void parseCSV(const std::string& filename, std::vector<std::string>& DEF);
     enum AffectedStat {
@@ -36,10 +42,31 @@ public:
         NONE // For natures with no effect
     };
 
+    enum class StatusCondition {
+        NONE,
+        BURN,
+        FREEZE,
+        PARALYSIS,
+        POISON,
+        SLEEP
+    };
+
     struct Natures {
         const char* name;
         AffectedStat increase;
         AffectedStat decrease;
+    };
+
+    struct TempStats {
+        int HP = 0;
+        int Attack = 0;
+        int Defense = 0;
+        int SP_Attack = 0;
+        int SP_Defense = 0;
+        int Speed = 0;
+        int Accuracy = 100;   // Default accuracy
+        int Evasion = 0;      // Default evasion
+        int Crit = 16;
     };
 
     struct Stats {
@@ -49,8 +76,6 @@ public:
         int SP_Attack;
         int SP_Defense;
         int Speed;
-        int Accuracy = 100;   // Default accuracy
-        int Evasion = 0;      // Default evasion
     };
 
     struct IndividualValues {
@@ -87,6 +112,8 @@ public:
     };
 
     Moves& GetMovements() {return Moveset;}
+    Stats& GetBaseStats() {return BaseStats;}
+    TempStats& GetTempStats() {return TemporaryStats;}
 
 private:
     int SLOT;
@@ -95,10 +122,13 @@ private:
     int GSTAGE;
     int GENDER;
     int CUR_HP;
+    StatusCondition STATUS = StatusCondition::NONE;
     std::string location;
     std::string nickname;
+    bool critHit = false;
 
     Stats BaseStats;
+    TempStats TemporaryStats;
     IndividualValues IV;
     EffortValues EV;
     Moves Moveset;

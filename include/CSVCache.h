@@ -13,7 +13,6 @@ public:
 
     void LoadCSV(const std::string& filename) {
         if (cache.find(filename) != cache.end()) {
-            std::cout << "Already Loaded" << std::endl;
             return; // Already loaded
         }
 

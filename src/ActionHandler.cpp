@@ -391,6 +391,7 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
             if (!IsTextureReady(PlayerBattleTexture)){
                 battleTimer = 1.0f;
                 PKMN EnemyPKMN(19,4,0,0);
+                EnemyMons.push_back(EnemyPKMN);
                 EnemyPKMNInfo.Index = EnemyPKMN.GetID();
                 EnemyPKMNInfo.Lvl = EnemyPKMN.GetLevel();
                 EnemyPKMNInfo.Gender = EnemyPKMN.GetGender();
@@ -408,6 +409,7 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                 EnemyPKMNSpritePos = {(EnemyBasePos.x + (BaseEnemyMap.width/2)), (fadePos.y + 92)};
                 for (int i = 0; i < 4; i ++){
                     PlayerPKMNInfo.MoveNames[i] = PKMNParty[PlayerPKMNInfo.SlotID].GetMovementInfo(PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().Move[i],1);
+                    PlayerPKMNInfo.MoveIDs[i] = PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().Move[i];
                     if (PKMNParty[PlayerPKMNInfo.SlotID].GetMovementInfo(PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().Move[i],4) != "NONE"){
                         PlayerPKMNInfo.MaxPP[i] = std::stoi(PKMNParty[PlayerPKMNInfo.SlotID].GetMovementInfo(PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().Move[i],4));
                         PlayerPKMNInfo.curPP[i] = PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().PP[i];
@@ -525,6 +527,22 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                 selection = 0;
                 battlePhase = WAIT_INPUT;
             }
+            if (ControllerSingleton::GetInstance().IsAPressed()){
+                std::vector<int> E_TYPES = EnemyMons[0].GetPokemonTypes();
+                int E_Defense = EnemyMons[0].GetBaseStats().Defense * EnemyMons[0].GetStatMultiplier(EnemyMons[0].GetTempStats().Defense);
+                int Move_ID = PlayerPKMNInfo.MoveIDs[menuID - 1];
+                std::string Move_Type = PKMNParty[PlayerPKMNInfo.SlotID].GetMoveType(Move_ID);
+
+                if (Move_Type == "Physical" or Move_Type == "Special"){
+                    std::cout << "Attack Damage: "<< PKMNParty[PlayerPKMNInfo.SlotID].GetAttackDamage(E_TYPES, E_Defense, Move_ID) << std::endl;
+                }else if (Move_Type == "Status"){
+                    std::cout << "This is a status move xd " << std::endl;
+                }
+
+                if (PKMNParty[PlayerPKMNInfo.SlotID].IsCrit()){
+                    std::cout << "Critical Hit!" << std::endl;
+                }
+            }
             break;
     }
 }
@@ -595,6 +613,7 @@ void ActionHandler::ExitBattle(Player& player){
     PlayerPKMNInfo.MoveSlots = 0;
     exposure = 80.0f;
     timer = 0.0f;
+    EnemyMons.clear();
     unloadTextureFull(PlayerBattleTexture);
     unloadTextureFull(PKMNBattleTexture);
     unloadTextureFull(BattleButtonsTexture);

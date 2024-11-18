@@ -169,6 +169,7 @@ private:
         int Index;
         std::string Name;
         std::string MoveNames[4];
+        int MoveIDs[4];
         int curPP[4];
         int MaxPP[4];
         int MoveSlots = 0;
@@ -180,6 +181,7 @@ private:
     };
     PKMNInfo PlayerPKMNInfo;
     PKMNInfo EnemyPKMNInfo;
+    std::vector<PKMN> EnemyMons;
 
     struct NPCInfo {
         std::string Name;
