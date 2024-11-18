@@ -19,7 +19,7 @@ if (EMSCRIPTEN)
     include(${EMSCRIPTEN_ROOT_PATH}/cmake/Modules/Platform/Emscripten.cmake)
 
     # Set Emscripten compiler flags
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s GL_ENABLE_GET_PROC_ADDRESS=1")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s GL_ENABLE_GET_PROC_ADDRESS=1 -sFULL_ES2")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s GL_ENABLE_GET_PROC_ADDRESS=1")
     set(CMAKE_EXECUTABLE_SUFFIX ".html") # This line is used to set your executable to build with the emscripten html template so that you can directly open it.
 
@@ -48,6 +48,7 @@ if (EMSCRIPTEN)
     preprocess_directory("assets/PKMN_BACKSPRITE")
     preprocess_directory("assets/PKMN_BATTLESPRITE")
     preprocess_directory("assets/TRAINER_BACKSPRITE")
+    preprocess_directory("assets/TRANSITIONS")
 
     # Concatenate all preload files into a single string
     string(REPLACE ";" " " PRELOAD_FILES "${PRELOAD_FILES}")

@@ -53,6 +53,8 @@ private:
     void DrawPauseUI();
     void DrawActionUI();
     void unloadTextureFull(Texture2D& texture);
+    void ScreenTransition(float posterizeAmount);
+    void DrawTransitionEffect();
 
     void ExitBattle(Player& player);
     void DrawBattleUI();
@@ -74,8 +76,11 @@ private:
     static void DrawTextBoxed(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint);
     static void DrawTextBoxedSelectable(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint, int selectStart, int selectLength, Color selectTint, Color selectBackTint);
     void typewriterEffect(std::string& text);
+    Shader fadeShader = LoadShader(NULL, "assets/MISC/fade_shader.fs");
+
     Texture2D atlasTexture;
     Texture2D screenTexture;
+    Texture2D TransitionTexture;
 
     Texture2D BattleBGTexture;
     Texture2D BaseTexture;
@@ -155,15 +160,11 @@ private:
     int UIJumpCount = 0;
     int PKMNSpriteJiggle = 0;
 
-    struct EnemyPKMNInfo {
-        int Index = 23;
-        std::string Name = "Test";
-        int Gender = 0;
-        int Lvl = 4;
-        int GStage = 0;
-    } EnemyPKMNInfo;
+    float exposure = 80.0f;      // Starts at 0 (fully black)
+    float posterizeLevel; // Number of levels for posterization
+    float timer = 0.0f;      // Time elapsed (normalized between 0 and 1)
 
-    struct PlayerPKMNInfo {
+    struct PKMNInfo {
         int SlotID;
         int Index;
         std::string Name;
@@ -176,7 +177,9 @@ private:
         int GStage;
         int HP;
         int curHP;
-    } PlayerPKMNInfo;
+    };
+    PKMNInfo PlayerPKMNInfo;
+    PKMNInfo EnemyPKMNInfo;
 
     struct NPCInfo {
         std::string Name;
@@ -186,6 +189,7 @@ private:
         bool FollowReject = false;
     } NPCInfo;
     enum Battle_States{
+        SCREEN_TRANSITION,
         LOADING_ELEMENTS,
         SET_FIELD,
         ENEMY_INTRO,

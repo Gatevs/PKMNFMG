@@ -1,6 +1,7 @@
 #include "ActionHandler.h"
 #include <cctype>
 #include <cstring>
+#include <math.h>
 #include <raylib.h>
 #include <string>
 #include "npc.h"
@@ -18,6 +19,7 @@ ActionHandler::ActionHandler() {
     BattleBGTexture = LoadTexture("assets/MISC/BattleBGScroll.png");
     BaseTexture = LoadTexture("assets/MISC/BattleBases.png");
     HPCardTexture = LoadTexture("assets/MISC/BattleHPCard.png");
+    TransitionTexture = LoadTexture("assets/TRANSITIONS/001.png");
     smallBeep = LoadSound("assets/SFX/BEEP1.ogg");
     GUIOpen = LoadSound("assets/SFX/GUI_OPEN.ogg");
     GUIClose = LoadSound("assets/SFX/GUI_CLOSE.ogg");
@@ -71,6 +73,20 @@ void replaceAll(std::string& str, const std::string& oldWord, const std::string&
         str.replace(pos, oldWord.length(), newWord);
         pos += newWord.length();  // Move past the newly replaced word
     }
+}
+
+float easeOut(float t) {
+    return t == 1.0f ? 1.0f : 1.0f - pow((1.2f / t), -10.0f * t);
+}
+
+float lerp(float a, float b, float f)
+{
+    return a * (1.0 - f) + (b * f);
+}
+
+float n_lerp(float a, float b, float f) {
+    float easedF = easeOut(f); // Apply ease-out to the interpolation factor
+    return a * (1.0f - easedF) + (b * easedF); // Perform standard lerp
 }
 
 // Writes each character with a delay
@@ -138,7 +154,7 @@ void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
             HPCardFriendPos = {fadePos.x + (256),fadePos.y + (187 - (DialogueMap.height + HPCardPlayerMap.height))};
             BattleButtonsPos = {fadePos.x + (256 +21),fadePos.y + (192 - BattleButtonsMap.height)};
             stopPlayerInput = true;
-            battlePhase = LOADING_ELEMENTS;
+            battlePhase = SCREEN_TRANSITION;
             inUI = BATTLE;
             break;
     }
@@ -342,6 +358,14 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
     int textureHeight;
     float frameRate = 0.250f;
     float MAX_FRAMES;
+    float moveDuration = 16.0f; // Set the desired duration
+    float t = timer / moveDuration; // Normalized time (0.0 to 1.0)
+    int baseoffset = 4;
+
+    // Constants
+    const float enemyTargetX = fadePos.x + (SCREEN_WIDTH - BaseEnemyMap.width) + baseoffset;
+    const float playerTargetX = fadePos.x - (BaseEnemyMap.width / 2) - baseoffset;
+
     if (HasWalkingPKMN){
         MAX_FRAMES = 3.0f;
     } else{
@@ -352,6 +376,12 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
     }
 
     switch(battlePhase){
+        case SCREEN_TRANSITION:
+            ScreenTransition(1);
+            if (exposure <= 0){
+                battlePhase = LOADING_ELEMENTS;
+            }
+            break;
         case LOADING_ELEMENTS:
             if (!IsTextureReady(PlayerBattleTexture)){
                 battleTimer = 1.0f;
@@ -390,24 +420,32 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                 textureHeight = PlayerBattleTexture.height;
                 PlayerBackspriteFrame.x = textureWidth / 1.0f;
                 PlayerBackspriteFrame.y = textureHeight / MAX_FRAMES;
+                battleTimer = 0.0f;
                 battlePhase = SET_FIELD;
             }
             break;
         case SET_FIELD:
+
             if (BattleUIPos.x < 144){
                 BattleUIPos.x += (dt * (60.0f * 2.0f));
             }
             if (BattleUIPos.y < 48){
                 BattleUIPos.y += (dt * (60.0f * 3.0f));
             }
-            if (EnemyBasePos.x < fadePos.x + (SCREEN_WIDTH - BaseEnemyMap.width)){
-                EnemyBasePos.x += (dt * (60.0f * 4.0f));
-                EnemyPKMNSpritePos.x += (dt * (60.0f * 4.0f));
-            }
-            if (PlayerBasePos.x > fadePos.x - (BaseEnemyMap.width/2)){
-                PlayerBasePos.x -= (dt * (60.0f * 4.0f));
-                PlayerSpritePos.x -= (dt * (60.0f * 4.0f));
-            } else {
+
+            timer += dt;
+            if (timer > moveDuration) timer = moveDuration; // Clamp to duration
+
+            t = timer / moveDuration; // Normalized time (0.0 to 1.0)
+
+            // Interpolate positions
+            EnemyBasePos.x = round(lerp(EnemyBasePos.x, enemyTargetX, t));
+            EnemyPKMNSpritePos.x = EnemyBasePos.x + (BaseEnemyMap.width/2);
+
+            PlayerBasePos.x = round(lerp(PlayerBasePos.x, playerTargetX, t));
+            PlayerSpritePos.x = PlayerBasePos.x + (BasePlayerMap.width/3);
+
+            if (PlayerBasePos.x <= playerTargetX + baseoffset){
                 SetNPCDialogue("A wild ENEMYPKMN appeared!");
                 battlePhase = ENEMY_INTRO;
             }
@@ -550,6 +588,8 @@ void ActionHandler::ExitBattle(Player& player){
     TextBoxOpacity = 0;
     BattleUIPos = {0,0};
     PlayerPKMNInfo.MoveSlots = 0;
+    exposure = 80.0f;
+    timer = 0.0f;
     unloadTextureFull(PlayerBattleTexture);
     unloadTextureFull(PKMNBattleTexture);
     unloadTextureFull(BattleButtonsTexture);
@@ -855,12 +895,7 @@ void ActionHandler::claenText(){
     textTimer = 0;
     curTextSize = 0;
     textFinished = false;
-    UnloadTexture(VN_Sprite);
-    VN_Sprite.id = 0;
-    VN_Sprite.format = 0;
-    VN_Sprite.height = 0;
-    VN_Sprite.width = 0;
-    VN_Sprite.mipmaps = 0;
+    unloadTextureFull(VN_Sprite);
 }
 
 void ActionHandler::SetInteractionID(int ID){
@@ -1104,7 +1139,13 @@ void ActionHandler::DrawActionUI(){
 }
 
 void ActionHandler::DrawBattleUI(){
-    if (battlePhase != LOADING_ELEMENTS){
+    if (battlePhase == SCREEN_TRANSITION){
+        DrawTransitionEffect();
+    }
+    if (battlePhase == LOADING_ELEMENTS){
+        DrawRectangle(fadePos.x,fadePos.y,256,194,BLACK);
+    }
+    if (battlePhase > LOADING_ELEMENTS){
         Draw_BattleBG();
         Draw_EnemyElements();
         Draw_PlayerElements();
@@ -1245,3 +1286,28 @@ void ActionHandler::SetFade(int fadeAmount){
         Fade = fadeAmount;
     }
 }
+
+void ActionHandler::ScreenTransition(float posterizeAmount){
+    posterizeLevel = posterizeAmount;
+
+    timer += GetFrameTime() * 0.4f; // Adjust speed as needed
+    if (timer > 1.0f) timer = 1.0f; // Clamp to 1
+
+    exposure = n_lerp(80.0f, 0.0f, timer);
+    if (exposure <= 1.0f){
+        exposure = 0;
+    }
+
+    // Send uniforms to shader
+    SetShaderValue(fadeShader, GetShaderLocation(fadeShader, "exposure"), &exposure, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(fadeShader, GetShaderLocation(fadeShader, "posterizeLevel"), &posterizeLevel, SHADER_UNIFORM_FLOAT);
+}
+
+void ActionHandler::DrawTransitionEffect(){
+    BeginBlendMode(BLEND_MULTIPLIED); // Enable alpha blending
+    BeginShaderMode(fadeShader);
+    DrawTexture(TransitionTexture, fadePos.x, fadePos.y, WHITE); // Draw texture with shader
+    EndShaderMode();
+    EndBlendMode();
+}
+
