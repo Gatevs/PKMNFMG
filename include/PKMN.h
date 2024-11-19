@@ -26,6 +26,7 @@ public:
     void SetInitialStatValues();
     void SetMovements();
     void SetPP(int id, int PPat);
+    void SetCurHP (int value) {CUR_HP = value;}
     std::string GetMovementInfo(int MovementNum, int column);
     float GetTypeEffectiveness(int A_Type, int E_Type);
     float GetStatMultiplier(int stat);

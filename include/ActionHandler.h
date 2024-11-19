@@ -4,6 +4,7 @@
 #include "npc.h"
 #include "player.h"
 #include <iostream>
+#include <math.h>
 #include <raylib.h>
 #include <string>
 #include <vector>
@@ -41,6 +42,32 @@ public:
     bool textFinished;
 
 private:
+        struct PKMNInfo {
+        int SlotID;
+        int Index;
+        std::string Name;
+        std::string MoveNames[4];
+        int MoveIDs[4];
+        int curPP[4];
+        int MaxPP[4];
+        int MoveSlots = 0;
+        int Gender;
+        int Lvl;
+        int GStage;
+        int HP = 1;
+        float curHP = 1.0f;
+        int UsingMove;
+        float healthBar = (48.0f * (float(curHP)/HP));
+        int healthBarColor = 0;
+        int AttackPower = 0;
+        bool StatusMoveSet = false;
+        bool MoveActionSet = false;
+        bool firstTurn = false;
+        bool crithit = false;
+        int blinkCounter = 0;
+        bool visible = true;
+    };
+
     void actionFollowMenu(std::vector<NPC>& NPC_objs, Player& player_Obj);
     void actionGrowthMenu(std::vector<NPC>& NPC_objs, Player& player_Obj);
     void actionStatsMenu();
@@ -64,6 +91,9 @@ private:
     void Draw_BattleTextBox();
     void BattleSpriteJiggle();
     void BattleUISelector(int max);
+    void BattleMoveAction(PKMN pokeA, PKMN pokeB, PKMNInfo& pokeAInfo, PKMNInfo& pokeBInfo, int move);
+    void SetMove(int move, PKMNInfo& poke, bool first);
+    void NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo,PKMNInfo& pokeBInfo, int Phase);
     void Draw_Buttons(Vector2 pos, int offset);
 
     void SetVNSprite();
@@ -164,21 +194,6 @@ private:
     float posterizeLevel; // Number of levels for posterization
     float timer = 0.0f;      // Time elapsed (normalized between 0 and 1)
 
-    struct PKMNInfo {
-        int SlotID;
-        int Index;
-        std::string Name;
-        std::string MoveNames[4];
-        int MoveIDs[4];
-        int curPP[4];
-        int MaxPP[4];
-        int MoveSlots = 0;
-        int Gender;
-        int Lvl;
-        int GStage;
-        int HP;
-        int curHP;
-    };
     PKMNInfo PlayerPKMNInfo;
     PKMNInfo EnemyPKMNInfo;
     std::vector<PKMN> EnemyMons;
@@ -197,7 +212,10 @@ private:
         ENEMY_INTRO,
         PLAYERPKMN_INTRO,
         WAIT_INPUT,
-        SELECT_MOVE
+        SELECT_MOVE,
+        TURN_A,
+        TURN_B,
+        FAINTING
     };
     enum Menu_Type{
         STATS,

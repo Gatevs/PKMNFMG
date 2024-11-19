@@ -2,6 +2,7 @@
 #include <cctype>
 #include <cstring>
 #include <math.h>
+#include <random>
 #include <raylib.h>
 #include <string>
 #include "npc.h"
@@ -396,6 +397,11 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                 EnemyPKMNInfo.Lvl = EnemyPKMN.GetLevel();
                 EnemyPKMNInfo.Gender = EnemyPKMN.GetGender();
                 EnemyPKMNInfo.Name = EnemyPKMN.GetPKMN_Name();
+                EnemyPKMNInfo.HP = EnemyPKMN.GetMaxHP();
+                EnemyPKMNInfo.curHP = EnemyPKMN.GetCurHp();
+                EnemyPKMNInfo.healthBar = 48.0f * (EnemyPKMNInfo.curHP / float(EnemyPKMNInfo.HP));
+                EnemyPKMNInfo.healthBarColor = 0;
+
                 std::transform(EnemyPKMNInfo.Name.begin(),EnemyPKMNInfo.Name.end(),EnemyPKMNInfo.Name.begin (),::toupper);
                 EnemyPKMNInfo.GStage = EnemyPKMN.GetGStage();
                 EnemySprite = "assets/PKMN_BATTLESPRITE/" + std::to_string(EnemyPKMNInfo.Index) + "_" + std::to_string(EnemyPKMNInfo.GStage) + ".png";
@@ -410,12 +416,17 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                 for (int i = 0; i < 4; i ++){
                     PlayerPKMNInfo.MoveNames[i] = PKMNParty[PlayerPKMNInfo.SlotID].GetMovementInfo(PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().Move[i],1);
                     PlayerPKMNInfo.MoveIDs[i] = PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().Move[i];
+                    EnemyPKMNInfo.MoveNames[i] = EnemyMons[0].GetMovementInfo(EnemyMons[0].GetMovements().Move[i],1);
+                    EnemyPKMNInfo.MoveIDs[i] = EnemyMons[0].GetMovements().Move[i];
                     if (PKMNParty[PlayerPKMNInfo.SlotID].GetMovementInfo(PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().Move[i],4) != "NONE"){
                         PlayerPKMNInfo.MaxPP[i] = std::stoi(PKMNParty[PlayerPKMNInfo.SlotID].GetMovementInfo(PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().Move[i],4));
                         PlayerPKMNInfo.curPP[i] = PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().PP[i];
                     }
                     if (PlayerPKMNInfo.MoveNames[i] != "NONE"){
                         PlayerPKMNInfo.MoveSlots += 1;
+                    }
+                    if (EnemyPKMNInfo.MoveNames[i] != "NONE"){
+                        EnemyPKMNInfo.MoveSlots += 1;
                     }
                 }
             }
@@ -528,22 +539,146 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                 battlePhase = WAIT_INPUT;
             }
             if (ControllerSingleton::GetInstance().IsAPressed()){
-                std::vector<int> E_TYPES = EnemyMons[0].GetPokemonTypes();
-                int E_Defense = EnemyMons[0].GetBaseStats().Defense * EnemyMons[0].GetStatMultiplier(EnemyMons[0].GetTempStats().Defense);
-                int Move_ID = PlayerPKMNInfo.MoveIDs[menuID - 1];
-                std::string Move_Type = PKMNParty[PlayerPKMNInfo.SlotID].GetMoveType(Move_ID);
-
-                if (Move_Type == "Physical" or Move_Type == "Special"){
-                    std::cout << "Attack Damage: "<< PKMNParty[PlayerPKMNInfo.SlotID].GetAttackDamage(E_TYPES, E_Defense, Move_ID) << std::endl;
-                }else if (Move_Type == "Status"){
-                    std::cout << "This is a status move xd " << std::endl;
+                int PlayerSpeed = PKMNParty[PlayerPKMNInfo.SlotID].GetBaseStats().Speed * PKMNParty[PlayerPKMNInfo.SlotID].GetStatMultiplier(PKMNParty[PlayerPKMNInfo.SlotID].GetTempStats().Speed);
+                int EnemySpeed = EnemyMons[0].GetBaseStats().Speed * EnemyMons[0].GetStatMultiplier(EnemyMons[0].GetTempStats().Speed);
+                std::random_device seed;
+                std::mt19937 engine(seed());
+                std::uniform_int_distribution<int> random(0, EnemyPKMNInfo.MoveSlots - 1); // uniform, unbiased
+                PlayerPKMNInfo.UsingMove = menuID - 1;
+                EnemyPKMNInfo.UsingMove = random(engine);
+                PlayerPKMNInfo.curPP[PlayerPKMNInfo.UsingMove] -= 1;
+                if (PlayerSpeed > EnemySpeed){
+                    SetMove(PlayerPKMNInfo.UsingMove, PlayerPKMNInfo, true);
+                    battlePhase = TURN_A;
                 }
-
-                if (PKMNParty[PlayerPKMNInfo.SlotID].IsCrit()){
-                    std::cout << "Critical Hit!" << std::endl;
+                if (PlayerSpeed == EnemySpeed){
+                    SetMove(PlayerPKMNInfo.UsingMove, PlayerPKMNInfo, true);
+                    battlePhase = TURN_A;
+                }
+                if(PlayerSpeed < EnemySpeed){
+                    SetMove(EnemyPKMNInfo.UsingMove, EnemyPKMNInfo, true);
+                    battlePhase = TURN_B;
                 }
             }
             break;
+        case TURN_A:
+            dialogue(player);
+            NextPhase(PKMNParty[PlayerPKMNInfo.SlotID], EnemyMons[0], PlayerPKMNInfo, EnemyPKMNInfo, TURN_B);
+            // BattleMoveAction(PKMNParty[PlayerPKMNInfo.SlotID],EnemyMons[0], PlayerPKMNInfo.MoveIDs[menuID - 1]);
+            break;
+        case TURN_B:
+            dialogue(player);
+            NextPhase(EnemyMons[0], PKMNParty[PlayerPKMNInfo.SlotID], EnemyPKMNInfo, PlayerPKMNInfo, TURN_A);
+            break;
+        case FAINTING:
+            break;
+    }
+}
+
+void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKMNInfo& pokeBInfo, int Phase) {
+    // Initialize variables
+    static float targetHP = pokeBInfo.curHP; // Store target HP
+
+    // Battle Timer
+    battleTimer += GetFrameTime() * (pokeBInfo.HP * 4.0f);
+
+    // If the move action isn't set yet, perform the move logic
+    if (!pokeAInfo.MoveActionSet) {
+        BattleMoveAction(pokeA, pokeB, pokeAInfo, pokeBInfo, pokeAInfo.MoveIDs[pokeAInfo.UsingMove]);
+        targetHP = pokeBInfo.curHP - pokeAInfo.AttackPower;
+    }
+
+    // Handle attack damage and smooth HP reduction
+    if (pokeBInfo.curHP > targetHP && pokeAInfo.MoveActionSet && battleTimer > 1.0f && pokeBInfo.blinkCounter >= 6) {
+        pokeBInfo.curHP -= 0.1f; // Decrease HP
+        if (pokeBInfo.curHP < targetHP) pokeBInfo.curHP = targetHP;
+        if (pokeBInfo.curHP < 0) {
+            pokeBInfo.curHP = 0;
+            targetHP = 0;
+        }
+
+        // Update the health bar
+        pokeBInfo.healthBar = 48.0f * (pokeBInfo.curHP / float(pokeBInfo.HP));
+
+        // Update health bar color
+        if (pokeBInfo.curHP / float(pokeBInfo.HP) > 0.5f){pokeBInfo.healthBarColor = 0;}
+        if (pokeBInfo.curHP / float(pokeBInfo.HP) < 0.5f && pokeBInfo.curHP / float(pokeBInfo.HP) > 0.2f){
+            pokeBInfo.healthBarColor = 1;
+        }
+        if (pokeBInfo.curHP / float(pokeBInfo.HP) < 0.2f){pokeBInfo.healthBarColor = 2;}
+
+        // Reset battle timer
+        battleTimer = 0.0f;
+    }
+    if (battleTimer > 5.0f && pokeBInfo.blinkCounter < 6 && textFinished && pokeAInfo.AttackPower > 0){
+        pokeBInfo.blinkCounter += 1;
+        pokeBInfo.visible = !pokeBInfo.visible;
+        battleTimer = 0.0f;
+    }
+
+    // if (pokeBInfo.curHP == 0){
+    //     battlePhase = FAINTING;
+    // }
+
+    // Move to the next phase if the text is finished and the player presses A
+    if (textFinished && ControllerSingleton::GetInstance().IsAPressed()) {
+        if (pokeAInfo.firstTurn) {
+            SetMove(pokeBInfo.UsingMove, pokeBInfo, false);
+            battlePhase = Phase;
+        } else {
+            claenText();
+            SetNPCDialogue("What will ¬PLAYERPKMN do?");
+            selection = 0;
+            menuID = 1;
+            pokeAInfo.MoveActionSet = false;
+            pokeBInfo.MoveActionSet = false;
+            pokeA.SetCurHP(pokeAInfo.curHP);
+            pokeB.SetCurHP(pokeBInfo.curHP);
+            pokeAInfo.AttackPower = 0;
+            pokeBInfo.AttackPower = 0;
+            pokeAInfo.crithit = false;
+            pokeBInfo.crithit = false;
+            pokeBInfo.blinkCounter = 0;
+            pokeAInfo.blinkCounter = 0;
+            battleTimer = 0.0f;
+            battlePhase = WAIT_INPUT;
+        }
+    }
+    if (textFinished && pokeAInfo.crithit){
+        claenText();
+        SetNPCDialogue("A critical hit!");
+        pokeAInfo.crithit = false;
+    }
+}
+
+
+void ActionHandler::SetMove(int move, PKMNInfo& poke, bool first){
+    std::string MoveSelected = poke.MoveNames[move];
+    std::string text = poke.Name + " used ¬" + MoveSelected + "!";
+    claenText();
+    SetNPCDialogue(text);
+    poke.firstTurn = first;
+}
+
+void ActionHandler::BattleMoveAction(PKMN pokeA, PKMN pokeB, PKMNInfo& pokeAInfo, PKMNInfo& pokeBInfo, int move){
+    int Move_ID = move;
+    std::vector<int> E_TYPES = pokeB.GetPokemonTypes();
+    int E_Defense = pokeB.GetBaseStats().Defense * pokeB.GetStatMultiplier(pokeB.GetTempStats().Defense);
+    std::string Move_Type = pokeA.GetMoveType(Move_ID);
+
+    if (Move_Type == "Physical" or Move_Type == "Special"){
+        pokeAInfo.AttackPower = pokeA.GetAttackDamage(E_TYPES, E_Defense, Move_ID);
+        pokeAInfo.MoveActionSet = true;
+        std::cout << "Attack Damage: "<< pokeAInfo.AttackPower << std::endl;
+    }else if (Move_Type == "Status"){
+        pokeAInfo.StatusMoveSet = true;
+        pokeAInfo.MoveActionSet = true;
+        std::cout << "This is a status move xd " << std::endl;
+    }
+
+    if (pokeA.IsCrit()){
+        pokeAInfo.crithit = true;
+        std::cout << "Critical Hit!" << std::endl;
     }
 }
 
@@ -582,20 +717,20 @@ void ActionHandler::BattleSpriteJiggle(){
     if (Jiggle){
         switch (UIJumpCount){
             case 1:
+                PKMNSpriteJiggle += -1;
                 HPCardFriendPos.y += 1;
-                PKMNSpriteJiggle -= 1;
                 break;
             case 2:
-                HPCardFriendPos.y -= 1;
                 PKMNSpriteJiggle += 1;
+                HPCardFriendPos.y += -1;
                 break;
             case 3:
-                HPCardFriendPos.y -= 1;
                 PKMNSpriteJiggle += 1;
+                HPCardFriendPos.y += -1;
                 break;
             case 4:
+                PKMNSpriteJiggle += -1;
                 HPCardFriendPos.y += 1;
-                PKMNSpriteJiggle -= 1;
                 UIJumpCount = 0;
                 break;
         }
@@ -611,16 +746,18 @@ void ActionHandler::ExitBattle(Player& player){
     TextBoxOpacity = 0;
     BattleUIPos = {0,0};
     PlayerPKMNInfo.MoveSlots = 0;
+    EnemyPKMNInfo.MoveSlots = 0;
     exposure = 80.0f;
     timer = 0.0f;
     EnemyMons.clear();
+    EnemyMons.swap(EnemyMons);
     unloadTextureFull(PlayerBattleTexture);
     unloadTextureFull(PKMNBattleTexture);
     unloadTextureFull(BattleButtonsTexture);
     unloadTextureFull(StatSprite);
     claenText();
     CloseUI(player);
-    battlePhase = LOADING_ELEMENTS;
+    battlePhase = SCREEN_TRANSITION;
 }
 void ActionHandler::unloadTextureFull(Texture2D& texture){
     if (IsTextureReady(texture)){
@@ -1187,11 +1324,11 @@ void ActionHandler::Draw_EnemyElements(){
     // Enemy base
     DrawTextureRec(BaseTexture, BaseEnemyMap, {EnemyBasePos.x, EnemyBasePos.y}, WHITE);
     // Enemy Pokemon sprite
-    DrawTexture(StatSprite, (EnemyPKMNSpritePos.x) - (StatSprite.width / 2.0f), EnemyPKMNSpritePos.y - StatSprite.height, WHITE);
+    if (EnemyPKMNInfo.visible){DrawTexture(StatSprite, (EnemyPKMNSpritePos.x) - (StatSprite.width / 2.0f), EnemyPKMNSpritePos.y - StatSprite.height, WHITE);}
     // Enemy HP Card
     DrawTextureRec(HPCardTexture, HPCardEnemyMap, HPCardEnemyPos, WHITE);
     // Enemy health points
-    DrawTextureRec(HPCardTexture, HealthPointMap, {HPCardEnemyPos.x + 50, HPCardEnemyPos.y + 24}, WHITE);
+    DrawTextureRec(HPCardTexture, {HealthPointMap.x, HealthPointMap.y + (HealthPointMap.height * EnemyPKMNInfo.healthBarColor), static_cast<float>(EnemyPKMNInfo.healthBar), HealthPointMap.height}, {HPCardEnemyPos.x + 50, HPCardEnemyPos.y + 24}, WHITE);
     // Enemy gender
     DrawTextureRec(HPCardTexture, {GenderIconMap.x + (8 * EnemyPKMNInfo.Gender), GenderIconMap.y, GenderIconMap.width, GenderIconMap.height}, {HPCardEnemyPos.x + 65, HPCardEnemyPos.y + 8}, WHITE);
     // Enemy name
@@ -1204,13 +1341,13 @@ void ActionHandler::Draw_PlayerElements(){
     // Player's base
     DrawTextureRec(BaseTexture, BasePlayerMap, {PlayerBasePos.x, PlayerBasePos.y}, WHITE);
     // Player's Pokemon sprite
-    DrawTexture(PKMNBattleTexture, PlayerPKMNSpritePos.x, (PlayerPKMNSpritePos.y + (PKMNSpriteJiggle)), WHITE);
+    if (PlayerPKMNInfo.visible){DrawTexture(PKMNBattleTexture, PlayerPKMNSpritePos.x, (PlayerPKMNSpritePos.y + (PKMNSpriteJiggle)), WHITE);}
     // Player's sprite
     DrawTextureRec(PlayerBattleTexture, {0, 0 + (PlayerBackspriteFrame.y * PlayerAnimFrame), PlayerBackspriteFrame.x, PlayerBackspriteFrame.y}, {PlayerSpritePos.x, PlayerSpritePos.y}, WHITE);
     // Player's pkmns HPCard
     DrawTextureRec(HPCardTexture,HPCardPlayerMap,HPCardFriendPos,WHITE);
     // Player's health points
-    DrawTextureRec(HPCardTexture, HealthPointMap, {HPCardFriendPos.x + 72, HPCardFriendPos.y + 25}, WHITE);
+    DrawTextureRec(HPCardTexture, {HealthPointMap.x, HealthPointMap.y + (HealthPointMap.height * PlayerPKMNInfo.healthBarColor), static_cast<float>(PlayerPKMNInfo.healthBar), HealthPointMap.height}, {HPCardFriendPos.x + 72, HPCardFriendPos.y + 25}, WHITE);
     // Player's gender
     DrawTextureRec(HPCardTexture, {GenderIconMap.x + (8 * PlayerPKMNInfo.Gender), GenderIconMap.y, GenderIconMap.width, GenderIconMap.height}, {HPCardFriendPos.x + 87, HPCardFriendPos.y + 9}, WHITE);
     // Player's name
@@ -1218,7 +1355,7 @@ void ActionHandler::Draw_PlayerElements(){
     // Player's level
     DrawTextBoxed(BattleFont, std::to_string(PlayerPKMNInfo.Lvl).c_str(), {HPCardFriendPos.x + 103, HPCardFriendPos.y + 8, 60, 30}, MainFont.baseSize, -4, wordWrap, WHITE);
     //Player's Pokemon CurHP'
-    DrawTextBoxed(BattleFont, std::to_string(PlayerPKMNInfo.curHP).c_str(), {HPCardFriendPos.x + 72, HPCardFriendPos.y + 28, 60, 30}, MainFont.baseSize, -4, wordWrap, WHITE);
+    DrawTextBoxed(BattleFont, std::to_string(int(PlayerPKMNInfo.curHP)).c_str(), {HPCardFriendPos.x + 72, HPCardFriendPos.y + 28, 60, 30}, MainFont.baseSize, -4, wordWrap, WHITE);
     //Player's Pokemon MaxHP'
     DrawTextBoxed(BattleFont, std::to_string(PlayerPKMNInfo.HP).c_str(), {HPCardFriendPos.x + 94, HPCardFriendPos.y + 28, 60, 30}, MainFont.baseSize, -4, wordWrap, WHITE);
 }
@@ -1231,8 +1368,10 @@ void ActionHandler::Draw_BattleTextBox(){
     // Battle screen text
     DrawTextBoxed(MainFont, DestTXT.c_str(), {MainPos.x + 16, MainPos.y + 8, 220, 60}, MainFont.baseSize, -5, wordWrap, WHITE);
     // Battle UI Input
-    DrawTextureRec(BattleButtonsTexture, {BattleButtonsMap.x, BattleButtonsMap.y + (BattleButtonsMap.height * menuID), BattleButtonsMap.width, BattleButtonsMap.height}, {BattleButtonsPos.x, BattleButtonsPos.y}, WHITE);
-    DrawTextureRec(atlasTexture, {DialogueMap.x + (DialogueMap.width - 21), DialogueMap.y, 21, DialogueMap.height}, {BattleButtonsPos.x - 21, BattleButtonsPos.y + 1}, WHITE);
+    if (battlePhase != TURN_A and battlePhase != TURN_B and battlePhase != FAINTING){
+        DrawTextureRec(BattleButtonsTexture, {BattleButtonsMap.x, BattleButtonsMap.y + (BattleButtonsMap.height * menuID), BattleButtonsMap.width, BattleButtonsMap.height}, {BattleButtonsPos.x, BattleButtonsPos.y}, WHITE);
+        DrawTextureRec(atlasTexture, {DialogueMap.x + (DialogueMap.width - 21), DialogueMap.y, 21, DialogueMap.height}, {BattleButtonsPos.x - 21, BattleButtonsPos.y + 1}, WHITE);
+    }
 
     if (battlePhase == SELECT_MOVE){
 
