@@ -526,7 +526,9 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                     menuID = 1;
                     break;
                 case 4:
-                    ExitBattle(player);
+                    PlayerPKMNInfo.EscapeAttempts += 1;
+                    battlePhase = RUN;
+                    menuID = 1;
                     break;
             }
             break;
@@ -571,6 +573,55 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
             NextPhase(EnemyMons[0], PKMNParty[PlayerPKMNInfo.SlotID], EnemyPKMNInfo, PlayerPKMNInfo, TURN_A);
             break;
         case FAINTING:
+            if (EnemyPKMNInfo.curHP == 0 && EnemyPKMNInfo.faintAnimDone){
+                claenText();
+                SetNPCDialogue("The wild ENEMYPKMN fainted!");
+                battlePhase = EXIT;
+            }
+            break;
+        case EXIT:
+            dialogue(player);
+            if (ControllerSingleton::GetInstance().IsAPressed() && textFinished){
+                PlayerPKMNInfo.BattleEnd = true;
+            }
+            if (PlayerPKMNInfo.BattleEnd){
+                if (!fadeInComplete) {
+                    fadeIn();
+                } else {
+                    externalFadeOut = true;
+                    ExitBattle(player);
+                }
+            }
+            break;
+        case RUN:
+            int speedPlayer = PKMNParty[PlayerPKMNInfo.SlotID].GetBaseStats().Speed * PKMNParty[PlayerPKMNInfo.SlotID].GetStatMultiplier(PKMNParty[PlayerPKMNInfo.SlotID].GetTempStats().Speed);
+            int speedWild = EnemyMons[0].GetBaseStats().Speed * EnemyMons[0].GetStatMultiplier(EnemyMons[0].GetTempStats().Speed);
+            int speedPlayerBase = PKMNParty[PlayerPKMNInfo.SlotID].GetBaseStats().Speed;
+            int speedWildBase = EnemyMons[0].GetBaseStats().Speed;
+            int Attempts = PlayerPKMNInfo.EscapeAttempts;
+            int EscapeOdds = ((speedPlayerBase * 128) / speedWildBase + (30 * Attempts)) % 256;
+
+            std::random_device seed;
+            std::mt19937 engine(seed());
+            std::uniform_int_distribution<int> random(0, 255); // uniform, unbiased
+
+            if (speedPlayer >= speedWild){
+                claenText();
+                SetNPCDialogue("Got away safely!");
+                battlePhase = EXIT;
+            }else{
+                if (random(engine) < EscapeOdds){
+                    claenText();
+                    SetNPCDialogue("Got away safely!");
+                    battlePhase = EXIT;
+                } else{
+                    std::uniform_int_distribution<int> move(0, EnemyPKMNInfo.MoveSlots - 1); // uniform, unbiased
+                    EnemyPKMNInfo.UsingMove = move(engine);
+                    claenText();
+                    SetNPCDialogue("Can't escape!");
+                    battlePhase = TURN_B;
+                }
+            }
             break;
     }
 }
@@ -616,32 +667,18 @@ void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKM
         battleTimer = 0.0f;
     }
 
-    // if (pokeBInfo.curHP == 0){
-    //     battlePhase = FAINTING;
-    // }
+    if (pokeBInfo.curHP == 0){
+        FinishTurns(pokeA,pokeB,pokeAInfo,pokeBInfo);
+        battlePhase = FAINTING;
+    }
 
     // Move to the next phase if the text is finished and the player presses A
-    if (textFinished && ControllerSingleton::GetInstance().IsAPressed()) {
+    if (textFinished && ControllerSingleton::GetInstance().IsAPressed() && pokeBInfo.curHP == targetHP) {
         if (pokeAInfo.firstTurn) {
             SetMove(pokeBInfo.UsingMove, pokeBInfo, false);
             battlePhase = Phase;
         } else {
-            claenText();
-            SetNPCDialogue("What will ¬PLAYERPKMN do?");
-            selection = 0;
-            menuID = 1;
-            pokeAInfo.MoveActionSet = false;
-            pokeBInfo.MoveActionSet = false;
-            pokeA.SetCurHP(pokeAInfo.curHP);
-            pokeB.SetCurHP(pokeBInfo.curHP);
-            pokeAInfo.AttackPower = 0;
-            pokeBInfo.AttackPower = 0;
-            pokeAInfo.crithit = false;
-            pokeBInfo.crithit = false;
-            pokeBInfo.blinkCounter = 0;
-            pokeAInfo.blinkCounter = 0;
-            battleTimer = 0.0f;
-            battlePhase = WAIT_INPUT;
+            FinishTurns(pokeA,pokeB,pokeAInfo,pokeBInfo);
         }
     }
     if (textFinished && pokeAInfo.crithit){
@@ -651,6 +688,24 @@ void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKM
     }
 }
 
+void ActionHandler::FinishTurns(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo,PKMNInfo& pokeBInfo){
+    claenText();
+    SetNPCDialogue("What will ¬PLAYERPKMN do?");
+    selection = 0;
+    menuID = 1;
+    pokeAInfo.MoveActionSet = false;
+    pokeBInfo.MoveActionSet = false;
+    pokeA.SetCurHP(pokeAInfo.curHP);
+    pokeB.SetCurHP(pokeBInfo.curHP);
+    pokeAInfo.AttackPower = 0;
+    pokeBInfo.AttackPower = 0;
+    pokeAInfo.crithit = false;
+    pokeBInfo.crithit = false;
+    pokeBInfo.blinkCounter = 0;
+    pokeAInfo.blinkCounter = 0;
+    battleTimer = 0.0f;
+    battlePhase = WAIT_INPUT;
+}
 
 void ActionHandler::SetMove(int move, PKMNInfo& poke, bool first){
     std::string MoveSelected = poke.MoveNames[move];
@@ -747,6 +802,9 @@ void ActionHandler::ExitBattle(Player& player){
     BattleUIPos = {0,0};
     PlayerPKMNInfo.MoveSlots = 0;
     EnemyPKMNInfo.MoveSlots = 0;
+    EnemyPKMNInfo.yOffset = 0;
+    EnemyPKMNInfo.faintAnimDone = false;
+    PlayerPKMNInfo.EscapeAttempts = 0;
     exposure = 80.0f;
     timer = 0.0f;
     EnemyMons.clear();
@@ -757,6 +815,7 @@ void ActionHandler::ExitBattle(Player& player){
     unloadTextureFull(StatSprite);
     claenText();
     CloseUI(player);
+    PlayerPKMNInfo.BattleEnd = false;
     battlePhase = SCREEN_TRANSITION;
 }
 void ActionHandler::unloadTextureFull(Texture2D& texture){
@@ -1047,6 +1106,7 @@ void ActionHandler::fadeOut(){
     } else {
         Fade = MIN_FADE_VALUE;
         fadeOutComplete = true;
+        externalFadeOut = false;
     }
 }
 
@@ -1083,7 +1143,7 @@ void ActionHandler::CloseUI(Player& player){
         StatSprite.mipmaps = 0;
     }
     ActiveNPCVectorIndex = -1;
-    if (inUI != DIALOGUE){PlaySound(GUIClose);}
+    if (inUI != DIALOGUE && inUI != BATTLE){PlaySound(GUIClose);}
     player.StopUI_Element();
 }
 
@@ -1324,7 +1384,7 @@ void ActionHandler::Draw_EnemyElements(){
     // Enemy base
     DrawTextureRec(BaseTexture, BaseEnemyMap, {EnemyBasePos.x, EnemyBasePos.y}, WHITE);
     // Enemy Pokemon sprite
-    if (EnemyPKMNInfo.visible){DrawTexture(StatSprite, (EnemyPKMNSpritePos.x) - (StatSprite.width / 2.0f), EnemyPKMNSpritePos.y - StatSprite.height, WHITE);}
+    if (EnemyPKMNInfo.visible){DrawPokemonSprite(EnemyPKMNSpritePos,StatSprite,EnemyPKMNInfo.yOffset,EnemyPKMNInfo.faintAnimDone,EnemyPKMNInfo.curHP);}
     // Enemy HP Card
     DrawTextureRec(HPCardTexture, HPCardEnemyMap, HPCardEnemyPos, WHITE);
     // Enemy health points
@@ -1368,7 +1428,7 @@ void ActionHandler::Draw_BattleTextBox(){
     // Battle screen text
     DrawTextBoxed(MainFont, DestTXT.c_str(), {MainPos.x + 16, MainPos.y + 8, 220, 60}, MainFont.baseSize, -5, wordWrap, WHITE);
     // Battle UI Input
-    if (battlePhase != TURN_A and battlePhase != TURN_B and battlePhase != FAINTING){
+    if (battlePhase == PLAYERPKMN_INTRO or battlePhase == WAIT_INPUT or battlePhase == SELECT_MOVE){
         DrawTextureRec(BattleButtonsTexture, {BattleButtonsMap.x, BattleButtonsMap.y + (BattleButtonsMap.height * menuID), BattleButtonsMap.width, BattleButtonsMap.height}, {BattleButtonsPos.x, BattleButtonsPos.y}, WHITE);
         DrawTextureRec(atlasTexture, {DialogueMap.x + (DialogueMap.width - 21), DialogueMap.y, 21, DialogueMap.height}, {BattleButtonsPos.x - 21, BattleButtonsPos.y + 1}, WHITE);
     }
@@ -1473,4 +1533,29 @@ void ActionHandler::DrawTransitionEffect(){
     EndShaderMode();
     EndBlendMode();
 }
+
+void ActionHandler::DrawPokemonSprite(Vector2 pos, Texture2D sprite, float& yOffset, bool& animationDone, float health) {
+    // Define the size of the scissor rectangle (e.g., hiding below the initial Y position)
+    int scissorWidth = sprite.width * copyCam.zoom + 32;
+    int scissorHeight = sprite.height * copyCam.zoom;
+    Vector2 screenPos = GetWorldToScreen2D(pos, copyCam);
+
+    // Start scissor mode
+    BeginScissorMode(screenPos.x - (scissorWidth / 2.0f), screenPos.y - scissorHeight, scissorWidth, scissorHeight);
+    if (battlePhase == FAINTING && health <= 0){
+        // Move the sprite downward smoothly
+        yOffset += GetFrameTime() * 200.0f; // Adjust the speed here
+        if (yOffset >= sprite.height) {
+            yOffset = sprite.height;  // Cap the movement
+            animationDone = true;          // Mark the animation as complete
+        }
+    }
+
+    // Draw the sprite (only visible within the scissor rectangle)
+    DrawTexture(sprite, pos.x - (sprite.width / 2.0f), (pos.y - sprite.height) + yOffset, WHITE);
+
+    // End scissor mode
+    EndScissorMode();
+}
+
 

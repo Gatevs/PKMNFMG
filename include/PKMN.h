@@ -20,6 +20,7 @@ public:
     std::string GetPKMN_NickName();
     std::string GetMoveType(int move) { return GetMovementInfo(move,3);}
     int GetAttackDamage(std::vector<int> enemyTypes, int D, int move);
+    int GetOddsEscape(int speedPlayer, int speedWild, int Attempts);
 
     void SetNickname(const std::string& newName) { nickname = newName; }
     void SetLevel(int newLevel) { LVL = newLevel; }

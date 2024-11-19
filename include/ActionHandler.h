@@ -37,9 +37,11 @@ public:
     void fadeOut();
     bool IsFadeInComplete() const {return fadeInComplete;}
     bool IsFadeOutComplete() const {return fadeOutComplete;}
+    bool FadeOutAtferMenu()const {return externalFadeOut;}
     void SetFade(int fadeAmount);
     bool stopPlayerInput;
     bool textFinished;
+    void SetCamera(Camera2D& cam) {copyCam = cam;}
 
 private:
         struct PKMNInfo {
@@ -66,6 +68,10 @@ private:
         bool crithit = false;
         int blinkCounter = 0;
         bool visible = true;
+        float yOffset = 0.0f;
+        bool faintAnimDone = false;
+        int EscapeAttempts = 0;
+        bool BattleEnd = false;
     };
 
     void actionFollowMenu(std::vector<NPC>& NPC_objs, Player& player_Obj);
@@ -94,7 +100,9 @@ private:
     void BattleMoveAction(PKMN pokeA, PKMN pokeB, PKMNInfo& pokeAInfo, PKMNInfo& pokeBInfo, int move);
     void SetMove(int move, PKMNInfo& poke, bool first);
     void NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo,PKMNInfo& pokeBInfo, int Phase);
+    void FinishTurns(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo,PKMNInfo& pokeBInfo);
     void Draw_Buttons(Vector2 pos, int offset);
+    void DrawPokemonSprite(Vector2 pos, Texture2D sprite, float& yOffset, bool& animationDone, float health);
 
     void SetVNSprite();
     void SetNPCDialogue(std::string text);
@@ -106,6 +114,7 @@ private:
     static void DrawTextBoxed(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint);
     static void DrawTextBoxedSelectable(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint, int selectStart, int selectLength, Color selectTint, Color selectBackTint);
     void typewriterEffect(std::string& text);
+    Camera2D copyCam;
     Shader fadeShader;
 
     Texture2D atlasTexture;
@@ -156,8 +165,9 @@ private:
     Vector2 PlayerBackspriteFrame = {1,0};
 
     bool wordWrap;
-    bool fadeInComplete;
-    bool fadeOutComplete;
+    bool fadeInComplete = true;
+    bool fadeOutComplete = true;
+    bool externalFadeOut = false;
     std::string DestTXT;
     std::string CurText;
     std::string NextText;
@@ -215,7 +225,10 @@ private:
         SELECT_MOVE,
         TURN_A,
         TURN_B,
-        FAINTING
+        FAINTING,
+        VICTORY,
+        EXIT,
+        RUN
     };
     enum Menu_Type{
         STATS,

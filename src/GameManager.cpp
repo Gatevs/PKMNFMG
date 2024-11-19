@@ -54,7 +54,7 @@ void GameManager::DebugIntro(){
         IntroFinished = true;
 
         //Testing out adding a PKMN to the party
-        PKMN Test(133,4,0,0);
+        PKMN Test(133,8,0,0);
         PlayerParty.push_back(Test);
     }
 }
@@ -201,8 +201,12 @@ void GameManager::GameLoop(){
         player.HandleInput(npcs);
     } else if (Menu.stopPlayerInput){
         Menu.InputUI(npcs, player, PlayerParty);
+        Menu.SetCamera(camera);
     }
     player.Update();
+    if (Menu.FadeOutAtferMenu()){
+        Menu.fadeOut();
+    }
     if (player.IsPlayerMoving()){
         if (Outside.IsCameraLockNear(player)){
             lockCamera = true;

@@ -143,6 +143,11 @@ int PKMN::GetAttackDamage(std::vector<int> enemyTypes, int D, int move){
     return CALC4;
 }
 
+int PKMN::GetOddsEscape(int speedPlayer, int speedWild, int Attempts){
+    int OddsEscape = ((speedPlayer * 128) / speedWild + (30 * Attempts)) % 256;
+    return OddsEscape;
+}
+
 int PKMN::HPStatCalc(){
     int calc = (((2 * std::stoi(PKMN_DEF[BASE_HP]) + IV.HP + (EV.HP / 4)) * LVL) / 100) + LVL + 10;
     return calc;
