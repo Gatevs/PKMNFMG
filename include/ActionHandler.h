@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PKMN.h"
+#include "BattleManager.h"
 #include "npc.h"
 #include "player.h"
 #include <iostream>

@@ -10,27 +10,15 @@ PKMN::PKMN(int id, int level, int gender, int gstage){
     GENDER = gender;
     GSTAGE = gstage;
     nickname = "NONE";
-    parseCSV("assets/CSV/PKMN_DB.csv", PKMN_DEF);
-    parseCSV("assets/CSV/PKMN_LevelUp.csv", PKMNLVLUP_DEF);
+    CSVCache& cache = CSVCache::GetInstance();
+    cache.parseCSV("assets/CSV/PKMN_DB.csv", PKMN_DEF, ID);
+    cache.parseCSV("assets/CSV/PKMN_LevelUp.csv", PKMNLVLUP_DEF, ID);
     SetInitialStatValues();
     SetMovements();
 }
 
 PKMN::~PKMN() {
     //clean
-}
-
-void PKMN::parseCSV(const std::string& filename, std::vector<std::string>& DEF) {
-    CSVCache& cache = CSVCache::GetInstance();
-    cache.LoadCSV(filename); // Load the file into memory (if not already loaded)
-
-    try {
-        // Query the row with the matching ID
-        const auto& row = cache.GetRow(filename, 0, ID); // Assuming ID is in column 0
-        DEF = row; // Store the row in your Pokémon-specific vector
-    } catch (const std::exception& e) {
-        std::cerr << "Error retrieving Pokémon data: " << e.what() << std::endl;
-    }
 }
 
 std::string PKMN::GetPKMN_NickName(){
@@ -296,6 +284,9 @@ void PKMN::SetStatusValue(int& stat, int multiplier, std::string statname){
     }
     if (stat == -6){
         STATUS_TEXT = GetPKMN_NickName() + "'s " + statname + " won't go lower!";
+    }
+    if (statname == "CRIT"){
+        STATUS_TEXT = GetPKMN_NickName() + " is getting pumped!";
     }
 
     StatusChangeText = STATUS_TEXT;

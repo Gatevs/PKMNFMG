@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -30,6 +32,29 @@ public:
         }
     }
 
+    void parseCSV(const std::string& filename, std::vector<std::string>& DEF, int ID){
+        LoadCSV(filename);
+
+        try {
+            // Query the row with the matching ID
+            const auto& row = GetRow(filename, 0, ID); // Assuming ID is in column 0
+            DEF = row; // Store the row in your Pokémon-specific vector
+        } catch (const std::exception& e) {
+            std::cerr << "Error retrieving data: " << e.what() << std::endl;
+        }
+    }
+    void parseCSVFromString(const std::string& filename, std::vector<std::string>& DEF, std::string name){
+        LoadCSV(filename);
+
+        try {
+            // Query the row with the matching ID
+            const auto& row = GetRowFromString(filename, 0, name); // Assuming ID is in column 0
+            DEF = row; // Store the row in your Pokémon-specific vector
+        } catch (const std::exception& e) {
+            std::cerr << "Error retrieving data: " << e.what() << std::endl;
+        }
+    }
+
     const std::vector<std::string>& GetRow(const std::string& filename, int idColumn, int id) const {
         const auto& rows = cache.at(filename);
         for (const auto& row : rows) {
@@ -38,6 +63,16 @@ public:
             }
         }
         throw std::runtime_error("ID not found in CSV: " + std::to_string(id));
+    }
+
+        const std::vector<std::string>& GetRowFromString(const std::string& filename, int idColumn, std::string name) const {
+        const auto& rows = cache.at(filename);
+        for (const auto& row : rows) {
+            if (row[idColumn] == name) {
+                return row;
+            }
+        }
+        throw std::runtime_error("String not found in CSV: " + name);
     }
 
     const std::vector<std::string>& GetRowAt(const std::string& filename, int cur) const {

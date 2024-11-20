@@ -37,8 +37,8 @@ public:
     std::vector<int> GetPokemonTypes();
     bool IsCrit() {return critHit;}
     void ResetTempStats();
+    void SetCurPP(int PPnumber, int PPValue) { Moveset.PP[PPnumber] = PPValue;}
 
-    void parseCSV(const std::string& filename, std::vector<std::string>& DEF);
     enum AffectedStat {
         ATTACK,
         DEFENSE,

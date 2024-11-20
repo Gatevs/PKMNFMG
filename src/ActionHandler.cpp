@@ -1,10 +1,9 @@
 #include "ActionHandler.h"
-#include <cctype>
-#include <cstring>
 #include <math.h>
 #include <random>
 #include <raylib.h>
 #include <string>
+#include "BattleManager.h"
 #include "npc.h"
 #include "player.h"
 #include "ControllerSingleton.h"
@@ -401,7 +400,8 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
         case LOADING_ELEMENTS:
             if (!IsTextureReady(PlayerBattleTexture)){
                 battleTimer = 1.0f;
-                PKMN EnemyPKMN(19,4,0,0);
+                BattleManager Enemy("WILD",0,player.GetLocation());
+                PKMN EnemyPKMN(Enemy.GetWildPKMN_ID(),Enemy.GetWildPKMN_LVL(),Enemy.GetWildPKMN_GENDER(),Enemy.GetWildPKMN_GSTAGE());
                 EnemyMons.push_back(EnemyPKMN);
                 EnemyPKMNInfo.Index = EnemyPKMN.GetID();
                 EnemyPKMNInfo.Lvl = EnemyPKMN.GetLevel();
@@ -844,6 +844,9 @@ void ActionHandler::BattleSpriteJiggle(){
 }
 
 void ActionHandler::ExitBattle(Player& player, PKMN& playerPoke){
+    for (int i = 0; i < 4; i ++){
+        playerPoke.SetCurPP(i,PlayerPKMNInfo.curPP[i]);
+    }
     menuID = 1;
     stopPlayerInput = false;
     battleTimer = 0;
