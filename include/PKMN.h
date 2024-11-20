@@ -21,6 +21,9 @@ public:
     std::string GetMoveType(int move) { return GetMovementInfo(move,3);}
     int GetAttackDamage(std::vector<int> enemyTypes, int D, int move);
     int GetOddsEscape(int speedPlayer, int speedWild, int Attempts);
+    void GetStatusAction(int move);
+    void SetStatusValue(int& stat, int multiplier, std::string statname);
+    std::string GetStatusText(){ return StatusChangeText;}
 
     void SetNickname(const std::string& newName) { nickname = newName; }
     void SetLevel(int newLevel) { LVL = newLevel; }
@@ -33,6 +36,7 @@ public:
     float GetStatMultiplier(int stat);
     std::vector<int> GetPokemonTypes();
     bool IsCrit() {return critHit;}
+    void ResetTempStats();
 
     void parseCSV(const std::string& filename, std::vector<std::string>& DEF);
     enum AffectedStat {
@@ -41,6 +45,9 @@ public:
         SPEED,
         SP_ATK,
         SP_DEF,
+        ACCURACY,
+        EVASION,
+        CRIT,
         NONE // For natures with no effect
     };
 
@@ -138,6 +145,7 @@ private:
     int HPStatCalc ();
     int OtherStatCalc(int Stat, int IV, int EV, int StatID);
     void NatureMultiplyier(Natures nature);
+    std::string StatusChangeText;
 
     std::vector<std::string> PKMN_DEF;
     std::vector<std::string> PKMNLVLUP_DEF;

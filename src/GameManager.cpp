@@ -204,9 +204,7 @@ void GameManager::GameLoop(){
         Menu.SetCamera(camera);
     }
     player.Update();
-    if (Menu.FadeOutAtferMenu()){
-        Menu.fadeOut();
-    }
+    if (Menu.FadeOutAtferMenu()) {Menu.fadeOut();}
     if (player.IsPlayerMoving()){
         if (Outside.IsCameraLockNear(player)){
             lockCamera = true;

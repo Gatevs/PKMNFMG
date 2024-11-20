@@ -113,6 +113,16 @@ void ActionHandler::typewriterEffect(std::string& text) {
     }
 }
 
+bool ActionHandler::WaitFor(int time){
+    if (waitTimer >= time){
+        waitTimer = 0.0f;
+        return true;
+    } else{
+        waitTimer += GetFrameTime();
+        return false;
+    }
+}
+
 // Function to handle different types of actions
 void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
     CameraPos = drawPos;
@@ -589,7 +599,7 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                     fadeIn();
                 } else {
                     externalFadeOut = true;
-                    ExitBattle(player);
+                    ExitBattle(player, PKMNParty[PlayerPKMNInfo.SlotID]);
                 }
             }
             break;
@@ -687,19 +697,36 @@ void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKM
         battlePhase = FAINTING;
     }
 
+    if (pokeAInfo.FirstMessage && pokeAInfo.StatusMoveSet && textFinished){
+        if (WaitFor(1)){
+            claenText();
+            SetNPCDialogue(pokeAInfo.StatusInfo);
+            pokeAInfo.StatusMoveSet = false;
+        }
+
+    }
+
     // Move to the next phase if the text is finished and the player presses A
-    if (textFinished && ControllerSingleton::GetInstance().IsAPressed() && pokeBInfo.curHP == targetHP) {
-        if (pokeAInfo.firstTurn) {
-            SetMove(pokeBInfo.UsingMove, pokeBInfo, false);
-            battlePhase = Phase;
-        } else {
-            FinishTurns(pokeA,pokeB,pokeAInfo,pokeBInfo);
+    if (pokeAInfo.FirstMessage && textFinished && pokeBInfo.curHP == targetHP && !pokeAInfo.StatusMoveSet && !pokeAInfo.crithit) {
+        if (WaitFor(1)){
+            if (pokeAInfo.firstTurn) {
+                SetMove(pokeBInfo.UsingMove, pokeBInfo, false);
+                battlePhase = Phase;
+            } else {
+                FinishTurns(pokeA,pokeB,pokeAInfo,pokeBInfo);
+            }
         }
     }
-    if (textFinished && pokeAInfo.crithit){
-        claenText();
-        SetNPCDialogue("A critical hit!");
-        pokeAInfo.crithit = false;
+    if (textFinished && !pokeAInfo.FirstMessage){
+        pokeAInfo.FirstMessage = true;
+    }
+
+    if (pokeAInfo.FirstMessage && textFinished && pokeAInfo.crithit && pokeBInfo.curHP != targetHP){
+        if (WaitFor(1)){
+            claenText();
+            SetNPCDialogue("A critical hit!");
+            pokeAInfo.crithit = false;
+        }
     }
 }
 
@@ -716,8 +743,10 @@ void ActionHandler::FinishTurns(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo,PK
     pokeBInfo.AttackPower = 0;
     pokeAInfo.crithit = false;
     pokeBInfo.crithit = false;
-    pokeBInfo.blinkCounter = 0;
     pokeAInfo.blinkCounter = 0;
+    pokeBInfo.blinkCounter = 0;
+    pokeAInfo.FirstMessage = false;
+    pokeBInfo.FirstMessage = false;
     battleTimer = 0.0f;
     battlePhase = WAIT_INPUT;
 }
@@ -730,7 +759,7 @@ void ActionHandler::SetMove(int move, PKMNInfo& poke, bool first){
     poke.firstTurn = first;
 }
 
-void ActionHandler::BattleMoveAction(PKMN pokeA, PKMN pokeB, PKMNInfo& pokeAInfo, PKMNInfo& pokeBInfo, int move){
+void ActionHandler::BattleMoveAction(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKMNInfo& pokeBInfo, int move){
     int Move_ID = move;
     std::vector<int> E_TYPES = pokeB.GetPokemonTypes();
     int E_Defense = pokeB.GetBaseStats().Defense * pokeB.GetStatMultiplier(pokeB.GetTempStats().Defense);
@@ -741,11 +770,18 @@ void ActionHandler::BattleMoveAction(PKMN pokeA, PKMN pokeB, PKMNInfo& pokeAInfo
         pokeAInfo.MoveActionSet = true;
         std::cout << "Attack Damage: "<< pokeAInfo.AttackPower << std::endl;
     }else if (Move_Type == "Status"){
-        pokeAInfo.StatusMoveSet = true;
-        pokeAInfo.MoveActionSet = true;
-        std::cout << "This is a status move xd " << std::endl;
+        if (pokeA.GetMovementInfo(Move_ID,10) == "ENEMY"){
+            pokeB.GetStatusAction(Move_ID);
+            pokeAInfo.MoveActionSet = true;
+            pokeAInfo.StatusMoveSet = true;
+            pokeAInfo.StatusInfo = pokeB.GetStatusText();
+        }else if(pokeA.GetMovementInfo(Move_ID,10) == "SELF"){
+            pokeA.GetStatusAction(Move_ID);
+            pokeAInfo.MoveActionSet = true;
+            pokeAInfo.StatusMoveSet = true;
+            pokeAInfo.StatusInfo = pokeA.GetStatusText();
+        }
     }
-
     if (pokeA.IsCrit()){
         pokeAInfo.crithit = true;
         std::cout << "Critical Hit!" << std::endl;
@@ -807,7 +843,7 @@ void ActionHandler::BattleSpriteJiggle(){
     }
 }
 
-void ActionHandler::ExitBattle(Player& player){
+void ActionHandler::ExitBattle(Player& player, PKMN& playerPoke){
     menuID = 1;
     stopPlayerInput = false;
     battleTimer = 0;
@@ -824,6 +860,7 @@ void ActionHandler::ExitBattle(Player& player){
     timer = 0.0f;
     EnemyMons.clear();
     EnemyMons.swap(EnemyMons);
+    playerPoke.ResetTempStats();
     unloadTextureFull(PlayerBattleTexture);
     unloadTextureFull(PKMNBattleTexture);
     unloadTextureFull(BattleButtonsTexture);
@@ -1121,7 +1158,12 @@ void ActionHandler::fadeOut(){
     } else {
         Fade = MIN_FADE_VALUE;
         fadeOutComplete = true;
-        externalFadeOut = false;
+        if (externalFadeOut){
+            externalFadeOut = false;
+            fadeOutComplete = false;
+        }else{
+            fadeOutComplete = true;
+        }
     }
 }
 

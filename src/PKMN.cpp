@@ -236,6 +236,76 @@ std::vector<int> PKMN::GetPokemonTypes(){
     return Types;
 }
 
+void PKMN::GetStatusAction(int move){
+    int AFFECTED_STATUS = std::stoi(GetMovementInfo(move,11));
+    int VALUE_MULTIPLIER = std::stoi(GetMovementInfo(move,12));
+    std::string AFFECTED_STATUS_NAME = GetMovementInfo(move,9);
+
+    switch (AFFECTED_STATUS){
+        case ATTACK:
+            SetStatusValue(TemporaryStats.Attack,VALUE_MULTIPLIER, AFFECTED_STATUS_NAME);
+            break;
+        case DEFENSE:
+            SetStatusValue(TemporaryStats.Defense,VALUE_MULTIPLIER, AFFECTED_STATUS_NAME);
+            break;
+        case SPEED:
+            SetStatusValue(TemporaryStats.Speed,VALUE_MULTIPLIER, AFFECTED_STATUS_NAME);
+            break;
+        case SP_ATK:
+            SetStatusValue(TemporaryStats.SP_Attack,VALUE_MULTIPLIER, AFFECTED_STATUS_NAME);
+            break;
+        case SP_DEF:
+            SetStatusValue(TemporaryStats.SP_Defense,VALUE_MULTIPLIER, AFFECTED_STATUS_NAME);
+            break;
+        case ACCURACY:
+            SetStatusValue(TemporaryStats.Accuracy,VALUE_MULTIPLIER, AFFECTED_STATUS_NAME);
+            break;
+        case EVASION:
+            SetStatusValue(TemporaryStats.Evasion,VALUE_MULTIPLIER, AFFECTED_STATUS_NAME);
+            break;
+        case CRIT:
+            SetStatusValue(TemporaryStats.Crit,VALUE_MULTIPLIER, AFFECTED_STATUS_NAME);
+            break;
+    }
+}
+
+void PKMN::SetStatusValue(int& stat, int multiplier, std::string statname){
+    std::string STATUS_TEXT;
+
+    if (stat < 6 && stat > -6){
+        stat += multiplier;
+    }
+
+    switch (multiplier){
+        case -1:
+            STATUS_TEXT = GetPKMN_NickName() + "'s " + statname + " fell!";
+            break;
+        case -2:
+            STATUS_TEXT = GetPKMN_NickName() + "'s " + statname + " harshly fell!";
+            break;
+        case 1:
+            STATUS_TEXT = GetPKMN_NickName() + "'s " + statname + " rose!";
+            break;
+        case 2:
+            STATUS_TEXT = GetPKMN_NickName() + "'s " + statname + " sharply fell!";
+            break;
+    }
+
+    if (stat == 6){
+        STATUS_TEXT = GetPKMN_NickName() + "'s " + statname + " won't go higher!";
+    }
+    if (stat == -6){
+        STATUS_TEXT = GetPKMN_NickName() + "'s " + statname + " won't go lower!";
+    }
+
+    StatusChangeText = STATUS_TEXT;
+}
+
+void PKMN::ResetTempStats(){
+    TempStats Reset;
+    TemporaryStats = Reset;
+}
+
 float PKMN::GetTypeEffectiveness(int A_Type, int E_Type){
     float EffectiveValue;
     CSVCache& cache = CSVCache::GetInstance();

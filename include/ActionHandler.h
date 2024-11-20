@@ -72,6 +72,8 @@ private:
         bool faintAnimDone = false;
         int EscapeAttempts = 0;
         bool BattleEnd = false;
+        std::string StatusInfo;
+        bool FirstMessage = false;
     };
 
     void actionFollowMenu(std::vector<NPC>& NPC_objs, Player& player_Obj);
@@ -89,7 +91,7 @@ private:
     void ScreenTransition(float posterizeAmount);
     void DrawTransitionEffect();
 
-    void ExitBattle(Player& player);
+    void ExitBattle(Player& player, PKMN& playerPoke);
     void DrawBattleUI();
     void Draw_BattleBG();
     void Draw_EnemyElements();
@@ -97,7 +99,7 @@ private:
     void Draw_BattleTextBox();
     void BattleSpriteJiggle();
     void BattleUISelector(int max);
-    void BattleMoveAction(PKMN pokeA, PKMN pokeB, PKMNInfo& pokeAInfo, PKMNInfo& pokeBInfo, int move);
+    void BattleMoveAction(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKMNInfo& pokeBInfo, int move);
     void SetMove(int move, PKMNInfo& poke, bool first);
     void NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo,PKMNInfo& pokeBInfo, int Phase);
     void FinishTurns(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo,PKMNInfo& pokeBInfo);
@@ -115,6 +117,7 @@ private:
     static void DrawTextBoxed(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint);
     static void DrawTextBoxedSelectable(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint, int selectStart, int selectLength, Color selectTint, Color selectBackTint);
     void typewriterEffect(std::string& text);
+    bool WaitFor(int time);
     Camera2D copyCam;
     Shader fadeShader;
 
@@ -204,6 +207,7 @@ private:
     float exposure = 80.0f;      // Starts at 0 (fully black)
     float posterizeLevel; // Number of levels for posterization
     float timer = 0.0f;      // Time elapsed (normalized between 0 and 1)
+    float waitTimer = 0.0f;
 
     PKMNInfo PlayerPKMNInfo;
     PKMNInfo EnemyPKMNInfo;
