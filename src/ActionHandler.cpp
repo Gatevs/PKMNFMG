@@ -527,7 +527,7 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                     break;
                 case 4:
                     PlayerPKMNInfo.EscapeAttempts += 1;
-                    battlePhase = RUN;
+                    battlePhase = ESCAPE;
                     menuID = 1;
                     break;
             }
@@ -593,36 +593,51 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                 }
             }
             break;
-        case RUN:
-            int speedPlayer = PKMNParty[PlayerPKMNInfo.SlotID].GetBaseStats().Speed * PKMNParty[PlayerPKMNInfo.SlotID].GetStatMultiplier(PKMNParty[PlayerPKMNInfo.SlotID].GetTempStats().Speed);
-            int speedWild = EnemyMons[0].GetBaseStats().Speed * EnemyMons[0].GetStatMultiplier(EnemyMons[0].GetTempStats().Speed);
-            int speedPlayerBase = PKMNParty[PlayerPKMNInfo.SlotID].GetBaseStats().Speed;
-            int speedWildBase = EnemyMons[0].GetBaseStats().Speed;
-            int Attempts = PlayerPKMNInfo.EscapeAttempts;
-            int EscapeOdds = ((speedPlayerBase * 128) / speedWildBase + (30 * Attempts)) % 256;
-
-            std::random_device seed;
-            std::mt19937 engine(seed());
-            std::uniform_int_distribution<int> random(0, 255); // uniform, unbiased
-
-            if (speedPlayer >= speedWild){
+        case ESCAPE:
+            if (IsPlayerEscaping(PlayerPKMNInfo,PKMNParty[PlayerPKMNInfo.SlotID], EnemyMons[0])){
                 claenText();
                 SetNPCDialogue("Got away safely!");
                 battlePhase = EXIT;
             }else{
-                if (random(engine) < EscapeOdds){
-                    claenText();
-                    SetNPCDialogue("Got away safely!");
-                    battlePhase = EXIT;
-                } else{
-                    std::uniform_int_distribution<int> move(0, EnemyPKMNInfo.MoveSlots - 1); // uniform, unbiased
-                    EnemyPKMNInfo.UsingMove = move(engine);
-                    claenText();
-                    SetNPCDialogue("Can't escape!");
-                    battlePhase = TURN_B;
-                }
+                std::random_device seed;
+                std::mt19937 engine(seed());
+                std::uniform_int_distribution<int> move(0, EnemyPKMNInfo.MoveSlots - 1); // uniform, unbiased
+                EnemyPKMNInfo.UsingMove = move(engine);
+                claenText();
+                SetNPCDialogue("Can't escape!");
+                battlePhase = ESCAPE_FAILED;
             }
             break;
+        case ESCAPE_FAILED:
+            dialogue(player);
+            if (ControllerSingleton::GetInstance().IsAPressed() && textFinished){
+                SetMove(EnemyPKMNInfo.UsingMove, EnemyPKMNInfo, false);
+                battlePhase = TURN_B;
+            }
+            break;
+    }
+}
+
+bool ActionHandler::IsPlayerEscaping(PKMNInfo& pokeInfo, PKMN& pokeA, PKMN& pokeB){
+    int speedPlayer = pokeA.GetBaseStats().Speed * pokeA.GetStatMultiplier(pokeA.GetTempStats().Speed);
+    int speedWild = pokeB.GetBaseStats().Speed * pokeB.GetStatMultiplier(pokeB.GetTempStats().Speed);
+    int speedPlayerBase = pokeA.GetBaseStats().Speed;
+    int speedWildBase = pokeB.GetBaseStats().Speed;
+    int Attempts = PlayerPKMNInfo.EscapeAttempts;
+    int EscapeOdds = ((speedPlayerBase * 128) / speedWildBase + (30 * Attempts)) % 256;
+
+    std::random_device seed;
+    std::mt19937 engine(seed());
+    std::uniform_int_distribution<int> random(0, 255); // uniform, unbiased
+
+    if (speedPlayer >= speedWild){
+        return true;
+    }else{
+        if (random(engine) < EscapeOdds){
+            return true;
+        } else{
+            return false;
+        }
     }
 }
 

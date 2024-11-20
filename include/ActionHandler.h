@@ -103,6 +103,7 @@ private:
     void FinishTurns(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo,PKMNInfo& pokeBInfo);
     void Draw_Buttons(Vector2 pos, int offset);
     void DrawPokemonSprite(Vector2 pos, Texture2D sprite, float& yOffset, bool& animationDone, float health);
+    bool IsPlayerEscaping(PKMNInfo& pokeInfo, PKMN& pokeA, PKMN& pokeB);
 
     void SetVNSprite();
     void SetNPCDialogue(std::string text);
@@ -228,7 +229,8 @@ private:
         FAINTING,
         VICTORY,
         EXIT,
-        RUN
+        ESCAPE,
+        ESCAPE_FAILED
     };
     enum Menu_Type{
         STATS,
