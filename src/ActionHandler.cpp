@@ -403,12 +403,12 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                 BattleManager Enemy("WILD",0,player.GetLocation());
                 PKMN EnemyPKMN(Enemy.GetWildPKMN_ID(),Enemy.GetWildPKMN_LVL(),Enemy.GetWildPKMN_GENDER(),Enemy.GetWildPKMN_GSTAGE());
                 EnemyMons.push_back(EnemyPKMN);
-                EnemyPKMNInfo.Index = EnemyPKMN.GetID();
-                EnemyPKMNInfo.Lvl = EnemyPKMN.GetLevel();
-                EnemyPKMNInfo.Gender = EnemyPKMN.GetGender();
-                EnemyPKMNInfo.Name = EnemyPKMN.GetPKMN_Name();
-                EnemyPKMNInfo.HP = EnemyPKMN.GetMaxHP();
-                EnemyPKMNInfo.curHP = EnemyPKMN.GetCurHp();
+                EnemyPKMNInfo.Index = EnemyMons[0].GetID();
+                EnemyPKMNInfo.Lvl = EnemyMons[0].GetLevel();
+                EnemyPKMNInfo.Gender = EnemyMons[0].GetGender();
+                EnemyPKMNInfo.Name = EnemyMons[0].GetPKMN_Name();
+                EnemyPKMNInfo.HP = EnemyMons[0].GetMaxHP();
+                EnemyPKMNInfo.curHP = EnemyMons[0].GetCurHp();
                 EnemyPKMNInfo.healthBar = 48.0f * (EnemyPKMNInfo.curHP / float(EnemyPKMNInfo.HP));
                 EnemyPKMNInfo.healthBarColor = 0;
 
@@ -576,7 +576,6 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
         case TURN_A:
             dialogue(player);
             NextPhase(PKMNParty[PlayerPKMNInfo.SlotID], EnemyMons[0], PlayerPKMNInfo, EnemyPKMNInfo, TURN_B);
-            // BattleMoveAction(PKMNParty[PlayerPKMNInfo.SlotID],EnemyMons[0], PlayerPKMNInfo.MoveIDs[menuID - 1]);
             break;
         case TURN_B:
             dialogue(player);

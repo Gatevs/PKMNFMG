@@ -82,7 +82,7 @@ int PKMN::GetAttackDamage(std::vector<int> enemyTypes, int D, int move){
     int ATTACK_TYPE_ID = std::stoi(GetMovementInfo(move,8));
     std::string ABILITY = PKMN_DEF[FIRST_ABILITY];
     int MOVE_POWER = std::stoi(GetMovementInfo(move,5));
-    int A = BaseStats.Attack;
+    int A = BaseStats.Attack * GetStatMultiplier(TemporaryStats.Attack);
     float BURN = 1.0f;
     float SCREEN = 1.0f;
     float WEATHER = 1.0f;
@@ -225,6 +225,7 @@ std::vector<int> PKMN::GetPokemonTypes(){
 }
 
 void PKMN::GetStatusAction(int move){
+    critHit = false;
     int AFFECTED_STATUS = std::stoi(GetMovementInfo(move,11));
     int VALUE_MULTIPLIER = std::stoi(GetMovementInfo(move,12));
     std::string AFFECTED_STATUS_NAME = GetMovementInfo(move,9);
