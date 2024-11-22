@@ -112,7 +112,7 @@ void ActionHandler::typewriterEffect(std::string& text) {
     }
 }
 
-bool ActionHandler::WaitFor(int time){
+bool ActionHandler::WaitFor(float time){
     if (waitTimer >= time){
         waitTimer = 0.0f;
         return true;
@@ -169,7 +169,8 @@ void ActionHandler::handleAction(ActionType actionType, Vector2 drawPos) {
             HPCardFriendPos = {fadePos.x + (256),fadePos.y + (187 - (DialogueMap.height + HPCardPlayerMap.height))};
             BattleButtonsPos = {fadePos.x + (256 +21),fadePos.y + (192 - BattleButtonsMap.height)};
             stopPlayerInput = true;
-            battlePhase = SCREEN_TRANSITION;
+            fadeOutComplete = true;
+            battlePhase = SCREEN_BLINK;
             inUI = BATTLE;
             break;
     }
@@ -276,7 +277,7 @@ void ActionHandler::actionBagMenu(){
 
 void ActionHandler::LeaveMenu(){
     if (screenState == ON && fadeOutComplete){
-        fadeIn();
+        fadeIn(1);
         screenState = WAIT;
     }
 }
@@ -391,6 +392,35 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
     }
 
     switch(battlePhase){
+        case SCREEN_BLINK:
+            if (!PlayerPKMNInfo.fadeblink && PlayerPKMNInfo.blinkCounter < 2){
+                if (WaitFor(0.1f)){
+                    PlayerPKMNInfo.fadeblink = !PlayerPKMNInfo.fadeblink;
+                    fadeInComplete = false;
+                    fadeOutComplete = false;
+                }
+            }
+            if (PlayerPKMNInfo.fadeblink){
+                if (!fadeInComplete) {
+                    fadeIn(4);
+                } else if (!fadeOutComplete) {
+                    fadeOut(4);
+                } else{
+                    PlayerPKMNInfo.fadeblink = false;
+                    PlayerPKMNInfo.blinkCounter++;
+                }
+            }
+            if (!PlayerPKMNInfo.fadeblink && PlayerPKMNInfo.blinkCounter >= 2){
+                fadeInComplete = false;
+                fadeOutComplete = false;
+                PlayerPKMNInfo.fadeblink = false;
+                PlayerPKMNInfo.blinkCounter = 0;
+                DrawTransitionEffect();
+                ScreenTransition(1);
+                battlePhase = SCREEN_TRANSITION;
+
+            }
+            break;
         case SCREEN_TRANSITION:
             ScreenTransition(1);
             if (exposure <= 0){
@@ -595,7 +625,7 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
             }
             if (PlayerPKMNInfo.BattleEnd){
                 if (!fadeInComplete) {
-                    fadeIn();
+                    fadeIn(1);
                 } else {
                     externalFadeOut = true;
                     ExitBattle(player, PKMNParty[PlayerPKMNInfo.SlotID]);
@@ -697,7 +727,7 @@ void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKM
     }
 
     if (pokeAInfo.FirstMessage && pokeAInfo.StatusMoveSet && textFinished){
-        if (WaitFor(1)){
+        if (WaitFor(1.0f)){
             claenText();
             SetNPCDialogue(pokeAInfo.StatusInfo);
             pokeAInfo.StatusMoveSet = false;
@@ -707,7 +737,7 @@ void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKM
 
     // Move to the next phase if the text is finished and the player presses A
     if (pokeAInfo.FirstMessage && textFinished && pokeBInfo.curHP == targetHP && !pokeAInfo.StatusMoveSet && !pokeAInfo.crithit) {
-        if (WaitFor(1)){
+        if (WaitFor(1.0f)){
             if (pokeAInfo.firstTurn) {
                 SetMove(pokeBInfo.UsingMove, pokeBInfo, false);
                 battlePhase = Phase;
@@ -721,7 +751,7 @@ void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKM
     }
 
     if (pokeAInfo.FirstMessage && textFinished && pokeAInfo.crithit && pokeBInfo.curHP != targetHP){
-        if (WaitFor(1)){
+        if (WaitFor(1.0f)){
             claenText();
             SetNPCDialogue("A critical hit!");
             pokeAInfo.crithit = false;
@@ -870,7 +900,7 @@ void ActionHandler::ExitBattle(Player& player, PKMN& playerPoke){
     claenText();
     CloseUI(player);
     PlayerPKMNInfo.BattleEnd = false;
-    battlePhase = SCREEN_TRANSITION;
+    battlePhase = SCREEN_BLINK;
 }
 void ActionHandler::unloadTextureFull(Texture2D& texture){
     if (IsTextureReady(texture)){
@@ -946,9 +976,9 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
 void ActionHandler::UpdateScreenState() {
     // Fade in or out based on current state
     if (!fadeInComplete) {
-        fadeIn();
+        fadeIn(1);
     } else if (!fadeOutComplete) {
-        fadeOut();
+        fadeOut(1);
     }
 
     // Update screen state based on fade-in and fade-out completion
@@ -1135,9 +1165,9 @@ void ActionHandler::dialogue(Player& player) {
     }
 }
 
-void ActionHandler::fadeIn(){
+void ActionHandler::fadeIn(int speed){
     const int MAX_FADE_VALUE = 255;
-    const int FADE_INCREMENT = 10; // Adjust the increment value as needed
+    int FADE_INCREMENT = 10 * speed; // Adjust the increment value as needed
 
     if (Fade < MAX_FADE_VALUE) {
         // Increment Fade by FADE_INCREMENT, but ensure it doesn't exceed MAX_FADE_VALUE
@@ -1149,9 +1179,9 @@ void ActionHandler::fadeIn(){
     }
 }
 
-void ActionHandler::fadeOut(){
+void ActionHandler::fadeOut(int speed){
     const int MIN_FADE_VALUE = 0;
-    const int FADE_DECREMENT = 10; // Adjust the decrement value as needed
+    int FADE_DECREMENT = 10 * speed; // Adjust the decrement value as needed
 
     if (Fade > MIN_FADE_VALUE) {
         // Decrement Fade by FADE_DECREMENT, but ensure it doesn't go below MIN_FADE_VALUE

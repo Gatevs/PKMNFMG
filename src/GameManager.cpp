@@ -134,8 +134,9 @@ void GameManager::CameraUpdate(){
 
 void GameManager::GameLoop(){
     if (IsKeyPressed(KEY_K)){
-        Menu.handleAction(ActionType::Battle_M,camera.target);
+        Menu.stopPlayerInput = true;
         Menu.getPKMNPartyInfo(PlayerParty);
+        Menu.handleAction(ActionType::Battle_M,camera.target);
     }
 
     Outside.update(Outside.GetCurLevelName(), cur, player.GetPosition());
@@ -144,7 +145,7 @@ void GameManager::GameLoop(){
         WarpPlayer(Outside.IndoorWarpTo(player));
     } else if (WarpingPlayer == 2){
         if(!Menu.IsFadeOutComplete()){
-            Menu.fadeOut();
+            Menu.fadeOut(1);
         }else{
             Menu.SetFade(-1);
             WarpingPlayer = 0;
@@ -204,7 +205,7 @@ void GameManager::GameLoop(){
         Menu.SetCamera(camera);
     }
     player.Update();
-    if (Menu.FadeOutAtferMenu()) {Menu.fadeOut();}
+    if (Menu.FadeOutAtferMenu()) {Menu.fadeOut(1);}
     if (player.IsPlayerMoving()){
         if (Outside.IsCameraLockNear(player)){
             lockCamera = true;
@@ -435,7 +436,7 @@ void GameManager::JsonLoadNPCData() {
 
 void GameManager::WarpPlayer(std::string where){
     Menu.SetFadePos({camera.target.x - 32, camera.target.y});
-    Menu.fadeIn();
+    Menu.fadeIn(1);
     if (Menu.IsFadeInComplete()){
         lockCamera = false;
         JsonSaveNPCData();

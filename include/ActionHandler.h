@@ -34,8 +34,8 @@ public:
     void SetFadePos(Vector2 newFadePos){fadePos = newFadePos;}
     void Draw();
     void claenText();
-    void fadeIn();
-    void fadeOut();
+    void fadeIn(int speed);
+    void fadeOut(int speed);
     bool IsFadeInComplete() const {return fadeInComplete;}
     bool IsFadeOutComplete() const {return fadeOutComplete;}
     bool FadeOutAtferMenu()const {return externalFadeOut;}
@@ -68,6 +68,8 @@ private:
         bool firstTurn = false;
         bool crithit = false;
         int blinkCounter = 0;
+        int fadeCounter = 0;
+        bool fadeblink = false;
         bool visible = true;
         float yOffset = 0.0f;
         bool faintAnimDone = false;
@@ -118,7 +120,7 @@ private:
     static void DrawTextBoxed(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint);
     static void DrawTextBoxedSelectable(Font font, const char *text, Rectangle rec, float fontSize, float spacing, bool wordWrap, Color tint, int selectStart, int selectLength, Color selectTint, Color selectBackTint);
     void typewriterEffect(std::string& text);
-    bool WaitFor(int time);
+    bool WaitFor(float time);
     Camera2D copyCam;
     Shader fadeShader;
 
@@ -222,6 +224,7 @@ private:
         bool FollowReject = false;
     } NPCInfo;
     enum Battle_States{
+        SCREEN_BLINK,
         SCREEN_TRANSITION,
         LOADING_ELEMENTS,
         SET_FIELD,
