@@ -101,7 +101,7 @@ private:
     void Draw_PlayerElements();
     void Draw_BattleTextBox();
     void BattleSpriteJiggle();
-    void BattleUISelector(int max);
+    void BattleUISelector(int max, bool isMove);
     void BattleMoveAction(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKMNInfo& pokeBInfo, int move);
     void SetMove(int move, PKMNInfo& poke, bool first);
     void NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo,PKMNInfo& pokeBInfo, int Phase);

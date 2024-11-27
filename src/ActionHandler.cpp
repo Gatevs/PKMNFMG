@@ -558,7 +558,7 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
             break;
         case WAIT_INPUT:
             BattleSpriteJiggle();
-            BattleUISelector(4);
+            BattleUISelector(4,false);
 
             switch (selection){
                 case 1:
@@ -574,7 +574,7 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
             break;
         case SELECT_MOVE:
             BattleSpriteJiggle();
-            BattleUISelector(PlayerPKMNInfo.MoveSlots);
+            BattleUISelector(PlayerPKMNInfo.MoveSlots,true);
             if (ControllerSingleton::GetInstance().IsBPressed()){
                 menuID = 1;
                 selection = 0;
@@ -695,7 +695,7 @@ void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKM
 
     // Handle attack damage and smooth HP reduction
     if (pokeBInfo.curHP > targetHP && pokeAInfo.MoveActionSet && battleTimer > 1.0f && pokeBInfo.blinkCounter >= 6) {
-        pokeBInfo.curHP -= 0.1f; // Decrease HP
+        pokeBInfo.curHP -= (float(pokeAInfo.AttackPower)/(pokeBInfo.HP * 2)); // Decrease HP
         if (pokeBInfo.curHP < targetHP) pokeBInfo.curHP = targetHP;
         if (pokeBInfo.curHP < 0) {
             pokeBInfo.curHP = 0;
@@ -817,21 +817,21 @@ void ActionHandler::BattleMoveAction(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAIn
     }
 }
 
-void ActionHandler::BattleUISelector(int max){
+void ActionHandler::BattleUISelector(int max, bool isMove){
     int UPPER_LIMIT = max;
     int LOWER_LIMIT = 1;
 
     if (ControllerSingleton::GetInstance().IsRightPressed() && menuID < UPPER_LIMIT){
         menuID += 1;
     }
-    if (ControllerSingleton::GetInstance().IsDownPressed() && menuID < UPPER_LIMIT - 1){
-        menuID += 2;
+    if (ControllerSingleton::GetInstance().IsDownPressed() && menuID < UPPER_LIMIT - (1 - isMove)){
+        isMove ? menuID += 1 : menuID += 2;
     }
     if (ControllerSingleton::GetInstance().IsLeftPressed() && menuID > LOWER_LIMIT){
         menuID -= 1;
     }
-    if (ControllerSingleton::GetInstance().IsUpPressed() && menuID > LOWER_LIMIT + 1){
-        menuID -= 2;
+    if (ControllerSingleton::GetInstance().IsUpPressed() && menuID > LOWER_LIMIT + (1 - isMove)){
+        isMove ? menuID -= 1 : menuID -= 2;
     }
     if (ControllerSingleton::GetInstance().IsAPressed()){
         selection = menuID;
@@ -1525,12 +1525,12 @@ void ActionHandler::Draw_BattleTextBox(){
     if (battlePhase == SELECT_MOVE){
 
         Vector2 UIPos = {fadePos.x, fadePos.y + 144};
-        Vector2 MoveButtonPos = {UIPos.x + 4, UIPos.y + 5};
+        Vector2 MoveButtonPos = {UIPos.x + 160, UIPos.y + 5};
         Vector2 SelectorPos = {0,0};
         Vector2 SelectOffset = {0,0};
         int OFFSET = 2;
-        constexpr Vector2 selectorPositions[4] = {{0, 0}, {1, 0}, {0, 1}, {1, 1}};
-        constexpr Vector2 selectorOffsets[4] = {{0, 0}, {-2, 0}, {0, -2}, {-2, -2}};
+        constexpr Vector2 selectorPositions[4] = {{0, 0}, {0, 1}, {0, 1}, {1, 1}};
+        constexpr Vector2 selectorOffsets[4] = {{0, 0}, {0, -2}, {0, -2}, {-2, -2}};
 
         SelectorPos = selectorPositions[menuID - 1];
         SelectOffset = selectorOffsets[menuID - 1];
@@ -1539,47 +1539,69 @@ void ActionHandler::Draw_BattleTextBox(){
         // Buttons
         Draw_Buttons(MoveButtonPos,OFFSET);
         // Type
-        DrawTextureRec(PKMNTypeTexture, {PKMNTypes.x,PKMNTypes.y,PKMNTypes.width,PKMNTypes.height}, {UIPos.x + 208, UIPos.y + 9}, WHITE);
+        DrawTextureRec(PKMNTypeTexture, {PKMNTypes.x,PKMNTypes.y,PKMNTypes.width,PKMNTypes.height}, {UIPos.x + 58, UIPos.y + 16}, WHITE);
         // Selector
         DrawTextureRec(MoveSelectorTexture, MovementsSelector, {MoveButtonPos.x - OFFSET + (MovementsSelector.width * SelectorPos.x) + SelectOffset.x, MoveButtonPos.y - OFFSET + (MovementsSelector.height * SelectorPos.y) + SelectOffset.y}, WHITE);
     }
 }
 
 void ActionHandler::Draw_Buttons(Vector2 pos, int offset) {
-    Color Dull = {150,150,150,255};
-    int TEXT_OFFSET_X = 11;
-    int TEXT_OFFSET_Y = 4;
-    int PP_OFFSET_X = 211;
-    int PP_OFFSET_Y = 23;
-    Rectangle ButtonBG[4];
-    Vector2 buttonPositions[4] = {
-        {pos.x, pos.y},
-        {pos.x + MovementsButtons.width + offset, pos.y},
-        {pos.x, pos.y + MovementsButtons.height + offset},
-        {pos.x + MovementsButtons.width + offset, pos.y + MovementsButtons.height + offset}
-    };
+    Color dullColor = {150, 150, 150, 255};
+    const int TEXT_OFFSET_X = 11;
+    const int TEXT_OFFSET_Y = 4;
+    const int PP_OFFSET_X = -135;
+    const int PP_OFFSET_Y = 15;
+    const int MOVE_NUMBER_OFFSET_X = -17;
+    const int MOVE_NUMBER_OFFSET_Y = 3;
+    const int visibleButtons = 2; // Number of visible buttons at a time
 
-    for(int i = 0; i < 4; i++) {
-        if(PlayerPKMNInfo.MoveNames[i] != "NONE") {
-            ButtonBG[i] = {MovementsButtons.x, MovementsButtons.y + (MovementsButtons.height * 1), MovementsButtons.width, MovementsButtons.height};
-        } else {
-            ButtonBG[i] = {MovementsButtons.x, MovementsButtons.y, MovementsButtons.width, MovementsButtons.height};
-        }
-        if (menuID == i + 1){
-            DrawTextureRec(MoveSelectorTexture, ButtonBG[i], buttonPositions[i], WHITE);
-        }else{
-            DrawTextureRec(MoveSelectorTexture, ButtonBG[i], buttonPositions[i], Dull);
+    bool menuOffset = (menuID > 2);
+
+    // Precompute button positions and sizes
+    Rectangle buttonRects[visibleButtons];
+    Vector2 buttonPositions[visibleButtons];
+    for (int i = 0; i < visibleButtons; ++i) {
+        buttonPositions[i] = {pos.x, pos.y + i * (MovementsButtons.height + offset)};
+        buttonRects[i] = {
+            MovementsButtons.x,
+            MovementsButtons.y + ((PlayerPKMNInfo.MoveNames[i] != "NONE") ? MovementsButtons.height : 0),
+            MovementsButtons.width,
+            MovementsButtons.height
+        };
+    }
+
+    // Draw buttons and their labels
+    for (int i = 0; i < visibleButtons; ++i) {
+        Color buttonColor = dullColor;
+        if (menuID < 2) {
+            if (menuID == i + 1) buttonColor = WHITE;
+        } else if (i > 0) {
+            buttonColor = WHITE;
         }
 
-        if(PlayerPKMNInfo.MoveNames[i] != "NONE") {
-            DrawTextBoxed(MainFont, PlayerPKMNInfo.MoveNames[i].c_str(),
+        DrawTextureRec(MoveSelectorTexture, buttonRects[i], buttonPositions[i], buttonColor);
+
+        // Draw move name text
+        if (PlayerPKMNInfo.MoveNames[i] != "NONE") {
+            DrawTextBoxed(MainFont, PlayerPKMNInfo.MoveNames[i + menuOffset].c_str(),
                           {buttonPositions[i].x + TEXT_OFFSET_X, buttonPositions[i].y + TEXT_OFFSET_Y, 80, 30},
                           MainFont.baseSize, -5, wordWrap, WHITE);
         }
     }
-    std::string PP_STATUS = std::to_string(PlayerPKMNInfo.curPP[menuID - 1]) + "/" + std::to_string(PlayerPKMNInfo.MaxPP[menuID - 1]);
-    DrawTextBoxed(MainFont, PP_STATUS.c_str(), {pos.x + PP_OFFSET_X, pos.y + PP_OFFSET_Y, 60, 60}, MainFont.baseSize, -5, wordWrap, WHITE);
+
+    // Draw PP status
+    std::string ppStatus = std::to_string(PlayerPKMNInfo.curPP[menuID - 1]) + "/" + std::to_string(PlayerPKMNInfo.MaxPP[menuID - 1]);
+    DrawTextBoxed(MainFont, ppStatus.c_str(),
+                  {pos.x + PP_OFFSET_X, pos.y + PP_OFFSET_Y, 60, 60},
+                  MainFont.baseSize, -5, wordWrap, WHITE);
+    DrawTextBoxed(BattleFont, std::to_string(menuID).c_str(),
+                  {pos.x + MOVE_NUMBER_OFFSET_X, pos.y + MOVE_NUMBER_OFFSET_Y, 60, 60},
+                  MainFont.baseSize, -4, wordWrap, WHITE);
+    DrawTextBoxed(BattleFont, std::to_string(PlayerPKMNInfo.MoveSlots).c_str(),
+                  {pos.x + MOVE_NUMBER_OFFSET_X, pos.y + (MOVE_NUMBER_OFFSET_Y * 7), 60, 60},
+                  MainFont.baseSize, -4, wordWrap, WHITE);
 }
+
 
 void ActionHandler::SetPlayerName(std::string player){
     PLAYER_NAME = player;
