@@ -17,6 +17,7 @@
 #include "json.hpp"
 #include <cstdlib>
 #include "ControllerSingleton.h"
+#include "CSVCache.h"
 
 GameManager::GameManager(){
     EntityGrowth = LoadSound("assets/SFX/GROWTH.ogg");
@@ -54,7 +55,7 @@ void GameManager::DebugIntro(){
         IntroFinished = true;
 
         //Testing out adding a PKMN to the party
-        PKMN Test(133,8,0,0);
+        PKMN Test(265,8,0,0);
         PlayerParty.push_back(Test);
     }
 }
@@ -75,7 +76,6 @@ void GameManager::GameInitialization(std::string map){
 
     for (auto& npc : npcs) {
         npc.parseCSV("assets/CSV/Dataset.csv");
-        npc.parseCSV("assets/CSV/NPC_OW_DEF.csv");
         npc.SetShadow(ShadowCentered,ShadowOffCenter);
     }
 
@@ -133,11 +133,59 @@ void GameManager::CameraUpdate(){
 }
 
 void GameManager::GameLoop(){
-    if (IsKeyPressed(KEY_K)){
-        Menu.stopPlayerInput = true;
-        Menu.getPKMNPartyInfo(PlayerParty);
-        Menu.handleAction(ActionType::Battle_M,camera.target);
+if (IsKeyPressed(KEY_K)) {
+    Menu.stopPlayerInput = true;
+
+    // Retrieve the player's follower ID
+    int followerID = player.GetPlayerFollower();
+    bool battleStarted = false;
+
+    // Load CSV cache (if not already loaded)
+    CSVCache& cache = CSVCache::GetInstance();
+    const std::string filename = "assets/CSV/PKMN_DB.csv";
+    cache.LoadCSV(filename);
+
+    // Check if player has a follower
+    if (followerID > 0) {
+        // Find the follower in the NPC list
+        auto follower = std::find_if(npcs.begin(), npcs.end(),
+            [followerID](const NPC& npc) { return npc.GetID() == followerID; });
+
+        if (follower != npcs.end()) {
+            // Check if follower can battle
+            if (follower->getBattleStatus()) {
+                const auto& row = cache.GetRow(filename, 32, followerID);
+                int pokeID = std::stoi(row[0]);
+
+                // Check if the Pokémon is already in the party
+                auto partyMember = std::find_if(PlayerParty.begin(), PlayerParty.end(),
+                    [pokeID](const PKMN& poke) { return poke.GetID() == pokeID; });
+
+                if (partyMember != PlayerParty.end()) {
+                    // Follower already in party; start battle
+                    int PartyID = std::distance(PlayerParty.begin(), partyMember);
+                    PlayerParty[PartyID].SetGStage(follower->GetStage());
+                    Menu.getPKMNPartyInfo(PlayerParty, PartyID);
+                } else {
+                    // Add follower to the party
+                    PKMN newPokemon(pokeID, 12, 0, follower->GetStage());
+                    PlayerParty.push_back(newPokemon);
+                    Menu.getPKMNPartyInfo(PlayerParty, PlayerParty.size() - 1);
+                }
+
+                Menu.handleAction(ActionType::Battle_M, camera.target);
+                battleStarted = true;
+            }
+        }
     }
+
+    // If no follower can battle or no follower exists, start with first party Pokémon
+    if (!battleStarted) {
+        Menu.getPKMNPartyInfo(PlayerParty, 0);
+        Menu.handleAction(ActionType::Battle_M, camera.target);
+    }
+}
+
 
     Outside.update(Outside.GetCurLevelName(), cur, player.GetPosition());
     // std::cout << Menu.stopPlayerInput << std::endl;

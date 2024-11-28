@@ -27,6 +27,7 @@ public:
 
     void SetNickname(const std::string& newName) { nickname = newName; }
     void SetLevel(int newLevel) { LVL = newLevel; }
+    void SetGStage(int newStage) {GSTAGE = newStage; }
     void SetInitialStatValues();
     void SetMovements();
     void SetPP(int id, int PPat);

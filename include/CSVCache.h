@@ -62,7 +62,7 @@ public:
                 return row;
             }
         }
-        throw std::runtime_error("ID not found in CSV: " + std::to_string(id));
+        throw std::runtime_error("ID: " + std::to_string(id) + " not found in CSV: " + filename);
     }
 
         const std::vector<std::string>& GetRowFromString(const std::string& filename, int idColumn, std::string name) const {

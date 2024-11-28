@@ -58,6 +58,7 @@ public:
     std::string GetNPCLocation() const {return location;}
     void SetPosition(Vector2 pos);
     bool GetIdleAnim() const {return idle;}
+    bool getBattleStatus() const {return battleStatus;}
 
 private:
     // Graphics
@@ -108,6 +109,7 @@ private:
     int Stage;
     int wantedStage;
     int lvl;
+    bool battleStatus = false;
     std::string location;
     std::vector<std::string> NPC_DEF;
     std::vector<std::vector<std::string>> m_data;

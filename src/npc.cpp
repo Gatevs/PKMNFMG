@@ -9,12 +9,16 @@
 NPC::NPC(int npcID, std::string loc, Vector2 NPCPos) {
     ID = npcID;
     location = loc;
+    position = NPCPos;
     Stage = 0;
     lvl = 1;
     NPCTexture = LoadTexture(NPCWalk::GetTexturePath(ID, Stage).c_str());
     DrawnTexture = NPCTexture;
-    position = NPCPos;
     //Initialize variables
+    CSVCache& cache = CSVCache::GetInstance();
+    // cache.parseCSV("assets/CSV/Dataset.csv", NPC_DEF, ID);
+    cache.parseCSV("assets/CSV/NPC_OW_DEF.csv", NPC_DEF, ID);
+    NPC_DEF[10] == "FALSE" ? battleStatus = false : battleStatus = true;
     currentAnimation = ANIM_DOWN;
     currentFrame = 0;
     direction = 1;
@@ -342,14 +346,6 @@ void NPC::parseCSV(const std::string& filename) {
                 // Store entire row in NPC-specific vector
                 m_data.push_back(cache.GetRowAt(filename,i));
             }
-        }
-    }else if(filename == "assets/CSV/NPC_OW_DEF.csv"){
-        try {
-            // Query the row with the matching ID
-            const auto& row = cache.GetRow(filename, 0, ID); // Assuming ID is in column 0
-            NPC_DEF = row; // Store the row in your Pokémon-specific vector
-        } catch (const std::exception& e) {
-            std::cerr << "Error retrieving NPC data: " << e.what() << std::endl;
         }
     }
 }

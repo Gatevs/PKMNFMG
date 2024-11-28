@@ -26,7 +26,7 @@ public:
     void handleAction(ActionType actionType, Vector2 drawPos);
     void getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event);
     void getPlayerInfo(int ID, Player player_Obj, int Event);
-    void getPKMNPartyInfo(std::vector<PKMN>& PKMNParty);
+    void getPKMNPartyInfo(std::vector<PKMN>& PKMNParty, int selectedID);
     void InputUI(std::vector<NPC>& NPC_objs, Player& player_Obj, std::vector<PKMN>& PKMNParty);
     void SetPlayerName(std::string player);
     void SetPlayerGender(std::string player);
@@ -77,6 +77,7 @@ private:
         bool BattleEnd = false;
         std::string StatusInfo;
         bool FirstMessage = false;
+        std::string Type;
     };
 
     void actionFollowMenu(std::vector<NPC>& NPC_objs, Player& player_Obj);

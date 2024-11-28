@@ -441,6 +441,7 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                 EnemyPKMNInfo.curHP = EnemyMons[0].GetCurHp();
                 EnemyPKMNInfo.healthBar = 48.0f * (EnemyPKMNInfo.curHP / float(EnemyPKMNInfo.HP));
                 EnemyPKMNInfo.healthBarColor = 0;
+                EnemyPKMNInfo.Type = "WILD";
 
                 std::transform(EnemyPKMNInfo.Name.begin(),EnemyPKMNInfo.Name.end(),EnemyPKMNInfo.Name.begin (),::toupper);
                 EnemyPKMNInfo.GStage = EnemyPKMN.GetGStage();
@@ -451,7 +452,7 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                 StatSprite = LoadTexture(EnemySprite.c_str());
                 PlayerBattleTexture = LoadTexture(PlayerSprite.c_str());
                 PKMNBattleTexture = LoadTexture(PKMNTexture.c_str());
-                PlayerPKMNSpritePos = {fadePos.x - PKMNBattleTexture.width ,fadePos.y + PKMNBattleTexture.height};
+                PlayerPKMNSpritePos = { fadePos.x - PKMNBattleTexture.width , (fadePos.y + 154) - (PKMNBattleTexture.height)};
                 EnemyPKMNSpritePos = {(EnemyBasePos.x + (BaseEnemyMap.width/2)), (fadePos.y + 92)};
                 for (int i = 0; i < 4; i ++){
                     PlayerPKMNInfo.MoveNames[i] = PKMNParty[PlayerPKMNInfo.SlotID].GetMovementInfo(PKMNParty[PlayerPKMNInfo.SlotID].GetMovements().Move[i],1);
@@ -537,8 +538,8 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
             }
             if (PlayerSpritePos.x + PlayerBattleTexture.width > fadePos.x){
                 PlayerSpritePos.x -= (dt * 120.0f);
-            }
-            if (PlayerPKMNSpritePos.x < fadePos.x + (PKMNBattleTexture.width/3.0f)){
+            } // fadePos.x + ((BasePlayerMap.width / 2) - (PKMNBattleTexture.width / 2.0f))
+            if (PlayerPKMNSpritePos.x < (fadePos.x - 70) + ((BasePlayerMap.width / 2) - (PKMNBattleTexture.width / 2.0f))){
                 PlayerPKMNSpritePos.x += (dt * 120.0f);
             } else if (HPCardFriendPos.x > fadePos.x + (SCREEN_WIDTH - HPCardPlayerMap.width)){
                 HPCardFriendPos.x -= (dt * (60.0f * 8.0f));
@@ -695,7 +696,7 @@ void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKM
 
     // Handle attack damage and smooth HP reduction
     if (pokeBInfo.curHP > targetHP && pokeAInfo.MoveActionSet && battleTimer > 1.0f && pokeBInfo.blinkCounter >= 6) {
-        pokeBInfo.curHP -= (float(pokeAInfo.AttackPower)/(pokeBInfo.HP * 2)); // Decrease HP
+        pokeBInfo.curHP -= (float(pokeAInfo.AttackPower)/pokeBInfo.HP) * 2; // Decrease HP
         if (pokeBInfo.curHP < targetHP) pokeBInfo.curHP = targetHP;
         if (pokeBInfo.curHP < 0) {
             pokeBInfo.curHP = 0;
@@ -783,8 +784,17 @@ void ActionHandler::FinishTurns(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo,PK
 void ActionHandler::SetMove(int move, PKMNInfo& poke, bool first){
     std::string MoveSelected = poke.MoveNames[move];
     std::string text = poke.Name + " used ¬" + MoveSelected + "!";
+    std::string textWild = "The wild " + text;
+    std::string textFoe = "The foe's " + text;
     claenText();
-    SetNPCDialogue(text);
+    if (poke.Type == "PLAYER"){
+        SetNPCDialogue(text);
+    }else if (poke.Type == "WILD"){
+        SetNPCDialogue(textWild);
+    }else if (poke.Type == "FOE"){
+        SetNPCDialogue(textFoe);
+    }
+
     poke.firstTurn = first;
 }
 
@@ -821,21 +831,30 @@ void ActionHandler::BattleUISelector(int max, bool isMove){
     int UPPER_LIMIT = max;
     int LOWER_LIMIT = 1;
 
-    if (ControllerSingleton::GetInstance().IsRightPressed() && menuID < UPPER_LIMIT){
+    if (ControllerSingleton::GetInstance().IsRightPressed() && menuID < UPPER_LIMIT && !isMove){
         menuID += 1;
     }
-    if (ControllerSingleton::GetInstance().IsDownPressed() && menuID < UPPER_LIMIT - (1 - isMove)){
+    if (ControllerSingleton::GetInstance().IsDownPressed() && menuID < UPPER_LIMIT - (1 - isMove) && menuID != -1){
         isMove ? menuID += 1 : menuID += 2;
     }
-    if (ControllerSingleton::GetInstance().IsLeftPressed() && menuID > LOWER_LIMIT){
+    if (ControllerSingleton::GetInstance().IsLeftPressed() && menuID > LOWER_LIMIT && !isMove){
         menuID -= 1;
     }
-    if (ControllerSingleton::GetInstance().IsUpPressed() && menuID > LOWER_LIMIT + (1 - isMove)){
+    if (ControllerSingleton::GetInstance().IsUpPressed() && menuID > LOWER_LIMIT + (1 - isMove) && menuID != -1){
         isMove ? menuID -= 1 : menuID -= 2;
     }
     if (ControllerSingleton::GetInstance().IsAPressed()){
         selection = menuID;
     }
+
+    if (isMove && ControllerSingleton::GetInstance().IsLeftPressed()){
+        if (menuID != -1) { lastMenuID = menuID;}
+        menuID = -1;
+    }
+    if (isMove && ControllerSingleton::GetInstance().IsRightPressed() && menuID == -1){
+        menuID = lastMenuID;
+    }
+
 }
 
 void ActionHandler::BattleSpriteJiggle(){
@@ -1059,8 +1078,8 @@ void ActionHandler::getNPCInfo(int ID, std::vector<NPC>& NPC_objs, int Event) {
     std::cerr << "Error: NPC with ID " << ID << " not found." << std::endl;
 }
 
-void ActionHandler::getPKMNPartyInfo(std::vector<PKMN>& PKMNParty){
-    int Selected = 0;
+void ActionHandler::getPKMNPartyInfo(std::vector<PKMN>& PKMNParty, int selectedID){
+    int Selected = selectedID;
 
     PlayerPKMNInfo.SlotID = Selected;
     PlayerPKMNInfo.Index = PKMNParty[Selected].GetID();
@@ -1070,6 +1089,9 @@ void ActionHandler::getPKMNPartyInfo(std::vector<PKMN>& PKMNParty){
     PlayerPKMNInfo.GStage = PKMNParty[Selected].GetGStage();
     PlayerPKMNInfo.HP = PKMNParty[Selected].GetMaxHP();
     PlayerPKMNInfo.curHP = PKMNParty[Selected].GetCurHp();
+    PlayerPKMNInfo.healthBar = 48.0f * (PlayerPKMNInfo.curHP / float(PlayerPKMNInfo.HP));
+    PlayerPKMNInfo.healthBarColor = 0;
+    PlayerPKMNInfo.Type = "PLAYER";
 }
 
 bool ActionHandler::CompareDialogueConditions(std::string condition, std::string value, NPC& npc){
@@ -1500,7 +1522,7 @@ void ActionHandler::Draw_PlayerElements(){
     // Player's gender
     DrawTextureRec(HPCardTexture, {GenderIconMap.x + (8 * PlayerPKMNInfo.Gender), GenderIconMap.y, GenderIconMap.width, GenderIconMap.height}, {HPCardFriendPos.x + 87, HPCardFriendPos.y + 9}, WHITE);
     // Player's name
-    DrawTextBoxed(MainFont, PlayerPKMNInfo.Name.c_str(), {HPCardFriendPos.x + 24, HPCardFriendPos.y + 9, 60, 30}, MainFont.baseSize, -5, wordWrap, WHITE);
+    DrawTextBoxed(MainFont, PlayerPKMNInfo.Name.c_str(), {HPCardFriendPos.x + 24, HPCardFriendPos.y + 9, 68, 30}, MainFont.baseSize, -5, wordWrap, WHITE);
     // Player's level
     DrawTextBoxed(BattleFont, std::to_string(PlayerPKMNInfo.Lvl).c_str(), {HPCardFriendPos.x + 103, HPCardFriendPos.y + 8, 60, 30}, MainFont.baseSize, -4, wordWrap, WHITE);
     //Player's Pokemon CurHP'
@@ -1529,8 +1551,8 @@ void ActionHandler::Draw_BattleTextBox(){
         Vector2 SelectorPos = {0,0};
         Vector2 SelectOffset = {0,0};
         int OFFSET = 2;
-        constexpr Vector2 selectorPositions[4] = {{0, 0}, {0, 1}, {0, 1}, {1, 1}};
-        constexpr Vector2 selectorOffsets[4] = {{0, 0}, {0, -2}, {0, -2}, {-2, -2}};
+        constexpr Vector2 selectorPositions[4] = {{0, 0}, {0, 1}, {0, 1}, {0, 1}};
+        constexpr Vector2 selectorOffsets[4] = {{0, 0}, {0, -2}, {0, -2}, {0, -2}};
 
         SelectorPos = selectorPositions[menuID - 1];
         SelectOffset = selectorOffsets[menuID - 1];
