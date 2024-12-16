@@ -19,9 +19,13 @@ public:
     std::string GetPKMN_Name() const { return PKMN_DEF[NAME];}
     std::string GetPKMN_NickName();
     std::string GetMoveType(int move) { return GetMovementInfo(move,3);}
+    std::string GetMoveFunctionCode(int move) { return GetMovementInfo(move,10);}
     int GetAttackDamage(std::vector<int> enemyTypes, int D, int move);
+    int GetTurnDamage() {return TurnAttackDamage;}
+    int GetHealthAmount() {return TurnHealAmount;}
+    int GetNextMovePhase() {return NextMovePhase;}
     int GetOddsEscape(int speedPlayer, int speedWild, int Attempts);
-    void GetStatusAction(int move);
+    void SetBattleStatusMultiplier(int affected, int multiplier, std::string affectedName);
     void SetStatusValue(int& stat, int multiplier, std::string statname);
     std::string GetStatusText(){ return StatusChangeText;}
 
@@ -32,6 +36,9 @@ public:
     void SetMovements();
     void SetPP(int id, int PPat);
     void SetCurHP (int value) {CUR_HP = value;}
+    void SetStatusText(std::string text) {StatusChangeText = text;}
+    void SetHealthAmount(int amount) {TurnHealAmount = amount;}
+    void SetNextMovePhase(int phase) {NextMovePhase = phase;}
     std::string GetMovementInfo(int MovementNum, int column);
     float GetTypeEffectiveness(int A_Type, int E_Type);
     float GetStatMultiplier(int stat);
@@ -137,6 +144,9 @@ private:
     std::string nickname;
     bool critHit = false;
 
+    int TurnAttackDamage = 0;
+    int TurnHealAmount = 0;
+
     Stats BaseStats;
     TempStats TemporaryStats;
     IndividualValues IV;
@@ -147,6 +157,7 @@ private:
     int OtherStatCalc(int Stat, int IV, int EV, int StatID);
     void NatureMultiplyier(Natures nature);
     std::string StatusChangeText;
+    int NextMovePhase = 0;
 
     std::vector<std::string> PKMN_DEF;
     std::vector<std::string> PKMNLVLUP_DEF;
@@ -188,28 +199,28 @@ private:
         SECOND_ABILITY,
         GENDER_RATIO,
         CATCH_RATE,
-        EGG_GROUP1,
-        EGG_GROUP2,
-        HATCH_TIME,
-        HEIGHT_I,
-        HEIGHT_M,
-        WEIGHT_I,
-        wEIGHT_M,
-        MEGASTONE,
+        EGG_GROUPS,
+        HATCH_STEPS,
+        HEIGHT,
+        WEIGHT,
         EXP_YIELD,
         LEVELING_RATE,
         EV_YIELD,
         SHAPE,
-        FOOTPRINT,
         POKEDEX_COLOR,
-        FRIENDSHIP,
+        HAPPINESS,
         BASE_HP,
         BASE_ATTACK,
         BASE_DEFENSE,
         BASE_SPATTACK,
         BASE_SPDEFENSE,
         BASE_SPEED,
-        HELD_ITEM,
+        HIDDEN_ABILITIES,
+        HABITAT,
+        CATEGORY,
+        POKEDEX,
+        GENERATION,
+        EVOLUTION,
         TYPE_ID_1,
         TYPE_ID_2,
         OW_ID

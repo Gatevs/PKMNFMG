@@ -63,6 +63,7 @@ private:
         float healthBar = (48.0f * (float(curHP)/HP));
         int healthBarColor = 0;
         int AttackPower = 0;
+        int HealAmount = 0;
         bool StatusMoveSet = false;
         bool MoveActionSet = false;
         bool firstTurn = false;
@@ -110,6 +111,8 @@ private:
     void Draw_Buttons(Vector2 pos, int offset);
     void DrawPokemonSprite(Vector2 pos, Texture2D sprite, float& yOffset, bool& animationDone, float health);
     bool IsPlayerEscaping(PKMNInfo& pokeInfo, PKMN& pokeA, PKMN& pokeB);
+    void ApplyDamageOrRecovery(PKMNInfo& pokeBInfo, float targetHP, PKMNInfo& pokeAInfo, bool healing);
+    void UpdateHealthBar(PKMNInfo& pokeBInfo);
 
     void SetVNSprite();
     void SetNPCDialogue(std::string text);
@@ -202,6 +205,7 @@ private:
     int ActiveNPCVectorIndex = -1;
 
     int battlePhase;
+    int CurMoveState = 0;
     int TextBoxOpacity = 0;
     float battleTimer = 0.0f;
     int PlayerAnimFrame = 0;
@@ -241,6 +245,19 @@ private:
         ESCAPE,
         ESCAPE_FAILED
     };
+
+    enum MoveActionState {
+        SHOW_MOVE_TEXT,
+        EXECUTE_MOVE,
+        BLINK_SPRITE,
+        ANIMATE_ACTION,
+        DAMAGE_UPDATE,
+        APPLY_EFFECTS,
+        FAINT_CHECK,
+        RECOVER_HEALTH,
+        END_PHASE
+    };
+
     enum Menu_Type{
         STATS,
         FOLLOW,

@@ -12,7 +12,6 @@ PKMN::PKMN(int id, int level, int gender, int gstage){
     nickname = "NONE";
     CSVCache& cache = CSVCache::GetInstance();
     cache.parseCSV("assets/CSV/PKMN_DB.csv", PKMN_DEF, ID);
-    cache.parseCSV("assets/CSV/PKMN_LevelUp.csv", PKMNLVLUP_DEF, ID);
     SetInitialStatValues();
     SetMovements();
 }
@@ -79,7 +78,7 @@ int PKMN::GetAttackDamage(std::vector<int> enemyTypes, int D, int move){
 
     std::string MOVE_TYPE = GetMovementInfo(move,3);
     std::string ATTACK_TYPE = GetMovementInfo(move,2);
-    int ATTACK_TYPE_ID = std::stoi(GetMovementInfo(move,8));
+    int ATTACK_TYPE_ID = std::stoi(GetMovementInfo(move,13));
     std::string ABILITY = PKMN_DEF[FIRST_ABILITY];
     int MOVE_POWER = std::stoi(GetMovementInfo(move,5));
     int A = BaseStats.Attack * GetStatMultiplier(TemporaryStats.Attack);
@@ -128,6 +127,7 @@ int PKMN::GetAttackDamage(std::vector<int> enemyTypes, int D, int move){
     int CALC3 = CALC2 * BURN * SCREEN * WEATHER * FF + 2;
     int CALC4 = CALC3 * CRITICAL * ITEM * FIRST * RANDOM * STAB * TYPE_1 * TYPE_2 * SRF * EB * TL * BERRY;
 
+    TurnAttackDamage = CALC4;
     return CALC4;
 }
 
@@ -155,36 +155,41 @@ int PKMN::OtherStatCalc(int Stat, int IV, int EV, int StatID){
     return calc;
 }
 
-void PKMN::SetMovements(){
+void PKMN::SetMovements() {
     std::vector<int> assignedMoves;
 
-    // Start from the Pokémon's current level and work backward
-    for (int lvl = LVL - 1; lvl > 0 && assignedMoves.size() < 4; --lvl) {
-        if (lvl < PKMNLVLUP_DEF.size() && PKMNLVLUP_DEF[lvl] != "0") { // Check if valid move exists
-            std::stringstream ss(PKMNLVLUP_DEF[lvl]);
-            std::string move;
+    CSVCache& cache = CSVCache::GetInstance();
+    std::string filename = "assets/CSV/PKMN_LEARNSET.csv";
 
-            // Split multiple moves (e.g., "033&039")
-            while (std::getline(ss, move, '&')) {
-                move.erase(0, move.find_first_not_of('0'));
-                int MoveID = std::stoi(move);
-                if (assignedMoves.size() < 4) { // Assign up to 4 moves
-                    assignedMoves.push_back(MoveID);
-                } else {
-                    break;
+    // Load CSV rows for the current Pokémon ID
+    cache.LoadCSV(filename);
+    const auto& rows = cache.GetRowsForID(filename, GetID()); // Assumes a method to get all rows for an ID
+
+    // Iterate through levels backward to find eligible moves
+    for (int lvl = LVL; lvl > 0 && assignedMoves.size() < 4; --lvl) {
+        for (const auto& row : rows) {
+            int moveLevel = std::stoi(row[1]); // Column 1: Level
+            if (moveLevel == lvl) {
+                int moveID = std::stoi(row[3]); // Column 3: MoveID
+                if (std::find(assignedMoves.begin(), assignedMoves.end(), moveID) == assignedMoves.end()) {
+                    assignedMoves.push_back(moveID);
+                    if (assignedMoves.size() >= 4) break;
                 }
             }
         }
     }
-    for (int i = 0; i < assignedMoves.size(); i++){
+
+    // Assign moves to the moveset
+    for (int i = 0; i < assignedMoves.size(); ++i) {
         Moveset.Move[i] = assignedMoves[i];
         SetPP(Moveset.Move[i], i);
     }
 }
 
+
 std::string PKMN::GetMovementInfo(int MovementNum, int column){
     CSVCache& cache = CSVCache::GetInstance();
-    std::string filename = "assets/CSV/Movements.csv";
+    std::string filename = "assets/CSV/PKMN_MOVES.csv";
     cache.LoadCSV(filename); // Load the file into memory (if not already loaded)
 
     try {
@@ -204,7 +209,7 @@ std::string PKMN::GetMovementInfo(int MovementNum, int column){
 
 void PKMN::SetPP(int id, int PPat){
     CSVCache& cache = CSVCache::GetInstance();
-    std::string filename = "assets/CSV/Movements.csv";
+    std::string filename = "assets/CSV/PKMN_MOVES.csv";
     cache.LoadCSV(filename); // Load the file into memory (if not already loaded)
 
     try {
@@ -224,11 +229,11 @@ std::vector<int> PKMN::GetPokemonTypes(){
     return Types;
 }
 
-void PKMN::GetStatusAction(int move){
+void PKMN::SetBattleStatusMultiplier(int affected, int multiplier, std::string affectedName){
     critHit = false;
-    int AFFECTED_STATUS = std::stoi(GetMovementInfo(move,11));
-    int VALUE_MULTIPLIER = std::stoi(GetMovementInfo(move,12));
-    std::string AFFECTED_STATUS_NAME = GetMovementInfo(move,9);
+    int AFFECTED_STATUS = affected;
+    int VALUE_MULTIPLIER = multiplier;
+    std::string AFFECTED_STATUS_NAME = affectedName;
 
     switch (AFFECTED_STATUS){
         case ATTACK:
@@ -276,7 +281,7 @@ void PKMN::SetStatusValue(int& stat, int multiplier, std::string statname){
             STATUS_TEXT = GetPKMN_NickName() + "'s " + statname + " rose!";
             break;
         case 2:
-            STATUS_TEXT = GetPKMN_NickName() + "'s " + statname + " sharply fell!";
+            STATUS_TEXT = GetPKMN_NickName() + "'s " + statname + " sharply rose!";
             break;
     }
 

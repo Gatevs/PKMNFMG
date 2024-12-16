@@ -8,6 +8,7 @@
 #include "player.h"
 #include "ControllerSingleton.h"
 #include <algorithm>
+#include <BattleFunctionMap.h>
 
 ActionHandler::ActionHandler() {
     atlasTexture = LoadTexture("assets/MISC/UI_Atlas.png");
@@ -685,78 +686,107 @@ void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKM
     // Initialize variables
     static float targetHP = pokeBInfo.curHP; // Store target HP
 
-    // Battle Timer
-    battleTimer += GetFrameTime() * (pokeBInfo.HP * 4.0f);
-
-    // If the move action isn't set yet, perform the move logic
-    if (!pokeAInfo.MoveActionSet) {
-        BattleMoveAction(pokeA, pokeB, pokeAInfo, pokeBInfo, pokeAInfo.MoveIDs[pokeAInfo.UsingMove]);
-        targetHP = pokeBInfo.curHP - pokeAInfo.AttackPower;
-    }
-
-    // Handle attack damage and smooth HP reduction
-    if (pokeBInfo.curHP > targetHP && pokeAInfo.MoveActionSet && battleTimer > 1.0f && pokeBInfo.blinkCounter >= 6) {
-        pokeBInfo.curHP -= (float(pokeAInfo.AttackPower)/pokeBInfo.HP) * 2; // Decrease HP
-        if (pokeBInfo.curHP < targetHP) pokeBInfo.curHP = targetHP;
-        if (pokeBInfo.curHP < 0) {
-            pokeBInfo.curHP = 0;
-            targetHP = 0;
-        }
-
-        // Update the health bar
-        pokeBInfo.healthBar = 48.0f * (pokeBInfo.curHP / float(pokeBInfo.HP));
-
-        // Update health bar color
-        if (pokeBInfo.curHP / float(pokeBInfo.HP) > 0.5f){pokeBInfo.healthBarColor = 0;}
-        if (pokeBInfo.curHP / float(pokeBInfo.HP) < 0.5f && pokeBInfo.curHP / float(pokeBInfo.HP) > 0.2f){
-            pokeBInfo.healthBarColor = 1;
-        }
-        if (pokeBInfo.curHP / float(pokeBInfo.HP) < 0.2f){pokeBInfo.healthBarColor = 2;}
-
-        // Reset battle timer
-        battleTimer = 0.0f;
-    }
-    if (battleTimer > 5.0f && pokeBInfo.blinkCounter < 6 && textFinished && pokeAInfo.AttackPower > 0){
-        pokeBInfo.blinkCounter += 1;
-        pokeBInfo.visible = !pokeBInfo.visible;
-        battleTimer = 0.0f;
-    }
-
-    if (pokeBInfo.curHP == 0){
-        FinishTurns(pokeA,pokeB,pokeAInfo,pokeBInfo);
-        battlePhase = FAINTING;
-    }
-
-    if (pokeAInfo.FirstMessage && pokeAInfo.StatusMoveSet && textFinished){
-        if (WaitFor(1.0f)){
-            claenText();
-            SetNPCDialogue(pokeAInfo.StatusInfo);
-            pokeAInfo.StatusMoveSet = false;
-        }
-
-    }
-
-    // Move to the next phase if the text is finished and the player presses A
-    if (pokeAInfo.FirstMessage && textFinished && pokeBInfo.curHP == targetHP && !pokeAInfo.StatusMoveSet && !pokeAInfo.crithit) {
-        if (WaitFor(1.0f)){
-            if (pokeAInfo.firstTurn) {
-                SetMove(pokeBInfo.UsingMove, pokeBInfo, false);
-                battlePhase = Phase;
-            } else {
-                FinishTurns(pokeA,pokeB,pokeAInfo,pokeBInfo);
+    switch (CurMoveState){
+        case SHOW_MOVE_TEXT:
+            if (textFinished){
+                CurMoveState = EXECUTE_MOVE;
             }
-        }
-    }
-    if (textFinished && !pokeAInfo.FirstMessage){
-        pokeAInfo.FirstMessage = true;
-    }
+            break;
+        case EXECUTE_MOVE:
+            BattleMoveAction(pokeA, pokeB, pokeAInfo, pokeBInfo, pokeAInfo.MoveIDs[pokeAInfo.UsingMove]);
+            targetHP = pokeBInfo.curHP - pokeAInfo.AttackPower;
+            if (targetHP < 0){
+                targetHP = 0;
+            }
+            CurMoveState = ANIMATE_ACTION;
+            break;
+        case ANIMATE_ACTION:
+            if (pokeAInfo.AttackPower > 0){
+                CurMoveState = BLINK_SPRITE;
+            }else{
+                CurMoveState = APPLY_EFFECTS;
+            }
+            break;
+        case BLINK_SPRITE:
+            if (battleTimer > 5.0f && pokeBInfo.blinkCounter < 6){
+                pokeBInfo.blinkCounter += 1;
+                pokeBInfo.visible = !pokeBInfo.visible;
+                battleTimer = 0.0f;
+            }else{
+                battleTimer += GetFrameTime() * (pokeBInfo.HP * 4.0f);
+            }
+            if (pokeBInfo.blinkCounter >= 6){
+                CurMoveState = DAMAGE_UPDATE;
+            }
+            break;
+        case DAMAGE_UPDATE:
+            if (pokeAInfo.crithit){
+                if (WaitFor(1.0f)){
+                    claenText();
+                    SetNPCDialogue("A critical hit!");
+                    pokeAInfo.crithit = false;
+                }
+            }
+            if (pokeBInfo.curHP != targetHP){
+                ApplyDamageOrRecovery(pokeBInfo, targetHP, pokeAInfo, false);
+                UpdateHealthBar(pokeBInfo);
+            }
+            if (pokeBInfo.curHP == targetHP && textFinished){
+                if (pokeAInfo.StatusMoveSet){
+                    CurMoveState = APPLY_EFFECTS;
+                }else{
+                    CurMoveState = FAINT_CHECK;
+                }
+            }
+            battleTimer += GetFrameTime() * (pokeBInfo.HP * 4.0f);
+            break;
+        case APPLY_EFFECTS:
+            if (WaitFor(1.0f) && pokeAInfo.StatusMoveSet){
+                claenText();
+                SetNPCDialogue(pokeAInfo.StatusInfo);
+                if (pokeA.GetNextMovePhase() != 0){
+                    CurMoveState = pokeA.GetNextMovePhase();
+                }
+                pokeAInfo.StatusMoveSet = false;
+            }
+            if (!pokeAInfo.StatusMoveSet && textFinished){
+                if (WaitFor(1.0f)){
+                    CurMoveState = END_PHASE;
+                }
+            }
+            break;
+        case FAINT_CHECK:
+            if (pokeBInfo.curHP == 0){
+                FinishTurns(pokeA,pokeB,pokeAInfo,pokeBInfo);
+                battlePhase = FAINTING;
+            }else{
+                CurMoveState = END_PHASE;
+            }
+            break;
 
-    if (pokeAInfo.FirstMessage && textFinished && pokeAInfo.crithit && pokeBInfo.curHP != targetHP){
-        if (WaitFor(1.0f)){
-            claenText();
-            SetNPCDialogue("A critical hit!");
-            pokeAInfo.crithit = false;
-        }
+        case RECOVER_HEALTH:
+            if (pokeAInfo.curHP != pokeAInfo.HealAmount){
+                ApplyDamageOrRecovery(pokeBInfo, pokeAInfo.HealAmount, pokeAInfo, true);
+                UpdateHealthBar(pokeAInfo);
+            }
+            if (pokeAInfo.curHP == pokeAInfo.HealAmount && textFinished){
+                if (WaitFor(1.0f)){
+                    CurMoveState = FAINT_CHECK;
+                }
+            }
+            battleTimer += GetFrameTime() * (pokeAInfo.HP * 4.0f);
+            break;
+        case END_PHASE:
+            if (WaitFor(0.5f) && textFinished){
+                if (pokeAInfo.firstTurn) {
+                    SetMove(pokeBInfo.UsingMove, pokeBInfo, false);
+                    battlePhase = Phase;
+                    CurMoveState = SHOW_MOVE_TEXT;
+                } else {
+                    FinishTurns(pokeA,pokeB,pokeAInfo,pokeBInfo);
+                }
+            }
+            break;
     }
 }
 
@@ -769,8 +799,16 @@ void ActionHandler::FinishTurns(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo,PK
     pokeBInfo.MoveActionSet = false;
     pokeA.SetCurHP(pokeAInfo.curHP);
     pokeB.SetCurHP(pokeBInfo.curHP);
+    pokeA.SetStatusText("");
+    pokeB.SetStatusText("");
+    pokeA.SetNextMovePhase(0);
+    pokeB.SetNextMovePhase(0);
+    pokeAInfo.StatusInfo = "";
+    pokeBInfo.StatusInfo = "";
     pokeAInfo.AttackPower = 0;
     pokeBInfo.AttackPower = 0;
+    pokeAInfo.HealAmount = 0;
+    pokeBInfo.HealAmount = 0;
     pokeAInfo.crithit = false;
     pokeBInfo.crithit = false;
     pokeAInfo.blinkCounter = 0;
@@ -779,6 +817,7 @@ void ActionHandler::FinishTurns(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo,PK
     pokeBInfo.FirstMessage = false;
     battleTimer = 0.0f;
     battlePhase = WAIT_INPUT;
+    CurMoveState = SHOW_MOVE_TEXT;
 }
 
 void ActionHandler::SetMove(int move, PKMNInfo& poke, bool first){
@@ -802,24 +841,21 @@ void ActionHandler::BattleMoveAction(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAIn
     int Move_ID = move;
     std::vector<int> E_TYPES = pokeB.GetPokemonTypes();
     int E_Defense = pokeB.GetBaseStats().Defense * pokeB.GetStatMultiplier(pokeB.GetTempStats().Defense);
-    std::string Move_Type = pokeA.GetMoveType(Move_ID);
+    std::string FunctionCode = pokeA.GetMoveFunctionCode(Move_ID);
 
-    if (Move_Type == "Physical" or Move_Type == "Special"){
+    if (FunctionCode == "None"){
         pokeAInfo.AttackPower = pokeA.GetAttackDamage(E_TYPES, E_Defense, Move_ID);
         pokeAInfo.MoveActionSet = true;
         std::cout << "Attack Damage: "<< pokeAInfo.AttackPower << std::endl;
-    }else if (Move_Type == "Status"){
-        if (pokeA.GetMovementInfo(Move_ID,10) == "ENEMY"){
-            pokeB.GetStatusAction(Move_ID);
-            pokeAInfo.MoveActionSet = true;
-            pokeAInfo.StatusMoveSet = true;
-            pokeAInfo.StatusInfo = pokeB.GetStatusText();
-        }else if(pokeA.GetMovementInfo(Move_ID,10) == "SELF"){
-            pokeA.GetStatusAction(Move_ID);
-            pokeAInfo.MoveActionSet = true;
-            pokeAInfo.StatusMoveSet = true;
-            pokeAInfo.StatusInfo = pokeA.GetStatusText();
+    }else{
+        if (pokeA.GetMovementInfo(move,5) != ""){
+            pokeAInfo.AttackPower = pokeA.GetAttackDamage(E_TYPES, E_Defense, Move_ID);
+            std::cout << "Attack Damage: "<< pokeAInfo.AttackPower << std::endl;
         }
+        ExecuteMove(FunctionCode, pokeA, pokeB, pokeAInfo.StatusInfo, move);
+        pokeAInfo.HealAmount = pokeA.GetHealthAmount();
+        pokeAInfo.MoveActionSet = true;
+        pokeAInfo.StatusMoveSet = true;
     }
     if (pokeA.IsCrit()){
         pokeAInfo.crithit = true;
@@ -890,6 +926,39 @@ void ActionHandler::BattleSpriteJiggle(){
         }
     }
 }
+
+void ActionHandler::ApplyDamageOrRecovery(PKMNInfo& pokeBInfo, float targetHP, PKMNInfo& pokeAInfo, bool healing) {
+    if (battleTimer > 1.0f) {
+        if (!healing){
+            float change = (float(std::abs(pokeAInfo.AttackPower)) / pokeBInfo.HP) * 2; // Scaled change
+            pokeBInfo.curHP -= change; // Decrease HP
+            if (pokeBInfo.curHP < targetHP) pokeBInfo.curHP = targetHP;
+            if (pokeBInfo.curHP < 0) {
+                pokeBInfo.curHP = 0;
+                targetHP = 0;
+            }
+        }else{
+            float change = (float(std::abs(pokeAInfo.HealAmount)) / pokeAInfo.HP) * 2; // Scaled change
+            pokeAInfo.curHP += change; // Increase HP
+            if (pokeAInfo.curHP > targetHP) pokeAInfo.curHP = targetHP;
+        }
+        battleTimer = 0.0f;
+    }
+}
+
+void ActionHandler::UpdateHealthBar(PKMNInfo& pokeBInfo) {
+    pokeBInfo.healthBar = 48.0f * (pokeBInfo.curHP / float(pokeBInfo.HP));
+
+    float healthPercentage = pokeBInfo.curHP / float(pokeBInfo.HP);
+    if (healthPercentage > 0.5f) {
+        pokeBInfo.healthBarColor = 0; // Green
+    } else if (healthPercentage > 0.2f) {
+        pokeBInfo.healthBarColor = 1; // Yellow
+    } else {
+        pokeBInfo.healthBarColor = 2; // Red
+    }
+}
+
 
 void ActionHandler::ExitBattle(Player& player, PKMN& playerPoke){
     for (int i = 0; i < 4; i ++){

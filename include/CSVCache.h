@@ -97,6 +97,19 @@ public:
         }
     }
 
+    const std::vector<std::vector<std::string>> GetRowsForID(const std::string& filename, int pokemonID) {
+        std::vector<std::vector<std::string>> matchingRows;
+        const auto& rows = cache.at(filename); // Assume `loadedCSVs` stores the parsed rows
+        for (const auto& row : rows) {
+            if (std::stoi(row[0]) == pokemonID) { // Column 0: Pokémon ID
+                matchingRows.push_back(row);
+            }
+        }
+        return matchingRows;
+    }
+
+
+
 private:
     std::unordered_map<std::string, std::vector<std::vector<std::string>>> cache;
 
