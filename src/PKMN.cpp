@@ -312,7 +312,7 @@ int PKMN::GetExpToLevel(int level) {
 
 void PKMN::AddExp(int expGained) {
     currentExp += expGained;
-    if (currentExp >= expToNextLevel) {
+    while (currentExp >= expToNextLevel) {
         LevelUp();
     }
 }

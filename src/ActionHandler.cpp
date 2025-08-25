@@ -627,32 +627,54 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
             break;
         case VICTORY:
             dialogue(player);
-            if (PlayerPKMNInfo.isLevelingUp) {
-                if (ControllerSingleton::GetInstance().IsAPressed() && textFinished){
+            if (ControllerSingleton::GetInstance().IsAPressed() && textFinished){
+                claenText();
+                int expGained = (1 * std::stoi(EnemyMons[0].GetPKMN_DEF()[PKMN::EXP_YIELD]) * EnemyMons[0].GetLevel()) / 7;
+                PKMNParty[PlayerPKMNInfo.SlotID].AddExp(expGained);
+
+                if (PKMNParty[PlayerPKMNInfo.SlotID].GetLevel() > PlayerPKMNInfo.Lvl) {
+                    PlayerPKMNInfo.isLevelingUp = true;
+                } else {
+                    PlayerPKMNInfo.levelUpMessage = "PLAYERPKMN gained " + std::to_string(expGained) + " EXP. Points!";
+                    SetNPCDialogue(PlayerPKMNInfo.levelUpMessage);
+                }
+                battlePhase = EXP_ANIMATION;
+            }
+            break;
+        case EXP_ANIMATION:
+            dialogue(player);
+            if (!PlayerPKMNInfo.isAnimatingExp) {
+                int expCurr = PKMNParty[PlayerPKMNInfo.SlotID].GetCurrentExp();
+                int expNext = PKMNParty[PlayerPKMNInfo.SlotID].GetExpToNextLevel();
+                int expPrev = PKMNParty[PlayerPKMNInfo.SlotID].GetExpToLevel(PlayerPKMNInfo.Lvl);
+                PlayerPKMNInfo.targetExpBar = 69.0f * ((float)(expCurr - expPrev) / (expNext - expPrev));
+                PlayerPKMNInfo.expBarSpeed = std::abs(PlayerPKMNInfo.targetExpBar - PlayerPKMNInfo.expBar) / 0.5f; // Animate over 0.5 seconds
+                PlayerPKMNInfo.isAnimatingExp = true;
+            }
+
+            if (PlayerPKMNInfo.expBar < PlayerPKMNInfo.targetExpBar) {
+                PlayerPKMNInfo.expBar += PlayerPKMNInfo.expBarSpeed * GetFrameTime();
+                if (PlayerPKMNInfo.expBar >= PlayerPKMNInfo.targetExpBar) {
+                    PlayerPKMNInfo.expBar = PlayerPKMNInfo.targetExpBar;
+                }
+            } else {
+                PlayerPKMNInfo.isAnimatingExp = false;
+                if (PlayerPKMNInfo.isLevelingUp) {
                     claenText();
                     PlayerPKMNInfo.Lvl = PKMNParty[PlayerPKMNInfo.SlotID].GetLevel();
                     PlayerPKMNInfo.HP = PKMNParty[PlayerPKMNInfo.SlotID].GetMaxHP();
                     PlayerPKMNInfo.curHP = PKMNParty[PlayerPKMNInfo.SlotID].GetCurHp();
                     PlayerPKMNInfo.levelUpMessage = "PLAYERPKMN grew to LV. " + std::to_string(PlayerPKMNInfo.Lvl) + "!";
                     SetNPCDialogue(PlayerPKMNInfo.levelUpMessage);
-                    PlayerPKMNInfo.isLevelingUp = false;
-                }
-            } else {
-                if (ControllerSingleton::GetInstance().IsAPressed() && textFinished){
-                    claenText();
-                    int expGained = (1 * std::stoi(EnemyMons[0].GetPKMN_DEF()[PKMN::EXP_YIELD]) * EnemyMons[0].GetLevel()) / 7;
-                    PKMNParty[PlayerPKMNInfo.SlotID].AddExp(expGained);
 
                     int expCurr = PKMNParty[PlayerPKMNInfo.SlotID].GetCurrentExp();
                     int expNext = PKMNParty[PlayerPKMNInfo.SlotID].GetExpToNextLevel();
                     int expPrev = PKMNParty[PlayerPKMNInfo.SlotID].GetExpToLevel(PlayerPKMNInfo.Lvl);
-                    PlayerPKMNInfo.expBar = 69.0f * ( (float)(expCurr - expPrev) / (expNext - expPrev) );
-
-                    PlayerPKMNInfo.levelUpMessage = "PLAYERPKMN gained " + std::to_string(expGained) + " EXP. Points!";
-                    SetNPCDialogue(PlayerPKMNInfo.levelUpMessage);
-                    if (PKMNParty[PlayerPKMNInfo.SlotID].GetLevel() > PlayerPKMNInfo.Lvl){
-                        PlayerPKMNInfo.isLevelingUp = true;
-                    } else {
+                    PlayerPKMNInfo.expBar = 0;
+                    PlayerPKMNInfo.targetExpBar = 69.0f * ((float)(expCurr - expPrev) / (expNext - expPrev));
+                    PlayerPKMNInfo.isLevelingUp = false;
+                } else {
+                    if (ControllerSingleton::GetInstance().IsAPressed() && textFinished){
                         battlePhase = EXIT;
                     }
                 }

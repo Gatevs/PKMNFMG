@@ -80,6 +80,9 @@ private:
         bool FirstMessage = false;
         std::string Type;
         float expBar = 0.0f;
+        float targetExpBar = 0.0f;
+        float expBarSpeed = 0.0f;
+        bool isAnimatingExp = false;
         bool isLevelingUp = false;
         std::string levelUpMessage;
     };
@@ -244,6 +247,7 @@ private:
         TURN_B,
         FAINTING,
         VICTORY,
+        EXP_ANIMATION,
         EXIT,
         ESCAPE,
         ESCAPE_FAILED
