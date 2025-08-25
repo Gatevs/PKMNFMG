@@ -618,6 +618,11 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
             dialogue(player);
             NextPhase(EnemyMons[0], PKMNParty[PlayerPKMNInfo.SlotID], EnemyPKMNInfo, PlayerPKMNInfo, TURN_A);
             break;
+        case ENEMY_FAINT_DELAY:
+            if (WaitFor(1.0f)) {
+                battlePhase = FAINTING;
+            }
+            break;
         case FAINTING:
             if (EnemyPKMNInfo.curHP == 0 && EnemyPKMNInfo.faintAnimDone){
                 claenText();
@@ -625,7 +630,7 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                 battlePhase = VICTORY;
             }
             if (PlayerPKMNInfo.curHP == 0) {
-                if (WaitFor(1.0f)) {
+                if (PlayerPKMNInfo.faintAnimDone) {
                     claenText();
                     SetNPCDialogue("PLAYERNAME ran out of usable pokemons!");
                     battlePhase = DEFEAT;
@@ -817,11 +822,8 @@ void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKM
                 UpdateHealthBar(pokeBInfo);
             }
             if (pokeBInfo.curHP == targetHP && textFinished){
-                if (pokeAInfo.StatusMoveSet){
-                    CurMoveState = APPLY_EFFECTS;
-                }else{
-                    CurMoveState = FAINT_CHECK;
-                }
+                CurMoveState = FAINT_CHECK;
+
             }
             break;
         case APPLY_EFFECTS:
@@ -842,9 +844,19 @@ void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKM
         case FAINT_CHECK:
             if (pokeBInfo.curHP == 0){
                 FinishTurns(pokeA,pokeB,pokeAInfo,pokeBInfo);
-                battlePhase = FAINTING;
+                if (&pokeBInfo == &EnemyPKMNInfo) {
+                    claenText();
+                    waitTimer = 0.0f;
+                    battlePhase = ENEMY_FAINT_DELAY;
+                } else {
+                    battlePhase = FAINTING;
+                }
             }else{
-                CurMoveState = END_PHASE;
+                if (pokeAInfo.StatusMoveSet){
+                    CurMoveState = APPLY_EFFECTS;
+                }else{
+                    CurMoveState = END_PHASE;
+                }
             }
             break;
 
@@ -1052,6 +1064,8 @@ void ActionHandler::ExitBattle(Player& player, PKMN& playerPoke){
     BattleUIPos = {0,0};
     PlayerPKMNInfo.MoveSlots = 0;
     EnemyPKMNInfo.MoveSlots = 0;
+    PlayerPKMNInfo.yOffset = 0;
+    PlayerPKMNInfo.faintAnimDone = false;
     EnemyPKMNInfo.yOffset = 0;
     EnemyPKMNInfo.faintAnimDone = false;
     PlayerPKMNInfo.EscapeAttempts = 0;
@@ -1660,7 +1674,12 @@ void ActionHandler::Draw_PlayerElements(){
     // Player's base
     DrawTextureRec(BaseTexture, BasePlayerMap, {PlayerBasePos.x, PlayerBasePos.y}, WHITE);
     // Player's Pokemon sprite
-    if (PlayerPKMNInfo.visible){DrawTexture(PKMNBattleTexture, PlayerPKMNSpritePos.x, (PlayerPKMNSpritePos.y + (PKMNSpriteJiggle)), WHITE);}
+    if (PlayerPKMNInfo.visible){
+        Vector2 spritePos = PlayerPKMNSpritePos;
+        spritePos.y += PKMNSpriteJiggle;
+        Vector2 bottomCenterPos = {spritePos.x + PKMNBattleTexture.width / 2.0f, spritePos.y + PKMNBattleTexture.height};
+        DrawPokemonSprite(bottomCenterPos, PKMNBattleTexture, PlayerPKMNInfo.yOffset, PlayerPKMNInfo.faintAnimDone, PlayerPKMNInfo.curHP);
+    }
     // Player's sprite
     DrawTextureRec(PlayerBattleTexture, {0, 0 + (PlayerBackspriteFrame.y * PlayerAnimFrame), PlayerBackspriteFrame.x, PlayerBackspriteFrame.y}, {PlayerSpritePos.x, PlayerSpritePos.y}, WHITE);
     // Player's pkmns HPCard

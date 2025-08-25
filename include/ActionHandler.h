@@ -246,6 +246,7 @@ private:
         SELECT_MOVE,
         TURN_A,
         TURN_B,
+        ENEMY_FAINT_DELAY,
         FAINTING,
         VICTORY,
         DEFEAT,
