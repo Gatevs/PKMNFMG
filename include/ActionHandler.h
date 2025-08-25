@@ -79,6 +79,9 @@ private:
         std::string StatusInfo;
         bool FirstMessage = false;
         std::string Type;
+        float expBar = 0.0f;
+        bool isLevelingUp = false;
+        std::string levelUpMessage;
     };
 
     void actionFollowMenu(std::vector<NPC>& NPC_objs, Player& player_Obj);

@@ -14,6 +14,8 @@ PKMN::PKMN(int id, int level, int gender, int gstage){
     cache.parseCSV("assets/CSV/PKMN_DB.csv", PKMN_DEF, ID);
     SetInitialStatValues();
     SetMovements();
+    currentExp = GetExpToLevel(LVL);
+    expToNextLevel = GetExpToLevel(LVL + 1);
 }
 
 PKMN::~PKMN() {
@@ -301,6 +303,35 @@ void PKMN::SetStatusValue(int& stat, int multiplier, std::string statname){
 void PKMN::ResetTempStats(){
     TempStats Reset;
     TemporaryStats = Reset;
+}
+
+int PKMN::GetExpToLevel(int level) {
+    // This is the Medium Fast curve
+    return level * level * level;
+}
+
+void PKMN::AddExp(int expGained) {
+    currentExp += expGained;
+    if (currentExp >= expToNextLevel) {
+        LevelUp();
+    }
+}
+
+void PKMN::LevelUp() {
+    LVL++;
+    expToNextLevel = GetExpToLevel(LVL + 1);
+
+    // Recalculate stats
+    BaseStats.HP = HPStatCalc();
+    BaseStats.Attack = OtherStatCalc(std::stoi(PKMN_DEF[BASE_ATTACK]), IV.Attack, EV.Attack, ATTACK);
+    BaseStats.Defense = OtherStatCalc(std::stoi(PKMN_DEF[BASE_DEFENSE]), IV.Defense, EV.Defense, DEFENSE);
+    BaseStats.Speed = OtherStatCalc(std::stoi(PKMN_DEF[BASE_SPEED]), IV.Speed, EV.Speed, SPEED);
+    BaseStats.SP_Attack = OtherStatCalc(std::stoi(PKMN_DEF[BASE_SPATTACK]), IV.SP_Attack, EV.SP_Attack, SP_ATK);
+    BaseStats.SP_Defense = OtherStatCalc(std::stoi(PKMN_DEF[BASE_SPDEFENSE]), IV.SP_Defense, EV.SP_Defense, SP_DEF);
+
+    // The following line is commented out because it requires a significant amount of additional work to implement,
+    // including parsing the level-up moves from the CSV files and adding a UI for the player to choose which move to replace.
+    // SetMovements();
 }
 
 float PKMN::GetTypeEffectiveness(int A_Type, int E_Type){

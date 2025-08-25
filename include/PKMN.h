@@ -46,6 +46,48 @@ public:
     bool IsCrit() {return critHit;}
     void ResetTempStats();
     void SetCurPP(int PPnumber, int PPValue) { Moveset.PP[PPnumber] = PPValue;}
+    void AddExp(int expGained);
+    void LevelUp();
+    int GetExpToLevel(int level);
+    int GetCurrentExp() const { return currentExp; }
+    int GetExpToNextLevel() const { return expToNextLevel; }
+
+    enum PKMN_DB{
+        INDEX,
+        NAME,
+        TYPE1,
+        TYPE2,
+        FIRST_ABILITY,
+        SECOND_ABILITY,
+        GENDER_RATIO,
+        CATCH_RATE,
+        EGG_GROUPS,
+        HATCH_STEPS,
+        HEIGHT,
+        WEIGHT,
+        EXP_YIELD,
+        LEVELING_RATE,
+        EV_YIELD,
+        SHAPE,
+        POKEDEX_COLOR,
+        HAPPINESS,
+        BASE_HP,
+        BASE_ATTACK,
+        BASE_DEFENSE,
+        BASE_SPATTACK,
+        BASE_SPDEFENSE,
+        BASE_SPEED,
+        HIDDEN_ABILITIES,
+        HABITAT,
+        CATEGORY,
+        POKEDEX,
+        GENERATION,
+        EVOLUTION,
+        TYPE_ID_1,
+        TYPE_ID_2,
+        OW_ID
+    };
+
 
     enum AffectedStat {
         ATTACK,
@@ -131,6 +173,8 @@ public:
     Moves& GetMovements() {return Moveset;}
     Stats& GetBaseStats() {return BaseStats;}
     TempStats& GetTempStats() {return TemporaryStats;}
+    std::vector<std::string> GetPKMN_DEF() const { return PKMN_DEF; }
+    std::vector<std::string> PKMN_DEF;
 
 private:
     int SLOT;
@@ -143,6 +187,8 @@ private:
     std::string location;
     std::string nickname;
     bool critHit = false;
+    int currentExp;
+    int expToNextLevel;
 
     int TurnAttackDamage = 0;
     int TurnHealAmount = 0;
@@ -159,7 +205,6 @@ private:
     std::string StatusChangeText;
     int NextMovePhase = 0;
 
-    std::vector<std::string> PKMN_DEF;
     std::vector<std::string> PKMNLVLUP_DEF;
 
     Natures natureTable[25] = {
@@ -190,39 +235,4 @@ private:
         {"Quirky", NONE, NONE}
     };
 
-    enum PKMN_DB{
-        INDEX,
-        NAME,
-        TYPE1,
-        TYPE2,
-        FIRST_ABILITY,
-        SECOND_ABILITY,
-        GENDER_RATIO,
-        CATCH_RATE,
-        EGG_GROUPS,
-        HATCH_STEPS,
-        HEIGHT,
-        WEIGHT,
-        EXP_YIELD,
-        LEVELING_RATE,
-        EV_YIELD,
-        SHAPE,
-        POKEDEX_COLOR,
-        HAPPINESS,
-        BASE_HP,
-        BASE_ATTACK,
-        BASE_DEFENSE,
-        BASE_SPATTACK,
-        BASE_SPDEFENSE,
-        BASE_SPEED,
-        HIDDEN_ABILITIES,
-        HABITAT,
-        CATEGORY,
-        POKEDEX,
-        GENERATION,
-        EVOLUTION,
-        TYPE_ID_1,
-        TYPE_ID_2,
-        OW_ID
-    };
 };

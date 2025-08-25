@@ -444,6 +444,11 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                 EnemyPKMNInfo.healthBarColor = 0;
                 EnemyPKMNInfo.Type = "WILD";
 
+                int expCurr = PKMNParty[PlayerPKMNInfo.SlotID].GetCurrentExp();
+                int expNext = PKMNParty[PlayerPKMNInfo.SlotID].GetExpToNextLevel();
+                int expPrev = PKMNParty[PlayerPKMNInfo.SlotID].GetExpToLevel(PlayerPKMNInfo.Lvl);
+                PlayerPKMNInfo.expBar = 69.0f * ( (float)(expCurr - expPrev) / (expNext - expPrev) );
+
                 std::transform(EnemyPKMNInfo.Name.begin(),EnemyPKMNInfo.Name.end(),EnemyPKMNInfo.Name.begin (),::toupper);
                 EnemyPKMNInfo.GStage = EnemyPKMN.GetGStage();
                 EnemySprite = "assets/PKMN_BATTLESPRITE/" + std::to_string(EnemyPKMNInfo.Index) + "_" + std::to_string(EnemyPKMNInfo.GStage) + ".png";
@@ -617,7 +622,40 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
             if (EnemyPKMNInfo.curHP == 0 && EnemyPKMNInfo.faintAnimDone){
                 claenText();
                 SetNPCDialogue("The wild ENEMYPKMN fainted!");
-                battlePhase = EXIT;
+                battlePhase = VICTORY;
+            }
+            break;
+        case VICTORY:
+            dialogue(player);
+            if (PlayerPKMNInfo.isLevelingUp) {
+                if (ControllerSingleton::GetInstance().IsAPressed() && textFinished){
+                    claenText();
+                    PlayerPKMNInfo.Lvl = PKMNParty[PlayerPKMNInfo.SlotID].GetLevel();
+                    PlayerPKMNInfo.HP = PKMNParty[PlayerPKMNInfo.SlotID].GetMaxHP();
+                    PlayerPKMNInfo.curHP = PKMNParty[PlayerPKMNInfo.SlotID].GetCurHp();
+                    PlayerPKMNInfo.levelUpMessage = "PLAYERPKMN grew to LV. " + std::to_string(PlayerPKMNInfo.Lvl) + "!";
+                    SetNPCDialogue(PlayerPKMNInfo.levelUpMessage);
+                    PlayerPKMNInfo.isLevelingUp = false;
+                }
+            } else {
+                if (ControllerSingleton::GetInstance().IsAPressed() && textFinished){
+                    claenText();
+                    int expGained = (1 * std::stoi(EnemyMons[0].GetPKMN_DEF()[PKMN::EXP_YIELD]) * EnemyMons[0].GetLevel()) / 7;
+                    PKMNParty[PlayerPKMNInfo.SlotID].AddExp(expGained);
+
+                    int expCurr = PKMNParty[PlayerPKMNInfo.SlotID].GetCurrentExp();
+                    int expNext = PKMNParty[PlayerPKMNInfo.SlotID].GetExpToNextLevel();
+                    int expPrev = PKMNParty[PlayerPKMNInfo.SlotID].GetExpToLevel(PlayerPKMNInfo.Lvl);
+                    PlayerPKMNInfo.expBar = 69.0f * ( (float)(expCurr - expPrev) / (expNext - expPrev) );
+
+                    PlayerPKMNInfo.levelUpMessage = "PLAYERPKMN gained " + std::to_string(expGained) + " EXP. Points!";
+                    SetNPCDialogue(PlayerPKMNInfo.levelUpMessage);
+                    if (PKMNParty[PlayerPKMNInfo.SlotID].GetLevel() > PlayerPKMNInfo.Lvl){
+                        PlayerPKMNInfo.isLevelingUp = true;
+                    } else {
+                        battlePhase = EXIT;
+                    }
+                }
             }
             break;
         case EXIT:
@@ -1598,6 +1636,9 @@ void ActionHandler::Draw_PlayerElements(){
     DrawTextBoxed(BattleFont, std::to_string(int(PlayerPKMNInfo.curHP)).c_str(), {HPCardFriendPos.x + 72, HPCardFriendPos.y + 28, 60, 30}, MainFont.baseSize, -4, wordWrap, WHITE);
     //Player's Pokemon MaxHP'
     DrawTextBoxed(BattleFont, std::to_string(PlayerPKMNInfo.HP).c_str(), {HPCardFriendPos.x + 94, HPCardFriendPos.y + 28, 60, 30}, MainFont.baseSize, -4, wordWrap, WHITE);
+    // Player's EXP bar
+    DrawRectangle(HPCardFriendPos.x + 24, HPCardFriendPos.y + 42, 96, 2,LIGHTGRAY);
+    DrawRectangle(HPCardFriendPos.x + 24, HPCardFriendPos.y + 42, PlayerPKMNInfo.expBar, 2,BLUE);
 }
 
 void ActionHandler::Draw_BattleTextBox(){
