@@ -34,6 +34,10 @@ void TileMap::loadLDtkMap(const std::string& filePath, std::function<void()> cal
 void TileMap::initialize(const std::string& Lvl) {
     loadingDone = false;
     curLevel = Lvl;
+    animated_tiles.clear(); // Clear any previous animated tiles
+    tileAnimationsMap.clear();
+    firstFrameIds.clear();
+
     const auto& world = ldtk_project.getWorld();
     const auto& level = world.getLevel(Lvl);
     const auto& layer = level.getLayer("BG");
@@ -63,7 +67,7 @@ void TileMap::initialize(const std::string& Lvl) {
         }
     }
 
-    // Draw all the tiles.
+    // Draw all the tiles and populate animated_tiles vector
     BeginTextureMode(renderer);
     ClearBackground(BLACK);
     for (const auto &tile : tiles_vector) {
@@ -80,6 +84,16 @@ void TileMap::initialize(const std::string& Lvl) {
             static_cast<float>(texture_rect.height) * (tile.flipY ? -1.0f : 1.0f)
         };
         DrawTextureRec(texture, src, dest, WHITE);
+
+        // Check if the tile is animated
+        auto it = std::find_if(firstFrameIds.begin(), firstFrameIds.end(),
+                               [&](const std::pair<std::string, int>& pair) {
+                                   return pair.second == tile.tileId;
+                               });
+
+        if (it != firstFrameIds.end()) {
+            animated_tiles.push_back({dest, it->first});
+        }
     }
     EndTextureMode();
     loadingDone = true;
@@ -109,79 +123,71 @@ void TileMap::draw(const std::string render, Vector2 lvl_Pos) {
 }
 
 // Animate Tiles
-void TileMap::update(const std::string lvl, unrelated& animationState, Vector2 pos) {
-    RenderTexture2D drawer;
-    if (Card.Active){
+void TileMap::update(const std::string lvl, AnimationState& animationState, Vector2 pos) {
+    if (Card.Active) {
         ShowLocationCard(pos);
     }
-    if (lvl == curLevel){
-        drawer = renderer;
-    } else if (lvl == nextLevel){
-        drawer = swapRender;
-    }
 
-    const auto& world = ldtk_project.getWorld();
-    const auto& level = world.getLevel(lvl);
-    const auto& layer = level.getLayer("BG");
-    const auto& tiles_vector = layer.allTiles();
-    // If the timer reaches the set time, draw the next tile in the sequence
-    if (animationState.animTimer != TILE_ANIM_TIME){
-        animationState.animTimer += 1;
+    // Timer logic for animation frames
+    if (animationState.animTimer < TILE_ANIM_TIME) {
+        animationState.animTimer++;
         animationState.animFrame = false;
-    }else{
+    } else {
         animationState.animTimer = 0;
         animationState.animFrame = true;
     }
 
-    if (animationState.animFrame){
-        Vector2 StartPos = (Vector2){pos.x - 112, pos.y - 96};
-        Vector2 EndPos = (Vector2){StartPos.x + 256, StartPos.y + 208};
-        // Update the current frame index based on the tile animation direction.
+    if (animationState.animFrame) {
+        // Determine which texture to update
+        RenderTexture2D* drawer = nullptr;
+        if (lvl == curLevel) {
+            drawer = &renderer;
+        } else if (lvl == nextLevel) {
+            drawer = &swapRender;
+        } else {
+            return; // Not a level we should update
+        }
+
+        const auto& world = ldtk_project.getWorld();
+        const auto& level = world.getLevel(lvl);
+        const auto& layer = level.getLayer("BG");
+        const auto& tileset = layer.getTileset();
+
+        // Update frame index
         animationState.currentFrameIndex += animationState.tileAnimReverse ? -1 : 1;
-        // Check if the current frame index is at the beginning or end of the animation sequence.
-        // If so, toggle the tile animation direction by reversing the value of animationState.tileAnimReverse.
-        if (animationState.currentFrameIndex == -1 || animationState.currentFrameIndex + 1 == 2) {
+        if (animationState.currentFrameIndex <= -1 || animationState.currentFrameIndex + 1 >= 2) {
             animationState.tileAnimReverse = !animationState.tileAnimReverse;
         }
-        ClearBackground(BLACK);
-        BeginTextureMode(drawer);
 
-        for (const auto &tile : tiles_vector) {
-            const auto& position = tile.getPosition();
-            const auto& texture_rect = tile.getTextureRect();
-            int TILE_X = texture_rect.x;
-            int TILE_Y = texture_rect.y;
-            if (position.x > StartPos.x && position.x < EndPos.x && position.y > StartPos.y && position.y < EndPos.y){
+        // Define viewport for culling
+        Rectangle viewport = {pos.x - 112, pos.y - 96, 256, 208};
 
+        BeginTextureMode(*drawer);
 
-            auto it = std::find_if(firstFrameIds.begin(), firstFrameIds.end(),
-                                   [&](const std::pair<std::string, int>& pair) {
-                                       return pair.second == tile.tileId;
-                                   });
-            if (it != firstFrameIds.end()) {
-                int animIndex = std::distance(firstFrameIds.begin(), it);
-                const auto& animTiles = tileAnimationsMap[firstFrameIds[animIndex].first];
-                // Check if the current tile is part of the animated sequence
-                if (tile.tileId == animTiles[0]){
-                    // Set the tile texture to the texture from the tile that's next on the sequence
-                    TILE_X = layer.getTileset().getTileTexturePos(animTiles[animationState.currentFrameIndex + 1]).x;
-                    TILE_Y = layer.getTileset().getTileTexturePos(animTiles[animationState.currentFrameIndex + 1]).y;
-                }
+        for (const auto& animatedTile : animated_tiles) {
+            // Culling: Check if the tile is within the viewport
+            if (CheckCollisionPointRec(animatedTile.position, viewport)) {
+                const auto& animFrames = tileAnimationsMap[animatedTile.animationName];
+                if (animFrames.empty()) continue;
+
+                // Calculate the next frame
+                int nextFrameTileId = animFrames[animationState.currentFrameIndex + 1];
+
+                // Get texture position for the new frame
+                ldtk::IntPoint texPos = tileset.getTileTexturePos(nextFrameTileId);
+
+                Rectangle src = {
+                    static_cast<float>(texPos.x),
+                    static_cast<float>(texPos.y),
+                    static_cast<float>(tileset.tile_size),
+                    static_cast<float>(tileset.tile_size)
+                };
+
+                // Draw the new frame on top of the old one
+                DrawTextureRec(texture, src, animatedTile.position, WHITE);
             }
+        }
 
-            Vector2 dest = {
-                static_cast<float>(position.x),
-                static_cast<float>(position.y),
-            };
-            Rectangle src = {
-                static_cast<float>((TILE_X)),
-                static_cast<float>((TILE_Y)),
-                static_cast<float>(texture_rect.width) * (tile.flipX ? -1.0f : 1.0f),
-                static_cast<float>(texture_rect.height) * (tile.flipY ? -1.0f : 1.0f)
-            };
-            DrawTextureRec(texture, src, dest, WHITE);
-        }
-        }
         EndTextureMode();
     }
 }

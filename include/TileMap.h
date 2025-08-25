@@ -10,7 +10,7 @@
 #include "raylib.h"
 #include "TileObjects.h"
 
-struct unrelated {
+struct AnimationState {
     int currentFrameIndex = -1;
     int animTimer = 0;
     bool animFrame = true;
@@ -26,7 +26,7 @@ public:
     void initialize(const std::string& Lvl);
     void Unload();
     void draw(const std::string render, Vector2 lvl_pos);
-    void update(const std::string lvl, unrelated& animationState, Vector2 pos);
+    void update(const std::string lvl, AnimationState& animationState, Vector2 pos);
     void InFrontObjs();
     const ldtk::Layer& GetCOL();
     ldtk::Project ldtk_project;
@@ -56,6 +56,11 @@ public:
     std::string IndoorWarpTo(Player& player_obj);
 
 private:
+    struct AnimatedTile {
+        Vector2 position;
+        std::string animationName;
+    };
+    std::vector<AnimatedTile> animated_tiles;
     std::map<std::string, std::vector<int>> tileAnimationsMap;
     std::vector<std::pair<std::string, int>> firstFrameIds; // Vector to store animation name and first frame ID
     std::vector<int> frontTiles;

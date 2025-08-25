@@ -31,6 +31,7 @@ private:
     void JsonSaveNPCData();
     void JsonLoadNPCData();
     void WarpPlayer(std::string where);
+    void LoadLevel(std::string where);
     int test;
     Color green = {20,160,133,254};
     int gameWidth = 256;
@@ -40,7 +41,8 @@ private:
     Camera2D camera = { 0 };
     Camera2D bigCamera = { 1 };
     bool lockCamera = false;
-    int WarpingPlayer = 0;
+    enum class WarpState { None, FadingIn, FadingOut };
+    WarpState warpState = WarpState::None;
     Vector2 targetPos;
     Vector2 BottomBarPos;
     TileMap Outside;
@@ -51,8 +53,8 @@ private:
     std::vector<tileObj> tileObjs;
     Texture2D ShadowCentered;
     Texture2D ShadowOffCenter;
-    unrelated swapper;
-    unrelated cur;
+    AnimationState swapper;
+    AnimationState cur;
     bool IntroFinished = false;
     bool VNMenu = false;
     Texture2D IntroBG = LoadTexture("assets/MISC/DEBUG_CHAR.png");

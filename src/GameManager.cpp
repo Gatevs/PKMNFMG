@@ -93,7 +93,7 @@ void GameManager::GameInitialization(std::string map){
     camera.zoom = 1.0f;
     Menu.SetFadePos({targetPos.x - 32, targetPos.y});
     Menu.SetFade(255);
-    WarpingPlayer = 2;
+    warpState = WarpState::FadingOut;
 }
 
 void GameManager::CameraUpdate(){
@@ -189,14 +189,15 @@ if (IsKeyPressed(KEY_K)) {
 
     Outside.update(Outside.GetCurLevelName(), cur, player.GetPosition());
     // std::cout << Menu.stopPlayerInput << std::endl;
-    if (WarpingPlayer == 1){
+    if (warpState == WarpState::FadingIn){
         WarpPlayer(Outside.IndoorWarpTo(player));
-    } else if (WarpingPlayer == 2){
+    } else if (warpState == WarpState::FadingOut){
+        Menu.SetFadePos({camera.target.x - 32, camera.target.y});
         if(!Menu.IsFadeOutComplete()){
             Menu.fadeOut(1);
         }else{
             Menu.SetFade(-1);
-            WarpingPlayer = 0;
+            warpState = WarpState::None;
         }
     }
     if (player.InvokeUIElement() != NONE && !Menu.stopPlayerInput){
@@ -246,7 +247,7 @@ if (IsKeyPressed(KEY_K)) {
         }
     }
     // Handle player input and update player and npc state
-    if (!Menu.stopPlayerInput && WarpingPlayer == 0 && !player.IsPlayerGrowing()){
+    if (!Menu.stopPlayerInput && warpState == WarpState::None && !player.IsPlayerGrowing()){
         player.HandleInput(npcs);
     } else if (Menu.stopPlayerInput){
         Menu.InputUI(npcs, player, PlayerParty);
@@ -260,7 +261,7 @@ if (IsKeyPressed(KEY_K)) {
         } else{
             lockCamera = false;
         }
-        if (Outside.IndoorWarpTo(player) != "NULL"){WarpingPlayer = true;}
+        if (Outside.IndoorWarpTo(player) != "NULL"){warpState = WarpState::FadingIn;}
         Outside.IsWarpClose(player);
         Outside.PlayerInTallGrass(player);
         player.checkCollisions(Outside.GetCOL(), npcs, Outside.GetlevelOffset());
@@ -482,18 +483,43 @@ void GameManager::JsonLoadNPCData() {
 }
 
 
+void GameManager::LoadLevel(std::string where) {
+    lockCamera = false;
+    JsonSaveNPCData();
+    npcs.clear();
+    tileObjs.clear();
+    Outside.Unload();
+    player.StopPlayer();
+
+    // Initialize the new level without full re-initialization
+    Outside.initialize(where);
+    Outside.loadPlayer(player);
+    Outside.loadNPCs(Outside.GetCurLevelName(), player, npcs, true);
+    Outside.loadTileObjs(Outside.GetCurLevelName(), tileObjs);
+    JsonLoadNPCData();
+
+    for (auto& npc : npcs) {
+        npc.parseCSV("assets/CSV/Dataset.csv");
+        npc.SetShadow(ShadowCentered,ShadowOffCenter);
+    }
+
+    player.UpdatePositionAndCamera();
+    targetPos = {(floor((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32), floor((player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f))};
+    if (Outside.IsCameraLockNear(player)){
+        lockCamera = true;
+        targetPos = {Outside.InitLockDirection(player).x,targetPos.y};
+    }else{
+        lockCamera = false;
+    }
+}
+
 void GameManager::WarpPlayer(std::string where){
     Menu.SetFadePos({camera.target.x - 32, camera.target.y});
     Menu.fadeIn(1);
     if (Menu.IsFadeInComplete()){
-        lockCamera = false;
-        JsonSaveNPCData();
-        npcs.clear();
-        tileObjs.clear();
-        Outside.Unload();
-        player.StopPlayer();
-        GameInitialization(where);
-        WarpingPlayer = 2;
+        LoadLevel(where);
+        Menu.SetFade(255);
+        warpState = WarpState::FadingOut;
     }
 }
 
