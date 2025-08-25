@@ -247,6 +247,7 @@ private:
         TURN_A,
         TURN_B,
         ENEMY_FAINT_DELAY,
+        PLAYER_FAINT_DELAY,
         FAINTING,
         VICTORY,
         DEFEAT,

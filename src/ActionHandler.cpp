@@ -623,6 +623,11 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                 battlePhase = FAINTING;
             }
             break;
+        case PLAYER_FAINT_DELAY:
+            if (WaitFor(1.0f)) {
+                battlePhase = FAINTING;
+            }
+            break;
         case FAINTING:
             if (EnemyPKMNInfo.curHP == 0 && EnemyPKMNInfo.faintAnimDone){
                 claenText();
@@ -822,8 +827,11 @@ void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKM
                 UpdateHealthBar(pokeBInfo);
             }
             if (pokeBInfo.curHP == targetHP && textFinished){
-                CurMoveState = FAINT_CHECK;
-
+                if (pokeAInfo.StatusMoveSet){
+                    CurMoveState = APPLY_EFFECTS;
+                }else{
+                    CurMoveState = FAINT_CHECK;
+                }
             }
             break;
         case APPLY_EFFECTS:
@@ -849,14 +857,12 @@ void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKM
                     waitTimer = 0.0f;
                     battlePhase = ENEMY_FAINT_DELAY;
                 } else {
-                    battlePhase = FAINTING;
+                    claenText();
+                    waitTimer = 0.0f;
+                    battlePhase = PLAYER_FAINT_DELAY;
                 }
             }else{
-                if (pokeAInfo.StatusMoveSet){
-                    CurMoveState = APPLY_EFFECTS;
-                }else{
-                    CurMoveState = END_PHASE;
-                }
+                CurMoveState = END_PHASE;
             }
             break;
 
