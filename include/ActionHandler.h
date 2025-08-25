@@ -211,6 +211,7 @@ private:
     int ActiveNPCVectorIndex = -1;
 
     int battlePhase;
+    bool battleVictory = false;
     int CurMoveState = 0;
     int TextBoxOpacity = 0;
     float battleTimer = 0.0f;
@@ -247,6 +248,7 @@ private:
         TURN_B,
         FAINTING,
         VICTORY,
+        DEFEAT,
         EXP_ANIMATION,
         EXIT,
         ESCAPE,

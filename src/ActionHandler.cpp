@@ -624,6 +624,13 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                 SetNPCDialogue("The wild ENEMYPKMN fainted!");
                 battlePhase = VICTORY;
             }
+            if (PlayerPKMNInfo.curHP == 0) {
+                if (WaitFor(1.0f)) {
+                    claenText();
+                    SetNPCDialogue("PLAYERNAME ran out of usable pokemons!");
+                    battlePhase = DEFEAT;
+                }
+            }
             break;
         case VICTORY:
             dialogue(player);
@@ -638,9 +645,20 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
                     PlayerPKMNInfo.levelUpMessage = "PLAYERPKMN gained " + std::to_string(expGained) + " EXP. Points!";
                     SetNPCDialogue(PlayerPKMNInfo.levelUpMessage);
                 }
+                battleVictory = true;
                 battlePhase = EXP_ANIMATION;
             }
             break;
+        case DEFEAT:
+            dialogue(player);
+            if (textFinished && ControllerSingleton::GetInstance().IsAPressed()) {
+                claenText();
+                SetNPCDialogue("PLAYERNAME blacked out!");
+                battleVictory = false;
+                battlePhase = EXIT;
+            }
+            break;
+
         case EXP_ANIMATION:
             dialogue(player);
             if (!PlayerPKMNInfo.isAnimatingExp) {
@@ -688,8 +706,15 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
             if (PlayerPKMNInfo.BattleEnd){
                 if (!fadeInComplete) {
                     fadeIn(1);
-                } else {
+                } else if (battleVictory) {
                     externalFadeOut = true;
+                    ExitBattle(player, PKMNParty[PlayerPKMNInfo.SlotID]);
+                } else{
+                    externalFadeOut = true;
+                    for (auto& pkmn : PKMNParty) {
+                        pkmn.SetCurHP(pkmn.GetMaxHP());
+                    }
+                    player.setPosition({10.0f * 16, 10.0f * 16}); // Respawn at tile (10, 10)
                     ExitBattle(player, PKMNParty[PlayerPKMNInfo.SlotID]);
                 }
             }
@@ -698,6 +723,7 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
             if (IsPlayerEscaping(PlayerPKMNInfo,PKMNParty[PlayerPKMNInfo.SlotID], EnemyMons[0])){
                 claenText();
                 SetNPCDialogue("Got away safely!");
+                battleVictory = true;
                 battlePhase = EXIT;
             }else{
                 std::random_device seed;
@@ -768,12 +794,11 @@ void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKM
             }
             break;
         case BLINK_SPRITE:
-            if (battleTimer > 5.0f && pokeBInfo.blinkCounter < 6){
+            battleTimer += GetFrameTime();
+            if (battleTimer > 0.08f && pokeBInfo.blinkCounter < 6){
                 pokeBInfo.blinkCounter += 1;
                 pokeBInfo.visible = !pokeBInfo.visible;
                 battleTimer = 0.0f;
-            }else{
-                battleTimer += GetFrameTime() * (pokeBInfo.HP * 4.0f);
             }
             if (pokeBInfo.blinkCounter >= 6){
                 CurMoveState = DAMAGE_UPDATE;
@@ -798,7 +823,6 @@ void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKM
                     CurMoveState = FAINT_CHECK;
                 }
             }
-            battleTimer += GetFrameTime() * (pokeBInfo.HP * 4.0f);
             break;
         case APPLY_EFFECTS:
             if (WaitFor(1.0f) && pokeAInfo.StatusMoveSet){
@@ -834,7 +858,6 @@ void ActionHandler::NextPhase(PKMN& pokeA, PKMN& pokeB, PKMNInfo& pokeAInfo, PKM
                     CurMoveState = FAINT_CHECK;
                 }
             }
-            battleTimer += GetFrameTime() * (pokeAInfo.HP * 4.0f);
             break;
         case END_PHASE:
             if (WaitFor(0.5f) && textFinished){
@@ -988,21 +1011,17 @@ void ActionHandler::BattleSpriteJiggle(){
 }
 
 void ActionHandler::ApplyDamageOrRecovery(PKMNInfo& pokeBInfo, float targetHP, PKMNInfo& pokeAInfo, bool healing) {
-    if (battleTimer > 1.0f) {
-        if (!healing){
-            float change = (float(std::abs(pokeAInfo.AttackPower)) / pokeBInfo.HP) * 2; // Scaled change
-            pokeBInfo.curHP -= change; // Decrease HP
-            if (pokeBInfo.curHP < targetHP) pokeBInfo.curHP = targetHP;
-            if (pokeBInfo.curHP < 0) {
-                pokeBInfo.curHP = 0;
-                targetHP = 0;
-            }
-        }else{
-            float change = (float(std::abs(pokeAInfo.HealAmount)) / pokeAInfo.HP) * 2; // Scaled change
-            pokeAInfo.curHP += change; // Increase HP
-            if (pokeAInfo.curHP > targetHP) pokeAInfo.curHP = targetHP;
+    float change = 0.35f;
+    if (!healing){
+        pokeBInfo.curHP -= change; // Decrease HP
+        if (pokeBInfo.curHP < targetHP) pokeBInfo.curHP = targetHP;
+        if (pokeBInfo.curHP < 0) {
+            pokeBInfo.curHP = 0;
+            targetHP = 0;
         }
-        battleTimer = 0.0f;
+    }else{
+        pokeAInfo.curHP += change; // Increase HP
+        if (pokeAInfo.curHP > targetHP) pokeAInfo.curHP = targetHP;
     }
 }
 
