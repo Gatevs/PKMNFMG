@@ -264,7 +264,7 @@ if (IsKeyPressed(KEY_K)) {
         if (Outside.IndoorWarpTo(player) != "NULL"){warpState = WarpState::FadingIn;}
         Outside.IsWarpClose(player);
         Outside.PlayerInTallGrass(player);
-        player.checkCollisions(Outside.GetCOL(), npcs, Outside.GetlevelOffset());
+        player.checkCollisions(Outside, npcs);
         player.UpdateAnim();
         player.UpdatePositionAndCamera();
         if (player.GetPlayerFollower() != 0){

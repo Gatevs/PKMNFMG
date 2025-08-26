@@ -36,7 +36,7 @@ public:
     void IsWarpClose(Player& player_obj);
     Vector2 GetSwapLevel();
     Vector2 GetCurLevel();
-    Vector2 GetlevelOffset();
+    Vector2 GetlevelOffset() const;
     bool IsNextLevelLoaded();
     bool StandingOnWarp();
     void SwapLevels(Player& player_obj);
@@ -54,8 +54,13 @@ public:
     void parseCSV();
     Vector2 InitLockDirection(Player& player_obj);
     std::string IndoorWarpTo(Player& player_obj);
+    int getCollision(int x, int y) const;
 
 private:
+    void initializeCollisionGrid(const std::string& levelName);
+    void preprocessEntityCollisions(const std::string& levelName);
+    std::vector<int> m_collision_grid;
+    int m_collision_grid_width;
     struct AnimatedTile {
         Vector2 position;
         std::string animationName;
@@ -110,7 +115,6 @@ private:
 
     Vector2 loadLevel_Pos;
     Vector2 curLevel_Pos;
-    Vector2 curLevel_Offset;
     bool NextLevelLoaded;
     bool DrawLoadedLevel;
     bool onWarp;

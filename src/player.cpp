@@ -1,4 +1,5 @@
 #include "player.h"
+#include "TileMap.h"
 #include "raylib.h"
 #include <cstddef>
 #include <iostream>
@@ -290,19 +291,20 @@ void Player::UpdatePositionAndCamera() {
     collisionMask.y = position.y - (COLLISION_MASK_HEIGHT / 2.0f);
 }
 
-bool Player::IntGridValueAtPosition(const ldtk::Layer& collisions, int value, Vector2 IntGridOffset){
+bool Player::IntGridValueAtPosition(const TileMap& tilemap, int value){
     // Calculate the position in front of the player based on direction
     int tile_Col = 0;
+    Vector2 IntGridOffset = tilemap.GetlevelOffset();
     // Get the integer grid value at the specified position
-    auto tileValue1 = collisions.getIntGridVal((ColOffset(true).x / 16) - IntGridOffset.x, (ColOffset(true).y / 16) - IntGridOffset.y);
-    auto tileValue2 = collisions.getIntGridVal(((ColOffset(true).x + 16 )/ 16) - IntGridOffset.x, ((ColOffset(true).y) / 16) - IntGridOffset.y);
-    auto tileValue3 = collisions.getIntGridVal((ColOffset(true).x/ 16) - IntGridOffset.x, ((ColOffset(true).y + 16 ) / 16) - IntGridOffset.y);
+    int tileValue1 = tilemap.getCollision((ColOffset(true).x / 16) - IntGridOffset.x, (ColOffset(true).y / 16) - IntGridOffset.y);
+    int tileValue2 = tilemap.getCollision(((ColOffset(true).x + 16 )/ 16) - IntGridOffset.x, ((ColOffset(true).y) / 16) - IntGridOffset.y);
+    int tileValue3 = tilemap.getCollision((ColOffset(true).x/ 16) - IntGridOffset.x, ((ColOffset(true).y + 16 ) / 16) - IntGridOffset.y);
     if (m_dir == 90 or m_dir == 180){
-        tile_Col = tileValue1.value;
+        tile_Col = tileValue1;
     } else if (m_dir == 0){
-        tile_Col = tileValue2.value;
+        tile_Col = tileValue2;
     } else{
-        tile_Col = tileValue3.value;
+        tile_Col = tileValue3;
     }
     if (tile_Col == value){
         return true;
@@ -311,9 +313,9 @@ bool Player::IntGridValueAtPosition(const ldtk::Layer& collisions, int value, Ve
     }
 }
 
-void Player::checkCollisions(const ldtk::Layer& collisions,  const std::vector<NPC>& npcs, Vector2 IntGridOffset) {
+void Player::checkCollisions(const TileMap& tilemap,  const std::vector<NPC>& npcs) {
     // Check if the tile value indicates a collision
-    if (IntGridValueAtPosition(collisions,1,IntGridOffset)) {
+    if (IntGridValueAtPosition(tilemap,1)) {
         // Collision detected, handle accordingly
         if (step_timer != 0){
             past_dir = input_direction;

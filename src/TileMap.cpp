@@ -3,6 +3,8 @@
 #include "rapidcsv.h"
 #include "raylib.h"
 #include <string>
+#include <fstream>
+#include "json.hpp"
 
 TileMap::TileMap() {
     locationCard_Texture = LoadTexture("assets/TILEMAPS/LocationCard.png");
@@ -96,6 +98,8 @@ void TileMap::initialize(const std::string& Lvl) {
         }
     }
     EndTextureMode();
+
+    initializeCollisionGrid(Lvl);
     loadingDone = true;
 }
 
@@ -239,9 +243,19 @@ void TileMap::IsWarpClose(Player& player_obj){
                 }
             }
         }
-        if (wObj_Pos.x == player_obj.GetPosition().x || wObj_Pos.y == player_obj.GetPosition().y){
+        Rectangle warp_bbox = {
+            static_cast<float>(wObj_Pos.x),
+            static_cast<float>(wObj_Pos.y),
+            static_cast<float>(wObj_Width),
+            static_cast<float>(wObj_Height)
+        };
+        if (CheckCollisionRecs(player_obj.ColOffset(false), warp_bbox)){
             curLevel = level.name;
-            std::string wname = wObj.getField<std::string>("Going_To").value();
+            auto goingTo = wObj.getField<std::string>("Going_To").value();
+            if (goingTo=="") {
+                std::cerr << "DEBUG: ERROR: Warp entity at (" << wObj_Pos.x << ", " << wObj_Pos.y << ") is missing 'Going_To' field." << std::endl;
+                continue;
+            }
             if (wObj_Dir == player_obj.GetPlayerDir() && !onWarp){
                 Warp_Pos = (Vector2){static_cast<float>(wObj_Pos.x), static_cast<float>(wObj_Pos.y)};
                 Warp_Dir = wObj_Dir;
@@ -330,6 +344,7 @@ void TileMap::EnterNextlevel(Vector2 warpPos, Player& player_obj, int dir){
             loadLevel_Pos = pastRenderPos;
             player_obj.SetLocation(curLevel);
             onWarp = false;
+            initializeCollisionGrid(curLevel);
         }
 }
 
@@ -455,7 +470,7 @@ const ldtk::Layer& TileMap::GetCOL() {
 
 void TileMap::PlayerInTallGrass(Player& player_obj){
     // Check if the tile value indicates a collision
-    if (player_obj.IntGridValueAtPosition(GetCOL(),2,GetlevelOffset())) {
+    if (player_obj.IntGridValueAtPosition(*this, 2)) {
         // Collision detected, handle accordingly
         grass.Visible = true;
         grass.Active = true;
@@ -655,15 +670,12 @@ Vector2 TileMap::GetCurLevel(){
     return curLevel_Pos;
 }
 
-Vector2 TileMap::GetlevelOffset(){
+Vector2 TileMap::GetlevelOffset() const {
     const auto& world = ldtk_project.getWorld();
     const auto& level = world.getLevel(curLevel);
-    int LvlOffsetX= level.position.x / 16;
-    int LvlOffsetY= level.position.y / 16;
-    curLevel_Offset = (Vector2){static_cast<float>(LvlOffsetX),static_cast<float>(LvlOffsetY)};
-
-
-    return curLevel_Offset;
+    int LvlOffsetX = level.position.x / 16;
+    int LvlOffsetY = level.position.y / 16;
+    return (Vector2){static_cast<float>(LvlOffsetX), static_cast<float>(LvlOffsetY)};
 }
 
 bool TileMap::IsNextLevelLoaded(){
@@ -692,4 +704,70 @@ std::string TileMap::GetCurLevelName(){
 
 std::string TileMap::GetSwapLevelName(){
     return nextLevel;
+}
+
+int TileMap::getCollision(int x, int y) const {
+    if (x < 0 || x >= m_collision_grid_width || y < 0 || y * m_collision_grid_width >= m_collision_grid.size()) {
+        return -1; // Out of bounds
+    }
+    return m_collision_grid[y * m_collision_grid_width + x];
+}
+
+void TileMap::initializeCollisionGrid(const std::string& levelName) {
+    const auto& world = ldtk_project.getWorld();
+    const auto& level = world.getLevel(levelName);
+    // Initialize collision grid
+    const auto& col_layer = level.getLayer("COL");
+    auto grid_size_vec = col_layer.getGridSize();
+    m_collision_grid_width = grid_size_vec.x;
+    int grid_height = grid_size_vec.y;
+    m_collision_grid.clear();
+    m_collision_grid.resize(m_collision_grid_width * grid_height);
+    for (int y = 0; y < grid_height; ++y) {
+        for (int x = 0; x < m_collision_grid_width; ++x) {
+            const auto& tile = col_layer.getIntGridVal(x, y);
+            m_collision_grid[y * m_collision_grid_width + x] = tile.value;
+        }
+    }
+
+    preprocessEntityCollisions(levelName);
+}
+
+void TileMap::preprocessEntityCollisions(const std::string& levelName) {
+    std::ifstream f("assets/entity_definitions.json");
+    if (!f.is_open()) {
+        std::cerr << "Failed to open entity_definitions.json" << std::endl;
+        return;
+    }
+    nlohmann::json entity_definitions = nlohmann::json::parse(f);
+
+    const auto& world = ldtk_project.getWorld();
+    auto& level = world.getLevel(levelName);
+    auto& objects = level.getLayer("Objects");
+    const auto& col_layer = level.getLayer("COL");
+    int grid_size = col_layer.getCellSize();
+
+    for (const auto& entity : objects.allEntities()) {
+        const std::string& entityType = entity.getName();
+        if (entity_definitions.contains(entityType)) {
+            const auto& def = entity_definitions[entityType];
+            if (def.contains("anchors")) {
+                for (const auto& anchor : def["anchors"]) {
+                    int anchorX = anchor[0];
+                    int anchorY = anchor[1];
+
+                    int entityTileX = entity.getPosition().x / grid_size;
+                    int entityTileY = entity.getPosition().y / grid_size;
+
+                    int collisionTileX = entityTileX + anchorX;
+                    int collisionTileY = entityTileY + anchorY;
+
+                    if (collisionTileX >= 0 && collisionTileX < m_collision_grid_width &&
+                        collisionTileY >= 0 && (collisionTileY * m_collision_grid_width) < m_collision_grid.size()) {
+                        m_collision_grid[collisionTileY * m_collision_grid_width + collisionTileX] = 1;
+                    }
+                }
+            }
+        }
+    }
 }
