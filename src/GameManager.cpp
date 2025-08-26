@@ -99,34 +99,51 @@ void GameManager::GameInitialization(std::string map){
 void GameManager::CameraUpdate(){
     if (!IntroFinished){
         targetPos = {static_cast<float>(+32), static_cast<float>(0)};
-    }else if (lockCamera){
-        if (Outside.GetLockCameraAxis().x == 1 && Outside.GetLockCameraAxis().y != 1){
-            targetPos.x = targetPos.x;
-            if (Outside.GetLockCameraAxis().y != 1){
-                targetPos.y = float((player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f));
+    } else if (lockCamera) {
+        // Get the lock directions from the current area
+        Vector2 lockDirections = Outside.GetLockCameraAxis(); // New method to get specific directions
+
+        // Calculate the desired camera position without locks
+        Vector2 desiredPos = {
+            (float((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32),
+            float((player.GetPosition().y - (192 / 2.0f)) + (32 / 2.0f))
+        };
+
+        // Apply directional locks based on the lock type
+        if (lockDirections.x != 0) { // Horizontal lock
+            if (lockDirections.x == 1) { // Lock right movement
+                targetPos.x = MIN(desiredPos.x, targetPos.x);
+            } else if (lockDirections.x == -1) { // Lock left movement
+                targetPos.x = MAX(desiredPos.x, targetPos.x);
             }
+        } else {
+            targetPos.x = desiredPos.x;
         }
-        if(Outside.GetLockCameraAxis().y == 1 && Outside.GetLockCameraAxis().x != 1){
-            targetPos.y = targetPos.y;
-            if (Outside.GetLockCameraAxis().x != 1){
-                targetPos.x = (float((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32);
+
+        if (lockDirections.y != 0) { // Vertical lock
+            if (lockDirections.y == 1) { // Lock down movement
+                targetPos.y = MIN(desiredPos.y, targetPos.y);
+            } else if (lockDirections.y == -1) { // Lock up movement
+                targetPos.y = MAX(desiredPos.y, targetPos.y);
             }
+        } else {
+            targetPos.y = desiredPos.y;
         }
-        if(Outside.GetLockCameraAxis().y == 1 && Outside.GetLockCameraAxis().x == 1){
-            targetPos.y = targetPos.y;
-            targetPos.x = targetPos.x;
-        }
-    }else{
-        targetPos = {(float((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32), float((player.GetPosition().y- (192 / 2.0f)) + (32/ 2.0f))};
+    } else {
+        // Normal camera follow when not locked
+        targetPos = {
+            (float((player.GetPosition().x - (256 / 2.0f)) + (32 / 2.0f)) + 32),
+            float((player.GetPosition().y - (192 / 2.0f)) + (32 / 2.0f))
+        };
     }
-    // Set the camera zoom and offset
+
+    // Set the camera zoom and offset (unchanged)
     scaleFactor = MIN(GetScreenWidth() / gameWidth, GetScreenHeight() / gameHeight);
-    // Calculate the actual game width and height after applying scaleFactor
     int actualGameWidth = gameHeight * scaleFactor;
     int actualGameHeight = gameHeight * scaleFactor;
-    // Calculate the offset to center the game in the window
     int offsetX = (GetScreenWidth() - actualGameWidth) / 2;
     int offsetY = (GetScreenHeight() - actualGameHeight) / 2;
+
     camera.zoom = scaleFactor;
     camera.offset = (Vector2){ (float)offsetX, (float)offsetY };
     camera.target = targetPos;

@@ -34,6 +34,11 @@ void TileMap::loadLDtkMap(const std::string& filePath, std::function<void()> cal
 
 // Configure the tilemap
 void TileMap::initialize(const std::string& Lvl) {
+        if (NextLevelLoaded) {
+        UnloadRenderTexture(swapRender);
+        NextLevelLoaded = false;
+        DrawLoadedLevel = false;
+    }
     loadingDone = false;
     curLevel = Lvl;
     animated_tiles.clear(); // Clear any previous animated tiles
@@ -394,21 +399,25 @@ bool TileMap::IsCameraLockNear(Player& player_obj){
         auto CameraL_pos = CameraL.getWorldPosition();
         auto CameraL_Width = CameraL.getSize().x;
         auto CameraL_Height = CameraL.getSize().y;
-        auto CameraL_Type = CameraL.getField<int>("Type").value();
+        auto CameraL_Type = CameraL.getField<std::string>("lock_direction").value();
         Rectangle CameraLRec = {static_cast<float>(CameraL_pos.x), static_cast<float>(CameraL_pos.y + 8), static_cast<float>(CameraL_Width),static_cast<float>(CameraL_Height)};
 
         if (CheckCollisionRecs(player_obj.ColOffset(false),CameraLRec)){
-            if (CameraL_Height > CameraL_Width){
-                LockCameraAxis.x = 1;
-                LockCameraAxis.y = 0;
-            }
-            if (CameraL_Height < CameraL_Width){
+            if (CameraL_Type == "up"){
+                LockCameraAxis.y = -1;
                 LockCameraAxis.x = 0;
-                LockCameraAxis.y = 1;
             }
-            if (CameraL_Height == CameraL_Width){
-                LockCameraAxis.x = 1;
+            if (CameraL_Type == "down"){
                 LockCameraAxis.y = 1;
+                LockCameraAxis.x = 0;
+            }
+            if (CameraL_Type == "right"){
+                LockCameraAxis.y = 0;
+                LockCameraAxis.x = 1;
+            }
+            if (CameraL_Type == "left"){
+                LockCameraAxis.y = 0;
+                LockCameraAxis.x = -1;
             }
             return true;
         }
