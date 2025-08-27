@@ -15,6 +15,7 @@ TileMap::TileMap() {
     TILE_ANIM_TIME = 50;
     curLevel = "Player_Home";
     nextLevel = "Swolie_Town";
+    loadedLevels.clear();
 }
 
 TileMap::~TileMap() {
@@ -218,10 +219,57 @@ std::string TileMap::IndoorWarpTo(Player& player_obj){
     return "NULL";
 }
 
-void TileMap::IsWarpClose(Player& player_obj){
-    const int TILE_SIZE = 16;
-    int dirvalue = 0;
+void TileMap::ProximityLoad(Player& player_obj, std::vector<tileObj>& tileObjs, std::vector<NPC>& npcs){
+    const auto& world = ldtk_project.getWorld();
+    const auto& level = world.getLevel(curLevel);
+    const auto& objects = level.getLayer("Objects");
 
+    for (const ldtk::Entity& wObj : objects.getEntitiesByName("OW_Warp")) {
+        auto wObj_Pos = wObj.getWorldPosition();
+        std::string goingTo = wObj.getField<std::string>("Going_To").value();
+
+        // Calculate distance
+        float distance = std::sqrt(std::pow(player_obj.GetPosition().x - wObj_Pos.x, 2) + std::pow(player_obj.GetPosition().y - wObj_Pos.y, 2));
+
+        // Load level
+        if (distance <= 256 && !loadedLevels[goingTo]){
+            LoadNextLevel(wObj);
+            loadedLevels[goingTo] = true;
+        }
+    }
+
+    const auto& levels = world.allLevels();
+    for (const auto& l : levels) {
+        const auto& levelObjects = l.getLayer("Objects");
+        for (const ldtk::Entity& wObj : levelObjects.getEntitiesByName("OW_Warp")) {
+            auto wObj_Pos = wObj.getWorldPosition();
+            std::string goingTo = wObj.getField<std::string>("Going_To").value();
+
+            // Calculate distance
+            float distance = std::sqrt(std::pow(player_obj.GetPosition().x - wObj_Pos.x, 2) + std::pow(player_obj.GetPosition().y - wObj_Pos.y, 2));
+
+            // Unload level
+            if (distance > 256 && loadedLevels[goingTo] && goingTo != curLevel){
+                if (loadedLevels[goingTo]) {
+                    NextLevelLoaded = false;
+                    DrawLoadedLevel = false;
+                    UnloadRenderTexture(swapRender);
+                    loadedLevels[goingTo] = false;
+
+                    tileObjs.erase(std::remove_if(tileObjs.begin(), tileObjs.end(), [&](const tileObj& obj) {
+                        return obj.GetLocation() == goingTo;
+                    }), tileObjs.end());
+
+                    npcs.erase(std::remove_if(npcs.begin(), npcs.end(), [&](const NPC& obj) {
+                        return obj.GetLocation() == goingTo && obj.GetID() != player_obj.GetPlayerFollower();
+                    }), npcs.end());
+                }
+            }
+        }
+    }
+}
+
+void TileMap::IsWarpClose(Player& player_obj){
     const auto& world = ldtk_project.getWorld();
     const auto& level = world.getLevel(curLevel);
     const auto& objects = level.getLayer("Objects");
@@ -231,23 +279,7 @@ void TileMap::IsWarpClose(Player& player_obj){
         auto wObj_Width = wObj.getSize().x;
         auto wObj_Height = wObj.getSize().y;
         int wObj_Dir = wObj.getField<int>("Dir").value();
-        if (player_obj.GetPlayerDir() == 0 || player_obj.GetPlayerDir() == 270){
-            dirvalue = 1;
-        }else{
-            dirvalue = -1;
-        }
 
-        if (player_obj.GetPosition().x > wObj_Pos.x && player_obj.GetPosition().x < (wObj_Pos.x + wObj_Width)){
-            if (player_obj.GetPosition().y + (dirvalue * (9 * TILE_SIZE)) >= wObj_Pos.y && wObj_Dir == 270 ){
-                if (!NextLevelLoaded){
-                    LoadNextLevel(wObj);
-                }
-            }else if (player_obj.GetPosition().y + (dirvalue * (9 * TILE_SIZE)) <= wObj_Pos.y && wObj_Dir == 90){
-                if (!NextLevelLoaded){
-                    LoadNextLevel(wObj);
-                }
-            }
-        }
         Rectangle warp_bbox = {
             static_cast<float>(wObj_Pos.x),
             static_cast<float>(wObj_Pos.y),
@@ -255,9 +287,8 @@ void TileMap::IsWarpClose(Player& player_obj){
             static_cast<float>(wObj_Height)
         };
         if (CheckCollisionRecs(player_obj.ColOffset(false), warp_bbox)){
-            curLevel = level.name;
             auto goingTo = wObj.getField<std::string>("Going_To").value();
-            if (goingTo=="") {
+            if (goingTo.empty()) {
                 std::cerr << "DEBUG: ERROR: Warp entity at (" << wObj_Pos.x << ", " << wObj_Pos.y << ") is missing 'Going_To' field." << std::endl;
                 continue;
             }
@@ -351,44 +382,6 @@ void TileMap::EnterNextlevel(Vector2 warpPos, Player& player_obj, int dir){
             onWarp = false;
             initializeCollisionGrid(curLevel);
         }
-}
-
-void TileMap::unloadFarAwayLevel(Player& player_obj, std::vector<tileObj>& Tile_objs){
-    const auto& world = ldtk_project.getWorld();
-    const auto& level = world.getLevel(curLevel);
-    bool TurnOff = false;
-    Vector2 levelheight = (Vector2){static_cast<float>(level.size.x), static_cast<float>(level.size.y)};
-    switch (SwapLevel_Dir){
-        case 180:
-            if (player_obj.GetPosition().x > loadLevel_Pos.x + 512){
-                TurnOff = true;
-            }
-            break;
-        case 0:
-            if (player_obj.GetPosition().x < loadLevel_Pos.x - 512){
-                TurnOff = true;
-            }
-            break;
-        case 270:
-            if (player_obj.GetPosition().y < (curLevel_Pos.y + levelheight.y) - 200){
-                TurnOff = true;
-            }
-            break;
-        case 90:
-            if (player_obj.GetPosition().y > curLevel_Pos.y + 200){
-                TurnOff = true;
-            }
-            break;
-    }
-    if (TurnOff){
-        std::cout << "Unloading level..." << std::endl;
-        NextLevelLoaded = false;
-        DrawLoadedLevel = false;
-        UnloadRenderTexture(swapRender);
-        Tile_objs.erase(std::remove_if(Tile_objs.begin(), Tile_objs.end(), [&](const tileObj& obj) {
-            return obj.GetLocation() != player_obj.GetLocation();
-        }), Tile_objs.end());
-    }
 }
 
 bool TileMap::IsCameraLockNear(Player& player_obj){

@@ -45,7 +45,7 @@ public:
     bool GetLoadingDone() const {return loadingDone; }
     std::string GetCurLevelName();
     std::string GetSwapLevelName();
-    void unloadFarAwayLevel(Player& player_obj, std::vector<tileObj>& Tile_objs);
+    void ProximityLoad(Player& player_obj, std::vector<tileObj>& tileObjs, std::vector<NPC>& npcs);
     bool IsCameraLockNear(Player& player_obj);
     Vector2 GetLockCameraAxis() const {return LockCameraAxis;}
     void PlayerInTallGrass(Player& player_obj);
@@ -66,6 +66,7 @@ private:
         std::string animationName;
     };
     std::vector<AnimatedTile> animated_tiles;
+    std::map<std::string, bool> loadedLevels;
     std::map<std::string, std::vector<int>> tileAnimationsMap;
     std::vector<std::pair<std::string, int>> firstFrameIds; // Vector to store animation name and first frame ID
     std::vector<int> frontTiles;
