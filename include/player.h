@@ -9,8 +9,6 @@
 #include <vector>
 #include <algorithm>
 
-class TileMap;
-
 class Player :public GameObject {
 public:
     Player();
@@ -41,7 +39,7 @@ public:
     void setPosition(Vector2 newPos);
 
     // Collision detection
-    void checkCollisions(const TileMap& tilemap, const std::vector<NPC>& npcs);
+    void checkCollisions(const ldtk::Layer& collisions,  const std::vector<NPC>& npcs, Vector2 IntGridOffset);
     Rectangle ColOffset(bool Tile) const;
 
     // Accessors
@@ -63,7 +61,7 @@ public:
     std::string GetPlayerGender() const;
     std::string GetPlayerName() const;
     int GetStage() const;
-    bool IntGridValueAtPosition(const TileMap& tilemap, int value);
+    bool IntGridValueAtPosition(const ldtk::Layer& collisions, int value, Vector2 IntGridOffset);
     void StopPlayer();
 
 private:

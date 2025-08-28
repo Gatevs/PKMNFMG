@@ -59,6 +59,7 @@ public:
     void SetPosition(Vector2 pos);
     bool GetIdleAnim() const {return idle;}
     bool getBattleStatus() const {return battleStatus;}
+    void setLocation(std::string newloc) {location = newloc;}
 
 private:
     // Graphics

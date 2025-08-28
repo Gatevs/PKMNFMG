@@ -322,6 +322,7 @@ void ActionHandler::actionFollowMenu(std::vector<NPC>& NPC_objs, Player& p){
         }else if (p.GetPlayerFollower() == NPCInfo.ID && textTimer >= 10){
             NPC_objs[ActiveNPCVectorIndex].following_Player = true;
             NPC_objs[ActiveNPCVectorIndex].lookAtPlayer(p.GetPlayerDir());
+            NPC_objs[ActiveNPCVectorIndex].setLocation(p.GetLocation());
             getNPCInfo(NPCInfo.ID,NPC_objs, 4);
             p.SetFollowerID(0);
             handleAction(ActionType::Dialogue_Box,CameraPos);

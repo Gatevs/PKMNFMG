@@ -36,7 +36,7 @@ public:
     void IsWarpClose(Player& player_obj);
     Vector2 GetSwapLevel();
     Vector2 GetCurLevel();
-    Vector2 GetlevelOffset() const;
+    Vector2 GetlevelOffset();
     bool IsNextLevelLoaded();
     bool StandingOnWarp();
     void SwapLevels(Player& player_obj);
@@ -45,7 +45,7 @@ public:
     bool GetLoadingDone() const {return loadingDone; }
     std::string GetCurLevelName();
     std::string GetSwapLevelName();
-    void ProximityLoad(Player& player_obj, std::vector<tileObj>& tileObjs, std::vector<NPC>& npcs);
+    void unloadFarAwayLevel(Player& player_obj, std::vector<tileObj>& Tile_objs);
     bool IsCameraLockNear(Player& player_obj);
     Vector2 GetLockCameraAxis() const {return LockCameraAxis;}
     void PlayerInTallGrass(Player& player_obj);
@@ -54,19 +54,13 @@ public:
     void parseCSV();
     Vector2 InitLockDirection(Player& player_obj);
     std::string IndoorWarpTo(Player& player_obj);
-    int getCollision(int x, int y) const;
 
 private:
-    void initializeCollisionGrid(const std::string& levelName);
-    void preprocessEntityCollisions(const std::string& levelName);
-    std::vector<int> m_collision_grid;
-    int m_collision_grid_width;
     struct AnimatedTile {
         Vector2 position;
         std::string animationName;
     };
     std::vector<AnimatedTile> animated_tiles;
-    std::map<std::string, bool> loadedLevels;
     std::map<std::string, std::vector<int>> tileAnimationsMap;
     std::vector<std::pair<std::string, int>> firstFrameIds; // Vector to store animation name and first frame ID
     std::vector<int> frontTiles;
@@ -116,6 +110,7 @@ private:
 
     Vector2 loadLevel_Pos;
     Vector2 curLevel_Pos;
+    Vector2 curLevel_Offset;
     bool NextLevelLoaded;
     bool DrawLoadedLevel;
     bool onWarp;

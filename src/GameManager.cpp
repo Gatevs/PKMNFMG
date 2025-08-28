@@ -279,10 +279,9 @@ if (IsKeyPressed(KEY_K)) {
             lockCamera = false;
         }
         if (Outside.IndoorWarpTo(player) != "NULL"){warpState = WarpState::FadingIn;}
-        Outside.ProximityLoad(player, tileObjs, npcs);
         Outside.IsWarpClose(player);
         Outside.PlayerInTallGrass(player);
-        player.checkCollisions(Outside, npcs);
+        player.checkCollisions(Outside.GetCOL(), npcs, Outside.GetlevelOffset());
         player.UpdateAnim();
         player.UpdatePositionAndCamera();
         if (player.GetPlayerFollower() != 0){
@@ -300,6 +299,7 @@ if (IsKeyPressed(KEY_K)) {
         Outside.SwapLevels(player);
     }
     if (Outside.IsNextLevelLoaded()){
+        Outside.unloadFarAwayLevel(player,tileObjs);
         if (!Outside.GetDrawNextLevel()){
             Outside.loadTileObjs(Outside.GetSwapLevelName(), tileObjs);
             Outside.loadNPCs(Outside.GetSwapLevelName(),player,npcs,false);
