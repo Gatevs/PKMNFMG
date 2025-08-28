@@ -10,6 +10,8 @@ endif()
 
 # Set Emscripten-specific settings only if building for Emscripten
 if (EMSCRIPTEN)
+    add_compile_options(-Wno-unused-command-line-argument)
+    add_compile_options(-Qunused-arguments)
     # Find the Emscripten SDK path from the environment variable
     if(NOT EMSCRIPTEN_ROOT_PATH)
         message(FATAL_ERROR "EMSCRIPTEN_ROOT_PATH not set. Please make sure Emscripten is set up correctly.")
@@ -55,6 +57,9 @@ if (EMSCRIPTEN)
 
     # Add the preload files to CXX flags
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${PRELOAD_FILES}")
+
+        # Add the missing export
+
 endif()
 
 # Windows-specific settings
@@ -101,3 +106,7 @@ set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) # Disable building raylib examples
 
 # Add external libraries (using only keyword-based signature)
 target_link_libraries(PokemonFMG PRIVATE raylib LDtkLoader)
+
+    target_link_options(PokemonFMG PRIVATE
+        -s EXPORTED_RUNTIME_METHODS=['HEAPF32','ccall','cwrap']
+    )

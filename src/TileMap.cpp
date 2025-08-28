@@ -334,6 +334,7 @@ void TileMap::EnterNextlevel(Vector2 warpPos, Player& player_obj, int dir){
 }
 
 void TileMap::unloadFarAwayLevel(Player& player_obj, std::vector<tileObj>& Tile_objs){
+    int TILE_SIZE = 16;
     const auto& world = ldtk_project.getWorld();
     const auto& level = world.getLevel(curLevel);
     bool TurnOff = false;
@@ -350,12 +351,12 @@ void TileMap::unloadFarAwayLevel(Player& player_obj, std::vector<tileObj>& Tile_
             }
             break;
         case 270:
-            if (player_obj.GetPosition().y < (curLevel_Pos.y + levelheight.y) - 200){
+            if (player_obj.GetPosition().y < Warp_Pos.y - (TILE_SIZE * 8)){
                 TurnOff = true;
             }
             break;
         case 90:
-            if (player_obj.GetPosition().y > curLevel_Pos.y + 200){
+            if (player_obj.GetPosition().y > Warp_Pos.y + (TILE_SIZE * 8)){
                 TurnOff = true;
             }
             break;
