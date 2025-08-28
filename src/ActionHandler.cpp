@@ -278,7 +278,7 @@ void ActionHandler::actionBagMenu(){
 
 void ActionHandler::LeaveMenu(){
     if (screenState == ON && fadeOutComplete){
-        fadeIn(1);
+        fadeIn(510.0f);
         screenState = WAIT;
     }
 }
@@ -404,9 +404,9 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
             }
             if (PlayerPKMNInfo.fadeblink){
                 if (!fadeInComplete) {
-                    fadeIn(4);
+                    fadeIn(510.0f * 4);
                 } else if (!fadeOutComplete) {
-                    fadeOut(4);
+                    fadeOut(510.0f * 4);
                 } else{
                     PlayerPKMNInfo.fadeblink = false;
                     PlayerPKMNInfo.blinkCounter++;
@@ -716,7 +716,7 @@ void ActionHandler::actionBattleMenu(Player& player, std::vector<PKMN>& PKMNPart
             }
             if (PlayerPKMNInfo.BattleEnd){
                 if (!fadeInComplete) {
-                    fadeIn(1);
+                    fadeIn(510.0f);
                 } else if (battleVictory) {
                     externalFadeOut = true;
                     ExitBattle(player, PKMNParty[PlayerPKMNInfo.SlotID]);
@@ -1164,9 +1164,9 @@ void ActionHandler::action(std::vector<NPC>& NPC_objs, Player& p) {
 void ActionHandler::UpdateScreenState() {
     // Fade in or out based on current state
     if (!fadeInComplete) {
-        fadeIn(1);
+        fadeIn(510.0f);
     } else if (!fadeOutComplete) {
-        fadeOut(1);
+        fadeOut(510.0f);
     }
 
     // Update screen state based on fade-in and fade-out completion
@@ -1356,37 +1356,32 @@ void ActionHandler::dialogue(Player& player) {
     }
 }
 
-void ActionHandler::fadeIn(int speed){
-    const int MAX_FADE_VALUE = 255;
-    int FADE_INCREMENT = 10 * speed; // Adjust the increment value as needed
-
-    if (Fade < MAX_FADE_VALUE) {
-        // Increment Fade by FADE_INCREMENT, but ensure it doesn't exceed MAX_FADE_VALUE
-        Fade = std::min(Fade + FADE_INCREMENT, MAX_FADE_VALUE);
-        fadeInComplete = false;
-    } else {
-        Fade = MAX_FADE_VALUE;
+void ActionHandler::fadeIn(float speed){
+    const float MAX_FADE_VALUE = 255.0f;
+    float dt = GetFrameTime();
+    if (dt > 1.0f/30.0f) dt = 1.0f/30.0f;
+    Fade = std::min(Fade + dt * speed, MAX_FADE_VALUE);
+    if (Fade >= MAX_FADE_VALUE) {
         fadeInComplete = true;
+    } else {
+        fadeInComplete = false;
     }
 }
 
-void ActionHandler::fadeOut(int speed){
-    const int MIN_FADE_VALUE = 0;
-    int FADE_DECREMENT = 10 * speed; // Adjust the decrement value as needed
-
-    if (Fade > MIN_FADE_VALUE) {
-        // Decrement Fade by FADE_DECREMENT, but ensure it doesn't go below MIN_FADE_VALUE
-        Fade = std::max(Fade - FADE_DECREMENT, MIN_FADE_VALUE);
-        fadeOutComplete = false;
-    } else {
-        Fade = MIN_FADE_VALUE;
-        fadeOutComplete = true;
+void ActionHandler::fadeOut(float speed){
+    const float MIN_FADE_VALUE = 0.0f;
+    float dt = GetFrameTime();
+    if (dt > 1.0f/30.0f) dt = 1.0f/30.0f;
+    Fade = std::max(Fade - dt * speed, MIN_FADE_VALUE);
+    if (Fade <= MIN_FADE_VALUE) {
         if (externalFadeOut){
             externalFadeOut = false;
             fadeOutComplete = false;
         }else{
             fadeOutComplete = true;
         }
+    } else {
+        fadeOutComplete = false;
     }
 }
 

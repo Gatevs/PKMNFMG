@@ -207,11 +207,20 @@ if (IsKeyPressed(KEY_K)) {
     Outside.update(Outside.GetCurLevelName(), cur, player.GetPosition());
     // std::cout << Menu.stopPlayerInput << std::endl;
     if (warpState == WarpState::FadingIn){
-        WarpPlayer(Outside.IndoorWarpTo(player));
-    } else if (warpState == WarpState::FadingOut){
         Menu.SetFadePos({camera.target.x - 32, camera.target.y});
+        Menu.fadeIn(500.0f);
+        if (Menu.IsFadeInComplete()){
+            warpState = WarpState::BlackScreen;
+        }
+    } else if (warpState == WarpState::BlackScreen) {
+        LoadLevel(warpDestination);
+        Menu.SetFadePos({targetPos.x - 32, targetPos.y});
+        Menu.SetFade(255);
+        warpState = WarpState::FadingOut;
+    } else if (warpState == WarpState::FadingOut){
+        Menu.SetFadePos({targetPos.x - 32, targetPos.y});
         if(!Menu.IsFadeOutComplete()){
-            Menu.fadeOut(1);
+            Menu.fadeOut(500.0f);
         }else{
             Menu.SetFade(-1);
             warpState = WarpState::None;
@@ -271,14 +280,18 @@ if (IsKeyPressed(KEY_K)) {
         Menu.SetCamera(camera);
     }
     player.Update();
-    if (Menu.FadeOutAtferMenu()) {Menu.fadeOut(1);}
+    if (Menu.FadeOutAtferMenu()) {Menu.fadeOut(510.0f);}
     if (player.IsPlayerMoving()){
         if (Outside.IsCameraLockNear(player)){
             lockCamera = true;
         } else{
             lockCamera = false;
         }
-        if (Outside.IndoorWarpTo(player) != "NULL"){warpState = WarpState::FadingIn;}
+        std::string warpDest = Outside.IndoorWarpTo(player);
+        if (warpDest != "NULL" && warpState == WarpState::None){
+            warpDestination = warpDest;
+            warpState = WarpState::FadingIn;
+        }
         Outside.IsWarpClose(player);
         Outside.PlayerInTallGrass(player);
         player.checkCollisions(Outside.GetCOL(), npcs, Outside.GetlevelOffset());
@@ -527,16 +540,6 @@ void GameManager::LoadLevel(std::string where) {
         targetPos = {Outside.InitLockDirection(player).x,targetPos.y};
     }else{
         lockCamera = false;
-    }
-}
-
-void GameManager::WarpPlayer(std::string where){
-    Menu.SetFadePos({camera.target.x - 32, camera.target.y});
-    Menu.fadeIn(1);
-    if (Menu.IsFadeInComplete()){
-        LoadLevel(where);
-        Menu.SetFade(255);
-        warpState = WarpState::FadingOut;
     }
 }
 

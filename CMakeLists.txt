@@ -4,7 +4,6 @@ project(PokemonFMG)
 set(CMAKE_CXX_STANDARD 11)
 
 add_compile_options(-Wno-unused-command-line-argument)
-add_compile_options(-Qunused-arguments)
 
 # Set the build type if not explicitly specified
 if(NOT CMAKE_BUILD_TYPE)

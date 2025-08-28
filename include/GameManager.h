@@ -30,7 +30,6 @@ public:
 private:
     void JsonSaveNPCData();
     void JsonLoadNPCData();
-    void WarpPlayer(std::string where);
     void LoadLevel(std::string where);
     int test;
     Color green = {20,160,133,254};
@@ -41,8 +40,9 @@ private:
     Camera2D camera = { 0 };
     Camera2D bigCamera = { 1 };
     bool lockCamera = false;
-    enum class WarpState { None, FadingIn, FadingOut };
+    enum class WarpState { None, FadingIn, BlackScreen, FadingOut };
     WarpState warpState = WarpState::None;
+    std::string warpDestination;
     Vector2 targetPos;
     Vector2 BottomBarPos;
     TileMap Outside;

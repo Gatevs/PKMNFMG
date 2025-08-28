@@ -34,8 +34,8 @@ public:
     void SetFadePos(Vector2 newFadePos){fadePos = newFadePos;}
     void Draw();
     void claenText();
-    void fadeIn(int speed);
-    void fadeOut(int speed);
+    void fadeIn(float speed);
+    void fadeOut(float speed);
     bool IsFadeInComplete() const {return fadeInComplete;}
     bool IsFadeOutComplete() const {return fadeOutComplete;}
     bool FadeOutAtferMenu()const {return externalFadeOut;}
@@ -203,7 +203,7 @@ private:
     int lastMenuID;
     int inUI;
     int selection;
-    int Fade;
+    float Fade;
     int screenState;
     float TEXT_SPEED;
     int MAX_DOWN;
